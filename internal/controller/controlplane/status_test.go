@@ -33,6 +33,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
@@ -2624,4 +2625,223 @@ func TestUpdateStatusReportsLastRemediation(t *testing.T) {
 	require.Equal(t, "cp-unhealthy", kcp.Status.LastRemediation.Machine)
 	require.NotNil(t, kcp.Status.LastRemediation.RetryCount)
 	require.Equal(t, int32(1), *kcp.Status.LastRemediation.RetryCount)
+}
+
+func TestUpdateStatusReportsEtcdClusterHealthy(t *testing.T) {
+	scheme := machineScheme(t)
+
+	member := func(name string, status metav1.ConditionStatus, provisioned bool) *clusterv1.Machine {
+		m := readyMachine(name, metav1.ConditionTrue, clusterv1.ReadyReason, "")
+		m.Spec.Version = "not-a-version"
+		if provisioned {
+			m.Spec.ProviderID = "test://" + name
+		}
+		if status != "" {
+			conditions.Set(m, metav1.Condition{
+				Type:   cpv1beta2.K0sControlPlaneMachineEtcdMemberHealthyCondition,
+				Status: status,
+				Reason: "Test",
+			})
+		}
+		return m
+	}
+
+	tests := []struct {
+		name        string
+		etcdManaged bool
+		machines    []*clusterv1.Machine
+		deleted     []*clusterv1.Machine
+		status      metav1.ConditionStatus
+		reason      string
+	}{
+		{name: "no etcd members removes the condition", machines: []*clusterv1.Machine{member("cp-0", metav1.ConditionFalse, true)}},
+		{name: "no machines is unknown", etcdManaged: true,
+			status: metav1.ConditionUnknown, reason: cpv1beta2.K0sControlPlaneEtcdClusterHealthUnknownReason},
+		{name: "one member saying nothing", etcdManaged: true,
+			machines: []*clusterv1.Machine{member("cp-0", metav1.ConditionTrue, true), member("cp-1", "", true)},
+			status:   metav1.ConditionUnknown, reason: cpv1beta2.K0sControlPlaneEtcdClusterHealthUnknownReason},
+		{name: "a provisioning machine saying nothing is not counted", etcdManaged: true,
+			machines: []*clusterv1.Machine{member("cp-0", metav1.ConditionTrue, true), member("cp-new", metav1.ConditionUnknown, false)},
+			status:   metav1.ConditionTrue, reason: cpv1beta2.K0sControlPlaneEtcdClusterHealthyReason},
+		{name: "a provisioning machine reporting a failure is counted", etcdManaged: true,
+			machines: []*clusterv1.Machine{member("cp-0", metav1.ConditionTrue, true), member("cp-new", metav1.ConditionFalse, false)},
+			status:   metav1.ConditionFalse, reason: cpv1beta2.K0sControlPlaneEtcdClusterNotHealthyReason},
+		{name: "a deleting machine is not counted", etcdManaged: true,
+			machines: []*clusterv1.Machine{member("cp-0", metav1.ConditionTrue, true)},
+			deleted:  []*clusterv1.Machine{member("cp-old", metav1.ConditionFalse, true)},
+			status:   metav1.ConditionTrue, reason: cpv1beta2.K0sControlPlaneEtcdClusterHealthyReason},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			kcp := &cpv1beta2.K0sControlPlane{ObjectMeta: metav1.ObjectMeta{Name: "kcp", Namespace: "default"}}
+			conditions.Set(kcp, metav1.Condition{
+				Type: cpv1beta2.K0sControlPlaneEtcdClusterHealthyCondition, Status: metav1.ConditionTrue, Reason: "Stale",
+			})
+			c := &K0sController{Client: fake.NewClientBuilder().WithScheme(scheme).Build()}
+
+			_ = c.updateStatus(t.Context(), &controlplane{
+				cluster:          &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "cluster", Namespace: "default"}},
+				kcp:              kcp,
+				activeMachines:   collections.FromMachines(tt.machines...),
+				deletedMachines:  collections.FromMachines(tt.deleted...),
+				upToDateMachines: collections.Machines{},
+				etcdManaged:      tt.etcdManaged,
+			})
+
+			got := conditions.Get(kcp, cpv1beta2.K0sControlPlaneEtcdClusterHealthyCondition)
+			if tt.status == "" {
+				require.Nil(t, got)
+				return
+			}
+			require.NotNil(t, got)
+			require.Equal(t, tt.status, got.Status)
+			require.Equal(t, tt.reason, got.Reason)
+		})
+	}
+}
+
+func TestEtcdClusterHealthyNamesTheMembers(t *testing.T) {
+	scheme := machineScheme(t)
+
+	healthy, failed, silent := readyMachine("cp-0", metav1.ConditionTrue, clusterv1.ReadyReason, ""),
+		readyMachine("cp-1", metav1.ConditionTrue, clusterv1.ReadyReason, ""),
+		readyMachine("cp-2", metav1.ConditionTrue, clusterv1.ReadyReason, "")
+	for _, m := range []*clusterv1.Machine{healthy, failed, silent} {
+		m.Spec.ProviderID = "test://" + m.Name
+	}
+
+	kcp := &cpv1beta2.K0sControlPlane{ObjectMeta: metav1.ObjectMeta{Name: "kcp", Namespace: "default"}}
+	c := &K0sController{Client: fake.NewClientBuilder().WithScheme(scheme).
+		WithObjects(healthy, failed, silent).WithStatusSubresource(healthy, failed, silent).Build()}
+	scope := &controlplane{
+		cluster:          &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "cluster", Namespace: "default"}},
+		kcp:              kcp,
+		activeMachines:   collections.FromMachines(healthy, failed, silent),
+		deletedMachines:  collections.Machines{},
+		upToDateMachines: collections.Machines{},
+		etcdManaged:      true,
+		etcdMemberHealth: map[string]metav1.ConditionStatus{"cp-0": metav1.ConditionTrue, "cp-1": metav1.ConditionFalse},
+	}
+
+	require.NoError(t, c.setEtcdMemberHealthyCondition(t.Context(), scope))
+	_ = c.updateStatus(t.Context(), scope)
+
+	require.Empty(t, conditions.Get(healthy, cpv1beta2.K0sControlPlaneMachineEtcdMemberHealthyCondition).Message)
+	got := conditions.Get(kcp, cpv1beta2.K0sControlPlaneEtcdClusterHealthyCondition)
+	require.NotNil(t, got)
+	require.Contains(t, got.Message, "* Machine cp-1: The etcd member left the cluster or k0s failed to reconcile it")
+	require.Contains(t, got.Message, "* Machine cp-2: The etcd member state could not be determined")
+}
+
+func TestScalingConditionsReportWhatPreflightIsWaitingFor(t *testing.T) {
+	scheme := machineScheme(t)
+
+	workerConfig := &bootstrapv2.K0sControllerConfig{Spec: bootstrapv2.K0sControllerConfigSpec{
+		K0sConfigSpec: &bootstrapv2.K0sConfigSpec{Args: []string{"--enable-worker"}},
+	}}
+	available := func(m *clusterv1.Machine) *clusterv1.Machine {
+		conditions.Set(m, metav1.Condition{Type: clusterv1.MachineAvailableCondition, Status: metav1.ConditionTrue, Reason: "Test"})
+		return m
+	}
+
+	tests := []struct {
+		name        string
+		active      []*clusterv1.Machine
+		deleted     []*clusterv1.Machine
+		configs     map[string]*bootstrapv2.K0sControllerConfig
+		updating    bool
+		hookWaiting bool
+		down        bool
+		initialized bool
+		blocker     string
+	}{
+		{
+			name:    "a machine still being deleted",
+			active:  []*clusterv1.Machine{available(remediationMachine("cp-0", true, false))},
+			deleted: []*clusterv1.Machine{remediationMachine("cp-1", true, true)},
+			blocker: "* waiting for a control plane Machine to complete deletion",
+		},
+		{
+			name:    "the newest machine not ready yet",
+			active:  []*clusterv1.Machine{remediationMachine("cp-0", true, false)},
+			blocker: "* waiting for Machine cp-0 to become ready",
+		},
+		{
+			name:     "a machine updating in place",
+			active:   []*clusterv1.Machine{available(remediationMachine("cp-0", true, false))},
+			configs:  map[string]*bootstrapv2.K0sControllerConfig{"cp-0": workerConfig},
+			updating: true,
+			blocker:  "* waiting for control plane Machines to finish updating in place",
+		},
+		{
+			name:        "a deletion that fails is reported by its error, not as a wait",
+			active:      []*clusterv1.Machine{available(remediationMachine("cp-0", true, false))},
+			deleted:     []*clusterv1.Machine{remediationMachine("cp-1", true, true)},
+			hookWaiting: true,
+			initialized: true,
+		},
+		{
+			name:    "a scale down waits as well",
+			active:  []*clusterv1.Machine{remediationMachine("cp-0", true, false), remediationMachine("cp-1", true, false), remediationMachine("cp-2", true, false), remediationMachine("cp-3", true, false)},
+			down:    true,
+			blocker: "* waiting for Machine cp-3 to become ready",
+		},
+		{
+			name:    "nothing to wait for",
+			active:  []*clusterv1.Machine{available(remediationMachine("cp-0", true, false))},
+			configs: map[string]*bootstrapv2.K0sControllerConfig{"cp-0": workerConfig},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			for _, m := range tt.active {
+				if tt.updating {
+					conditions.Set(m, metav1.Condition{Type: clusterv1.MachineUpdatingCondition, Status: metav1.ConditionTrue, Reason: "Test"})
+				}
+			}
+			for _, m := range tt.deleted {
+				if tt.hookWaiting {
+					conditions.Set(m, metav1.Condition{
+						Type: clusterv1.MachineDeletingCondition, Status: metav1.ConditionTrue,
+						Reason: clusterv1.MachineDeletingWaitingForPreTerminateHookReason,
+					})
+				}
+			}
+
+			kcp := &cpv1beta2.K0sControlPlane{ObjectMeta: metav1.ObjectMeta{Name: "kcp", Namespace: "default"}}
+			kcp.Spec.Replicas = 3
+			kcp.Status.Initialization.ControlPlaneInitialized = new(tt.initialized)
+			c := &K0sController{Client: fake.NewClientBuilder().WithScheme(scheme).Build()}
+			infra := map[string]*unstructured.Unstructured{}
+			for _, m := range tt.active {
+				infra[m.Name] = &unstructured.Unstructured{}
+			}
+			scope := &controlplane{
+				cluster:           &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "c", Namespace: "default"}},
+				kcp:               kcp,
+				activeMachines:    collections.FromMachines(tt.active...),
+				deletedMachines:   collections.FromMachines(tt.deleted...),
+				controllerConfigs: tt.configs,
+				infraMachines:     infra,
+			}
+
+			_, _ = c.preflightChecks(t.Context(), scope)
+			setScalingConditions(scope)
+
+			condition := cpv1beta2.K0sControlPlaneScalingUpCondition
+			if tt.down {
+				condition = cpv1beta2.K0sControlPlaneScalingDownCondition
+			}
+			got := conditions.Get(kcp, condition)
+			require.NotNil(t, got)
+			require.Equal(t, metav1.ConditionTrue, got.Status)
+			if tt.blocker == "" {
+				require.NotContains(t, got.Message, "Blocked because")
+				return
+			}
+			require.Contains(t, got.Message, "Blocked because:\n"+tt.blocker)
+		})
+	}
 }

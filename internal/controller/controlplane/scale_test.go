@@ -25,6 +25,7 @@ import (
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	cpv1beta2 "github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta2"
@@ -32,6 +33,7 @@ import (
 	"github.com/stretchr/testify/require"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util/collections"
+	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
@@ -538,4 +540,126 @@ func TestInPlaceVersionWithDeleteFirstGate(t *testing.T) {
 			require.Equal(t, tc.wantDeleteFirst, isDeleteFirstStrategyEnabled(kcp))
 		})
 	}
+}
+
+func TestPreflightChecksLetsAReplacementPastAnUnhealthyNewestMachine(t *testing.T) {
+	scheme := machineScheme(t)
+	marker := remediationData{Machine: "cp-1", Timestamp: metav1.NewTime(time.Unix(4000, 0))}.marshal()
+
+	tests := []struct {
+		name         string
+		newest       *clusterv1.Machine
+		unmarked     bool
+		replicas     int32
+		provisioning bool
+		inplace      bool
+		recreate     bool
+		outdated     bool
+		marker       bool
+		held         bool
+	}{
+		{name: "an unhealthy newest machine during a remediation is not waited for", newest: remediationMachine("cp-2", false, false), marker: true},
+		{name: "a newest machine not marked for remediation is waited for", newest: remediationMachine("cp-2", false, false), unmarked: true, marker: true, held: true},
+		{name: "an unhealthy newest machine with no remediation started is waited for", newest: remediationMachine("cp-2", false, false),
+			replicas: 4, provisioning: true, held: true},
+		{name: "an unhealthy newest machine is still waited for when no machine is missing", newest: remediationMachine("cp-2", false, false),
+			replicas: 2, outdated: true, marker: true, held: true},
+		{name: "an unhealthy newest machine is still waited for while an in place update is pending", newest: remediationMachine("cp-2", false, false),
+			inplace: true, marker: true, held: true},
+		{name: "a version bump rolled out by replacement does not hold the skip", newest: remediationMachine("cp-2", false, false),
+			inplace: true, recreate: true, marker: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			oldest := remediationMachine("cp-0", true, false)
+			oldest.CreationTimestamp = metav1.NewTime(time.Unix(1000, 0))
+			tt.newest.CreationTimestamp = metav1.NewTime(time.Unix(3000, 0))
+			if tt.unmarked {
+				conditions.Delete(tt.newest, clusterv1.MachineOwnerRemediatedCondition)
+			}
+
+			kcp := &cpv1beta2.K0sControlPlane{ObjectMeta: metav1.ObjectMeta{Name: "kcp", Namespace: "default"}}
+			kcp.Spec.Replicas = 3
+			if tt.replicas != 0 {
+				kcp.Spec.Replicas = tt.replicas
+			}
+			kcp.Spec.UpdateStrategy = cpv1beta2.UpdateInPlace
+			if tt.recreate {
+				kcp.Spec.UpdateStrategy = cpv1beta2.UpdateRecreate
+			}
+			kcp.Status.Initialization.ControlPlaneInitialized = new(true)
+			if tt.marker {
+				kcp.Annotations = map[string]string{cpv1beta2.RemediationInProgressAnnotation: marker}
+			}
+
+			active := []*clusterv1.Machine{oldest, tt.newest}
+			if tt.provisioning {
+				joining := remediationMachine("cp-1", true, false)
+				joining.Status.NodeRef = clusterv1.MachineNodeReference{}
+				joining.CreationTimestamp = metav1.NewTime(time.Unix(2000, 0))
+				active = append(active, joining)
+			}
+
+			objs := []client.Object{kcp}
+			infra := map[string]*unstructured.Unstructured{}
+			for _, m := range active {
+				objs = append(objs, m)
+				infra[m.Name] = &unstructured.Unstructured{}
+			}
+			c := &K0sController{Client: fake.NewClientBuilder().WithScheme(scheme).
+				WithObjects(objs...).WithStatusSubresource(objs...).Build()}
+			scope := &controlplane{
+				cluster:                            &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "c", Namespace: "default"}},
+				kcp:                                kcp,
+				activeMachines:                     collections.FromMachines(active...),
+				upToDateMachines:                   collections.FromMachines(active...),
+				deletedMachines:                    collections.Machines{},
+				infraMachines:                      infra,
+				hasMachinesWithOnlyVersionOutdated: tt.inplace,
+			}
+			if tt.outdated {
+				scope.notUpToDateMachines = collections.FromMachines(oldest)
+			}
+
+			res, err := c.preflightChecks(t.Context(), scope)
+			require.NoError(t, err)
+			require.Equal(t, tt.held, !res.IsZero())
+			if tt.held {
+				require.Equal(t, []string{"* waiting for Machine cp-2 to become ready"}, scope.preflightBlockers)
+				return
+			}
+			require.Empty(t, scope.preflightBlockers)
+		})
+	}
+}
+
+func TestReconcileMachineDeletionsHoldsAfterReleasingAHook(t *testing.T) {
+	scheme := machineScheme(t)
+
+	leaving := remediationMachine("cp-0", true, true)
+	leaving.Annotations = map[string]string{cpv1beta2.K0ControlPlanePreTerminateHookCleanupAnnotation: ""}
+	conditions.Set(leaving, metav1.Condition{
+		Type: clusterv1.MachineDeletingCondition, Status: metav1.ConditionTrue,
+		Reason: clusterv1.MachineDeletingWaitingForPreTerminateHookReason,
+	})
+	staying := remediationMachine("cp-1", true, false)
+
+	kcp := &cpv1beta2.K0sControlPlane{ObjectMeta: metav1.ObjectMeta{Name: "kcp", Namespace: "default"}}
+	c := &K0sController{Client: fake.NewClientBuilder().WithScheme(scheme).
+		WithObjects(leaving, staying, kcp).WithStatusSubresource(leaving, staying, kcp).Build()}
+
+	res, err := c.reconcileMachineDeletions(t.Context(), &controlplane{
+		cluster:         &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "c", Namespace: "default"}},
+		kcp:             kcp,
+		activeMachines:  collections.FromMachines(staying),
+		deletedMachines: collections.FromMachines(leaving),
+		infraMachines:   map[string]*unstructured.Unstructured{"cp-1": {}},
+	})
+	require.NoError(t, err)
+	require.False(t, res.IsZero(), "nothing else may scale in the pass that lets a machine go")
+
+	released := &clusterv1.Machine{}
+	require.NoError(t, c.Get(t.Context(), client.ObjectKeyFromObject(leaving), released))
+	require.NotContains(t, released.Annotations, cpv1beta2.K0ControlPlanePreTerminateHookCleanupAnnotation)
 }

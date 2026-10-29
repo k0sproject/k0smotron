@@ -68,6 +68,23 @@ const (
 	// etcd members, because it uses kine or an external cluster.
 	K0sControlPlaneMachineNoEtcdMembersReason = "NoEtcdMembers"
 
+	// K0sControlPlaneEtcdClusterHealthyCondition aggregates the EtcdMemberHealthy condition of the control plane
+	// machines. It is removed when k0s keeps no etcd members, as with kine or an external cluster.
+	K0sControlPlaneEtcdClusterHealthyCondition = "EtcdClusterHealthy"
+
+	// K0sControlPlaneEtcdClusterHealthyReason surfaces when every member is healthy.
+	K0sControlPlaneEtcdClusterHealthyReason = "Healthy"
+
+	// K0sControlPlaneEtcdClusterNotHealthyReason surfaces when at least one member is not healthy.
+	K0sControlPlaneEtcdClusterNotHealthyReason = "NotHealthy"
+
+	// K0sControlPlaneEtcdClusterHealthUnknownReason surfaces when no member is unhealthy and the state of
+	// at least one is unknown, or no machine is provisioned yet.
+	K0sControlPlaneEtcdClusterHealthUnknownReason = "HealthUnknown"
+
+	// K0sControlPlaneEtcdClusterInspectionFailedReason surfaces a failure to compute the condition.
+	K0sControlPlaneEtcdClusterInspectionFailedReason = clusterv1.InspectionFailedReason
+
 	// K0sControlPlaneScalingUpCondition is true if actual replicas < desired replicas.
 	// Note: In case a K0sControlPlane preflight check is preventing scale up, this will surface in the condition message.
 	K0sControlPlaneScalingUpCondition = clusterv1.ScalingUpCondition
