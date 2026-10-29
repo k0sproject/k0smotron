@@ -39,6 +39,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	"github.com/go-logr/logr"
+	bootstrapv2 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
 	k0smoutil "github.com/k0sproject/k0smotron/v2/internal/controller/util"
 )
 
@@ -100,7 +101,7 @@ func (p *ProviderIDController) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	if node.Spec.ProviderID == "" {
 		node.Spec.ProviderID = machine.Spec.ProviderID
-		node.Labels[machineNameNodeLabel] = machine.GetName()
+		node.Labels[bootstrapv2.MachineNameNodeLabel] = machine.GetName()
 		err = retry.OnError(retry.DefaultBackoff, func(_ error) bool {
 			return true
 		}, func() error {
@@ -144,7 +145,7 @@ func nodeForMachine(ctx context.Context, list listNodes, machine *clusterv1.Mach
 			}
 
 			// Check k0smotron.io/machine-name node label
-			if val, ok := n.Labels[machineNameNodeLabel]; ok && val == machine.GetName() {
+			if val, ok := n.Labels[bootstrapv2.MachineNameNodeLabel]; ok && val == machine.GetName() {
 				return n, false, nil
 			}
 

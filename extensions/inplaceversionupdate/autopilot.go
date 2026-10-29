@@ -21,15 +21,21 @@ package inplaceversionupdate
 import (
 	"context"
 	"fmt"
+	"slices"
+	"strings"
 	"time"
 
 	bootstrapv1 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
 	autopilot "github.com/k0sproject/k0smotron/v2/internal/autopilot"
 	"github.com/k0sproject/k0smotron/v2/internal/controller/util"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/controllers/external"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -37,17 +43,14 @@ import (
 // this function only targets one machine at a time. This is in line with the design of the in-place update CAPI extension, which focuses on updating individual machines rather
 // than multiple machines simultaneously.
 func createAutopilotPlanForMachine(ctx context.Context, c client.Client, clientset *kubernetes.Clientset, desiredMachine *clusterv1.Machine, isControlPlane bool) error {
+	log := ctrl.LoggerFrom(ctx)
+
 	downloadURL, err := getDownloadURLFromBootstrapConfig(ctx, c, desiredMachine.Spec.Bootstrap.ConfigRef, isControlPlane, desiredMachine.Namespace)
 	if err != nil {
 		return fmt.Errorf("error getting download URL from bootstrap config: %w", err)
 	}
 
 	timestamp := fmt.Sprintf("%d", time.Now().Unix())
-
-	target := autopilot.ControllersTarget
-	if !isControlPlane {
-		target = autopilot.WorkersTarget
-	}
 
 	// machine version may lack the k0s suffix, the download URL and autopilot require it
 	version := util.NormalizeK0sVersion(desiredMachine.Spec.Version)
@@ -59,8 +62,23 @@ func createAutopilotPlanForMachine(ctx context.Context, c client.Client, clients
 		Timestamp:   timestamp,
 		Version:     version,
 		DownloadURL: downloadURL,
-		Target:      target,
-		Nodes:       []string{desiredMachine.Name},
+	}
+
+	if isControlPlane {
+		// Control plane nodes are signaled through ControlNode objects, which are named after the host.
+		planParams.Target = autopilot.ControllersTarget
+		planParams.Nodes = []string{desiredMachine.Name}
+	} else {
+		// A worker node is not necessarily named after its Machine (see K0sWorkerConfig.spec.useSystemHostname),
+		// so the plan selects the node through the machine-name label k0smotron sets on every worker node.
+		nodeName, err := resolveWorkerNode(ctx, clientset, desiredMachine.Name)
+		if err != nil {
+			return fmt.Errorf("error resolving worker node for machine %s: %w", desiredMachine.Name, err)
+		}
+		log.Info("Targeting worker node of Machine in autopilot plan", "Node", nodeName)
+
+		planParams.Target = autopilot.WorkersTarget
+		planParams.NodeSelector = workerNodeSelector(desiredMachine.Name)
 	}
 
 	err = autopilot.CreatePlan(ctx, clientset, planParams)
@@ -69,6 +87,88 @@ func createAutopilotPlanForMachine(ctx context.Context, c client.Client, clients
 	}
 
 	return nil
+}
+
+// workerNodeSelector returns the label selector matching the worker node bootstrapped for the given Machine.
+func workerNodeSelector(machineName string) string {
+	return fmt.Sprintf("%s=%s", bootstrapv1.MachineNameNodeLabel, machineName)
+}
+
+// resolveWorkerNode returns the name of the worker node bootstrapped for the given Machine. Autopilot
+// completes a plan whose selector matches no node without updating anything, so the node is resolved up front
+// to fail loudly instead.
+func resolveWorkerNode(ctx context.Context, clientset kubernetes.Interface, machineName string) (string, error) {
+	selector := workerNodeSelector(machineName)
+
+	nodes, err := clientset.CoreV1().Nodes().List(ctx, metav1.ListOptions{LabelSelector: selector})
+	if err != nil {
+		return "", fmt.Errorf("error listing nodes with selector %q: %w", selector, err)
+	}
+
+	switch len(nodes.Items) {
+	case 0:
+		return "", fmt.Errorf("no node with label selector %q found in the workload cluster", selector)
+	case 1:
+		return nodes.Items[0].Name, nil
+	default:
+		names := make([]string, 0, len(nodes.Items))
+		for _, node := range nodes.Items {
+			names = append(names, node.Name)
+		}
+		return "", fmt.Errorf("expected a single node with label selector %q in the workload cluster, found %d: %s", selector, len(names), strings.Join(names, ", "))
+	}
+}
+
+// planTargetsMachine reports whether the autopilot plan targets the given Machine. Control plane machines are
+// targeted statically by name. Worker machines are targeted through the machine-name node label, but plans
+// created by previous versions of this extension targeted them statically by Machine name, which still counts.
+func planTargetsMachine(plan *unstructured.Unstructured, machine *clusterv1.Machine, isControlPlane bool) (bool, error) {
+	targetNodes, err := autopilot.GetPlanTargetNodes(plan)
+	if err != nil {
+		return false, err
+	}
+	if slices.Contains(targetNodes, machine.Name) {
+		return true, nil
+	}
+	if isControlPlane {
+		return false, nil
+	}
+
+	selector, err := autopilot.GetPlanTargetSelector(plan, autopilot.WorkersTarget)
+	if err != nil {
+		return false, err
+	}
+
+	return selectorTargetsMachine(selector, machine.Name)
+}
+
+// selectorTargetsMachine reports whether the label selector targets the worker node of the given Machine through
+// the machine-name node label. Plans not created by this extension may combine that label with others, so the
+// selector only has to require the machine-name label, and every requirement on it has to hold for the Machine.
+func selectorTargetsMachine(selector string, machineName string) (bool, error) {
+	if selector == "" {
+		return false, nil
+	}
+
+	parsed, err := labels.Parse(selector)
+	if err != nil {
+		return false, fmt.Errorf("error parsing autopilot plan selector %q: %w", selector, err)
+	}
+
+	requirements, _ := parsed.Requirements()
+	machineLabels := labels.Set{bootstrapv1.MachineNameNodeLabel: machineName}
+	targeted := false
+	for _, requirement := range requirements {
+		if requirement.Key() != bootstrapv1.MachineNameNodeLabel {
+			continue
+		}
+		if !requirement.Matches(machineLabels) {
+			return false, nil
+		}
+		targeted = true
+	}
+
+	return targeted, nil
 }
 
 func getDownloadURLFromBootstrapConfig(ctx context.Context, client client.Client, configRef clusterv1.ContractVersionedObjectReference, isControlPlane bool, namespace string) (string, error) {

@@ -58,6 +58,13 @@ const (
 	ConfigReadyUnknownReason = clusterv1.ReadyUnknownReason
 )
 
+const (
+	// MachineNameNodeLabel is the label k0smotron sets on every worker node with the name of the Machine the
+	// node was bootstrapped for. It is the stable link between a Machine and its node: the node name itself
+	// only matches the Machine name when the kubelet hostname is overridden (see K0sWorkerConfigSpec.UseSystemHostname).
+	MachineNameNodeLabel = "k0smotron.io/machine-name"
+)
+
 // Platform defines the target platform for the worker node.
 type Platform string
 

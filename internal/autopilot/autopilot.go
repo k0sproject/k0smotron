@@ -18,8 +18,9 @@ package autopilot
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/k0sproject/k0smotron/v2/internal/controller/util"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -68,68 +69,102 @@ type PlanParameters struct {
 	DownloadURL string
 	// Target specifies whether the plan is for control plane nodes or worker nodes.
 	Target Target
-	// Nodes is the list of node names that are targeted by the autopilot plan.
+	// Nodes is the list of node names targeted by the autopilot plan through its static discovery.
+	// It is mutually exclusive with NodeSelector.
 	Nodes []string
+	// NodeSelector is a label selector that targets nodes through autopilot's selector discovery.
+	// It is mutually exclusive with Nodes.
+	NodeSelector string
 }
 
-// CreatePlan creates a new autopilot plan in the cluster with the specified version and machines.
+// CreatePlan creates a new autopilot plan in the cluster with the specified version and targets.
 func CreatePlan(ctx context.Context, clientset *kubernetes.Clientset, params *PlanParameters) error {
-	amd64DownloadURL := `https://get.k0sproject.io/` + params.Version + `/k0s-` + params.Version + `-amd64`
-	arm64DownloadURL := `https://get.k0sproject.io/` + params.Version + `/k0s-` + params.Version + `-arm64`
-	armDownloadURL := `https://get.k0sproject.io/` + params.Version + `/k0s-` + params.Version + `-arm`
-	if params.DownloadURL == "" {
-		// Use the default download URL if the user has not specified a custom one.
-		params.DownloadURL = util.DefaultK0sDownloadURL
+	plan, err := buildPlan(params)
+	if err != nil {
+		return err
 	}
-	if params.DownloadURL != util.DefaultK0sDownloadURL {
-		amd64DownloadURL = params.DownloadURL
-		arm64DownloadURL = params.DownloadURL
-		armDownloadURL = params.DownloadURL
-	}
-
-	plan := []byte(`
-	{
-		"apiVersion": "autopilot.k0sproject.io/v1beta2",
-		"kind": "Plan",
-		"metadata": {
-		  "name": "autopilot"
-		},
-		"spec": {
-			"id": "` + params.ID + `",
-			"timestamp": "` + params.Timestamp + `",
-			"commands": [{
-				"k0supdate": {
-					"version": "` + params.Version + `",
-					"platforms": {
-						"linux-amd64": {
-							"url": "` + amd64DownloadURL + `"
-						},
-						"linux-arm64": {
-							"url": "` + arm64DownloadURL + `"
-						},
-						"linux-arm": {
-							"url": "` + armDownloadURL + `"
-						}
-					},
-					"targets": {
-						"` + string(params.Target) + `": {
-							"discovery": {
-							    "static": {
-									"nodes": ["` + strings.Join(params.Nodes, `","`) + `"]
-								}
-							}
-						}
-					}
-				}
-			}]
-		}
-	}`)
 
 	return clientset.RESTClient().Post().
 		AbsPath("/apis/autopilot.k0sproject.io/v1beta2/plans").
 		Body(plan).
 		Do(ctx).
 		Error()
+}
+
+// buildPlan renders the autopilot Plan manifest described by the given parameters.
+func buildPlan(params *PlanParameters) ([]byte, error) {
+	if params.Target == "" {
+		return nil, errors.New("autopilot plan target is required")
+	}
+
+	discovery, err := targetDiscovery(params)
+	if err != nil {
+		return nil, err
+	}
+
+	amd64DownloadURL := `https://get.k0sproject.io/` + params.Version + `/k0s-` + params.Version + `-amd64`
+	arm64DownloadURL := `https://get.k0sproject.io/` + params.Version + `/k0s-` + params.Version + `-arm64`
+	armDownloadURL := `https://get.k0sproject.io/` + params.Version + `/k0s-` + params.Version + `-arm`
+	// Use the default download URL if the user has not specified a custom one.
+	if params.DownloadURL != "" && params.DownloadURL != util.DefaultK0sDownloadURL {
+		amd64DownloadURL = params.DownloadURL
+		arm64DownloadURL = params.DownloadURL
+		armDownloadURL = params.DownloadURL
+	}
+
+	plan := map[string]any{
+		"apiVersion": "autopilot.k0sproject.io/v1beta2",
+		"kind":       "Plan",
+		"metadata": map[string]any{
+			"name": "autopilot",
+		},
+		"spec": map[string]any{
+			"id":        params.ID,
+			"timestamp": params.Timestamp,
+			"commands": []any{
+				map[string]any{
+					"k0supdate": map[string]any{
+						"version": params.Version,
+						"platforms": map[string]any{
+							"linux-amd64": map[string]any{"url": amd64DownloadURL},
+							"linux-arm64": map[string]any{"url": arm64DownloadURL},
+							"linux-arm":   map[string]any{"url": armDownloadURL},
+						},
+						"targets": map[string]any{
+							string(params.Target): map[string]any{
+								"discovery": discovery,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	return json.Marshal(plan)
+}
+
+// targetDiscovery renders the discovery section of the plan target: static when node names are given,
+// selector when a label selector is given.
+func targetDiscovery(params *PlanParameters) (map[string]any, error) {
+	switch {
+	case len(params.Nodes) > 0 && params.NodeSelector != "":
+		return nil, errors.New("autopilot plan target must use either static nodes or a node selector, not both")
+	case params.NodeSelector != "":
+		return map[string]any{
+			"selector": map[string]any{
+				"labels": params.NodeSelector,
+			},
+		}, nil
+	case len(params.Nodes) > 0:
+		return map[string]any{
+			"static": map[string]any{
+				"nodes": params.Nodes,
+			},
+		}, nil
+	default:
+		return nil, errors.New("autopilot plan target requires static nodes or a node selector")
+	}
 }
 
 // IsPlanCompleted checks if the autopilot plan has completed successfully.
@@ -155,27 +190,12 @@ func IsPlanCompleted(plan *unstructured.Unstructured) (bool, error) {
 	}
 }
 
-// GetPlanTargetNodes retrieves the list of nodes targeted by the autopilot plan.
+// GetPlanTargetNodes retrieves the list of nodes targeted by the autopilot plan through static discovery.
+// Targets that use selector discovery contribute no nodes; see GetPlanTargetSelector for those.
 func GetPlanTargetNodes(plan *unstructured.Unstructured) ([]string, error) {
-	commands, found, err := unstructured.NestedSlice(plan.Object, "spec", "commands")
+	targets, err := planTargets(plan)
 	if err != nil {
-		return nil, fmt.Errorf("error reading spec.commands: %w", err)
-	}
-	if !found || len(commands) == 0 {
-		return nil, fmt.Errorf("no commands found in plan")
-	}
-
-	firstCommand, ok := commands[0].(map[string]any)
-	if !ok {
-		return nil, fmt.Errorf("unexpected type for command")
-	}
-
-	targets, found, err := unstructured.NestedMap(firstCommand, "k0supdate", "targets")
-	if err != nil {
-		return nil, fmt.Errorf("error reading k0supdate.targets: %w", err)
-	}
-	if !found {
-		return nil, fmt.Errorf("no targets found in plan")
+		return nil, err
 	}
 
 	var allNodes []string
@@ -198,6 +218,48 @@ func GetPlanTargetNodes(plan *unstructured.Unstructured) ([]string, error) {
 	}
 
 	return allNodes, nil
+}
+
+// GetPlanTargetSelector retrieves the label selector used by the selector discovery of the given plan target.
+// It returns an empty string when the plan has no such target or the target does not use selector discovery.
+func GetPlanTargetSelector(plan *unstructured.Unstructured, target Target) (string, error) {
+	targets, err := planTargets(plan)
+	if err != nil {
+		return "", err
+	}
+
+	selector, _, err := unstructured.NestedString(targets, string(target), "discovery", "selector", "labels")
+	if err != nil {
+		return "", fmt.Errorf("error reading selector for target %s: %w", target, err)
+	}
+
+	return selector, nil
+}
+
+// planTargets retrieves the k0supdate targets of the autopilot plan's first command.
+func planTargets(plan *unstructured.Unstructured) (map[string]any, error) {
+	commands, found, err := unstructured.NestedSlice(plan.Object, "spec", "commands")
+	if err != nil {
+		return nil, fmt.Errorf("error reading spec.commands: %w", err)
+	}
+	if !found || len(commands) == 0 {
+		return nil, fmt.Errorf("no commands found in plan")
+	}
+
+	firstCommand, ok := commands[0].(map[string]any)
+	if !ok {
+		return nil, fmt.Errorf("unexpected type for command")
+	}
+
+	targets, found, err := unstructured.NestedMap(firstCommand, "k0supdate", "targets")
+	if err != nil {
+		return nil, fmt.Errorf("error reading k0supdate.targets: %w", err)
+	}
+	if !found {
+		return nil, fmt.Errorf("no targets found in plan")
+	}
+
+	return targets, nil
 }
 
 // GetPlanTargetVersion retrieves the target version specified in the autopilot plan.
