@@ -170,6 +170,10 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
+	if featuregate.IsEnabled(featuregate.InPlaceVersionWithDeleteFirst) {
+		setupLog.Info("WARNING: feature gate InPlaceVersionWithDeleteFirst is experimental, has no support guarantees and could be removed once the K0sControlPlane API can combine update strategies")
+	}
+
 	var metricsOpts metricsserver.Options
 	{
 		tlsOpts, newMetricsOpts, err := flags.GetManagerOptions(managerOptions)
