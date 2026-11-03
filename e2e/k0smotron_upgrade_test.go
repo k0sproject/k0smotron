@@ -69,6 +69,7 @@ func k0smotronUpgradeSpec(t *testing.T) {
 		Images:             e2eConfig.Images,
 		IPFamily:           e2eConfig.MustGetVariable(IPFamily),
 		LogFolder:          filepath.Join(managementClusterLogFolder, "logs-kind"),
+		DisableOwnerReferencesPermissionEnforcement: true,
 	})
 	require.NotNil(t, managementClusterProvider, "Failed to create cluster to upgrade")
 

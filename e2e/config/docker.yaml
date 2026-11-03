@@ -12,8 +12,8 @@ providers:
   - name: cluster-api
     type: CoreProvider
     versions:
-      - name: "{go://sigs.k8s.io/cluster-api@v1.12}"
-        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/{go://sigs.k8s.io/cluster-api@v1.12}/core-components.yaml
+      - name: "{go://sigs.k8s.io/cluster-api@v1.14}"
+        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/{go://sigs.k8s.io/cluster-api@v1.14}/core-components.yaml
         type: url
         contract: v1beta1
         files:
@@ -24,8 +24,8 @@ providers:
   - name: docker
     type: InfrastructureProvider
     versions:
-      - name: "{go://sigs.k8s.io/cluster-api@v1.12}"
-        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/{go://sigs.k8s.io/cluster-api@v1.12}/infrastructure-components-development.yaml
+      - name: "{go://sigs.k8s.io/cluster-api@v1.14}"
+        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/{go://sigs.k8s.io/cluster-api@v1.14}/infrastructure-components-development.yaml
         type: url
         contract: v1beta1
         files:

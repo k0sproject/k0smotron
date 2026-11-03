@@ -1470,8 +1470,7 @@ for when the pod needs a feature only available to the host user namespace, such
 loading a kernel module with CAP_SYS_MODULE.
 When set to false, a new userns is created for the pod. Setting false is useful for
 mitigating container breakout vulnerabilities even allowing users to run their
-containers as root without actually having root privileges on the host.
-This field is alpha-level and is only honored by servers that enable the UserNamespacesSupport feature.<br/>
+containers as root without actually having root privileges on the host.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -1712,6 +1711,24 @@ SchedulingGates can only be set at pod creation time, and be removed only afterw
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#remotemachinespecprovisionjobjobspectemplatespectemplatespecschedulinggroup">schedulingGroup</a></b></td>
+        <td>object</td>
+        <td>
+          SchedulingGroup provides a reference to the immediate scheduling runtime
+grouping object that this Pod belongs to.
+This field is used by the scheduler to identify the group and apply the
+correct group scheduling policies. The association with a group also
+impacts other lifecycle aspects of a Pod that are relevant in a wider context
+of scheduling like preemption, resource attachment, etc. If not specified,
+the Pod is treated as a single unit in all of these aspects.
+The group object referenced by this field may not exist at the time the
+Pod is created.
+This field is immutable, but a group object with the same name may be
+recreated with different policies. Doing this during pod scheduling
+may result in the placement not conforming to the expected policies.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#remotemachinespecprovisionjobjobspectemplatespectemplatespecsecuritycontext">securityContext</a></b></td>
         <td>object</td>
         <td>
@@ -1803,19 +1820,6 @@ All topologySpreadConstraints are ANDed.<br/>
         <td>
           List of volumes that can be mounted by containers belonging to the pod.
 More info: https://kubernetes.io/docs/concepts/storage/volumes<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b><a href="#remotemachinespecprovisionjobjobspectemplatespectemplatespecworkloadref">workloadRef</a></b></td>
-        <td>object</td>
-        <td>
-          WorkloadRef provides a reference to the Workload object that this Pod belongs to.
-This field is used by the scheduler to identify the PodGroup and apply the
-correct group scheduling policies. The Workload object referenced
-by this field may not exist at the time the Pod is created.
-This field is immutable, but a Workload object with the same name
-may be recreated with different policies. Doing this during pod scheduling
-may result in the placement not conforming to the expected policies.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -4111,7 +4115,6 @@ Note that this field cannot be set when spec.os.name is windows.<br/>
           procMount denotes the type of proc mount to use for the containers.
 The default value is Default which uses the container runtime defaults for
 readonly paths and masked paths.
-This requires the ProcMountType feature flag to be enabled.
 Note that this field cannot be set when spec.os.name is windows.<br/>
         </td>
         <td>false</td>
@@ -8846,7 +8849,6 @@ Note that this field cannot be set when spec.os.name is windows.<br/>
           procMount denotes the type of proc mount to use for the containers.
 The default value is Default which uses the container runtime defaults for
 readonly paths and masked paths.
-This requires the ProcMountType feature flag to be enabled.
 Note that this field cannot be set when spec.os.name is windows.<br/>
         </td>
         <td>false</td>
@@ -11973,7 +11975,6 @@ Note that this field cannot be set when spec.os.name is windows.<br/>
           procMount denotes the type of proc mount to use for the containers.
 The default value is Default which uses the container runtime defaults for
 readonly paths and masked paths.
-This requires the ProcMountType feature flag to be enabled.
 Note that this field cannot be set when spec.os.name is windows.<br/>
         </td>
         <td>false</td>
@@ -12848,6 +12849,14 @@ for the pod.
 It adds a name to it that uniquely identifies the ResourceClaim inside the Pod.
 Containers that need access to the ResourceClaim reference it with this name.
 
+When the DRAWorkloadResourceClaims feature gate is enabled and this Pod
+belongs to a PodGroup, a PodResourceClaim is matched to a
+PodGroupResourceClaim if all of their fields are equal (Name,
+ResourceClaimName, and ResourceClaimTemplateName). A matched claim references
+a single ResourceClaim shared across all Pods in the PodGroup, reserved for
+the PodGroup in ResourceClaimStatus.ReservedFor rather than for individual
+Pods.
+
 <table>
     <thead>
         <tr>
@@ -12888,6 +12897,16 @@ be bound to this pod. When this pod is deleted, the ResourceClaim
 will also be deleted. The pod name and resource name, along with a
 generated component, will be used to form a unique name for the
 ResourceClaim, which will be recorded in pod.status.resourceClaimStatuses.
+
+When the DRAWorkloadResourceClaims feature gate is enabled and the pod
+belongs to a PodGroup that defines a PodGroupResourceClaim with the same
+Name and ResourceClaimTemplateName, this PodResourceClaim resolves to the
+ResourceClaim generated for the PodGroup. All pods in the group that
+define an equivalent PodResourceClaim matching the
+PodGroupResourceClaim's Name and ResourceClaimTemplateName share the same
+generated ResourceClaim. ResourceClaims generated for a PodGroup are
+owned by the PodGroup and their lifecycles are tied to the PodGroup
+instead of any individual pod.
 
 This field is immutable and no changes will be made to the
 corresponding ResourceClaim by the control plane after creating the
@@ -13022,6 +13041,46 @@ PodSchedulingGate is associated to a Pod to guard its scheduling.
 Each scheduling gate must have a unique name field.<br/>
         </td>
         <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteMachine.spec.provisionJob.jobSpecTemplate.spec.template.spec.schedulingGroup
+<sup><sup>[↩ Parent](#remotemachinespecprovisionjobjobspectemplatespectemplatespec)</sup></sup>
+
+
+
+SchedulingGroup provides a reference to the immediate scheduling runtime
+grouping object that this Pod belongs to.
+This field is used by the scheduler to identify the group and apply the
+correct group scheduling policies. The association with a group also
+impacts other lifecycle aspects of a Pod that are relevant in a wider context
+of scheduling like preemption, resource attachment, etc. If not specified,
+the Pod is treated as a single unit in all of these aspects.
+The group object referenced by this field may not exist at the time the
+Pod is created.
+This field is immutable, but a group object with the same name may be
+recreated with different policies. Doing this during pod scheduling
+may result in the placement not conforming to the expected policies.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>podGroupName</b></td>
+        <td>string</td>
+        <td>
+          PodGroupName specifies the name of the standalone PodGroup object
+that represents the runtime instance of this group.
+Must be a DNS subdomain.<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -13975,7 +14034,7 @@ The volume gets re-resolved if the pod gets deleted and recreated, which means t
 A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message.
 The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field.
 The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images.
-The volume will be mounted read-only (ro) and non-executable files (noexec).
+The volume will be mounted read-only (ro).
 Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath) before 1.33.
 The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.<br/>
         </td>
@@ -14020,8 +14079,7 @@ Deprecated: PhotonPersistentDisk is deprecated and the in-tree photonPersistentD
         <td>
           portworxVolume represents a portworx volume attached and mounted on kubelets host machine.
 Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type
-are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate
-is on.<br/>
+are redirected to the pxd.portworx.com CSI driver.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -15871,7 +15929,7 @@ The volume gets re-resolved if the pod gets deleted and recreated, which means t
 A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message.
 The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field.
 The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images.
-The volume will be mounted read-only (ro) and non-executable files (noexec).
+The volume will be mounted read-only (ro).
 Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath) before 1.33.
 The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.
 
@@ -16184,8 +16242,7 @@ Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
 
 portworxVolume represents a portworx volume attached and mounted on kubelets host machine.
 Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type
-are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate
-is on.
+are redirected to the pxd.portworx.com CSI driver.
 
 <table>
     <thead>
@@ -17717,63 +17774,6 @@ Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
 </table>
 
 
-### RemoteMachine.spec.provisionJob.jobSpecTemplate.spec.template.spec.workloadRef
-<sup><sup>[↩ Parent](#remotemachinespecprovisionjobjobspectemplatespectemplatespec)</sup></sup>
-
-
-
-WorkloadRef provides a reference to the Workload object that this Pod belongs to.
-This field is used by the scheduler to identify the PodGroup and apply the
-correct group scheduling policies. The Workload object referenced
-by this field may not exist at the time the Pod is created.
-This field is immutable, but a Workload object with the same name
-may be recreated with different policies. Doing this during pod scheduling
-may result in the placement not conforming to the expected policies.
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>name</b></td>
-        <td>string</td>
-        <td>
-          Name defines the name of the Workload object this Pod belongs to.
-Workload must be in the same namespace as the Pod.
-If it doesn't match any existing Workload, the Pod will remain unschedulable
-until a Workload object is created and observed by the kube-scheduler.
-It must be a DNS subdomain.<br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
-        <td><b>podGroup</b></td>
-        <td>string</td>
-        <td>
-          PodGroup is the name of the PodGroup within the Workload that this Pod
-belongs to. If it doesn't match any existing PodGroup within the Workload,
-the Pod will remain unschedulable until the Workload object is recreated
-and observed by the kube-scheduler. It must be a DNS label.<br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
-        <td><b>podGroupReplicaKey</b></td>
-        <td>string</td>
-        <td>
-          PodGroupReplicaKey specifies the replica key of the PodGroup to which this
-Pod belongs. It is used to distinguish pods belonging to different replicas
-of the same pod group. The pod group policy is applied separately to each replica.
-When set, it must be a DNS label.<br/>
-        </td>
-        <td>false</td>
-      </tr></tbody>
-</table>
-
-
 ### RemoteMachine.spec.provisionJob.jobSpecTemplate.spec.podFailurePolicy
 <sup><sup>[↩ Parent](#remotemachinespecprovisionjobjobspectemplatespec)</sup></sup>
 
@@ -19063,8 +19063,7 @@ for when the pod needs a feature only available to the host user namespace, such
 loading a kernel module with CAP_SYS_MODULE.
 When set to false, a new userns is created for the pod. Setting false is useful for
 mitigating container breakout vulnerabilities even allowing users to run their
-containers as root without actually having root privileges on the host.
-This field is alpha-level and is only honored by servers that enable the UserNamespacesSupport feature.<br/>
+containers as root without actually having root privileges on the host.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -19305,6 +19304,24 @@ SchedulingGates can only be set at pod creation time, and be removed only afterw
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#remotemachinetemplatespectemplatespecprovisionjobjobspectemplatespectemplatespecschedulinggroup">schedulingGroup</a></b></td>
+        <td>object</td>
+        <td>
+          SchedulingGroup provides a reference to the immediate scheduling runtime
+grouping object that this Pod belongs to.
+This field is used by the scheduler to identify the group and apply the
+correct group scheduling policies. The association with a group also
+impacts other lifecycle aspects of a Pod that are relevant in a wider context
+of scheduling like preemption, resource attachment, etc. If not specified,
+the Pod is treated as a single unit in all of these aspects.
+The group object referenced by this field may not exist at the time the
+Pod is created.
+This field is immutable, but a group object with the same name may be
+recreated with different policies. Doing this during pod scheduling
+may result in the placement not conforming to the expected policies.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#remotemachinetemplatespectemplatespecprovisionjobjobspectemplatespectemplatespecsecuritycontext">securityContext</a></b></td>
         <td>object</td>
         <td>
@@ -19396,19 +19413,6 @@ All topologySpreadConstraints are ANDed.<br/>
         <td>
           List of volumes that can be mounted by containers belonging to the pod.
 More info: https://kubernetes.io/docs/concepts/storage/volumes<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b><a href="#remotemachinetemplatespectemplatespecprovisionjobjobspectemplatespectemplatespecworkloadref">workloadRef</a></b></td>
-        <td>object</td>
-        <td>
-          WorkloadRef provides a reference to the Workload object that this Pod belongs to.
-This field is used by the scheduler to identify the PodGroup and apply the
-correct group scheduling policies. The Workload object referenced
-by this field may not exist at the time the Pod is created.
-This field is immutable, but a Workload object with the same name
-may be recreated with different policies. Doing this during pod scheduling
-may result in the placement not conforming to the expected policies.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -21704,7 +21708,6 @@ Note that this field cannot be set when spec.os.name is windows.<br/>
           procMount denotes the type of proc mount to use for the containers.
 The default value is Default which uses the container runtime defaults for
 readonly paths and masked paths.
-This requires the ProcMountType feature flag to be enabled.
 Note that this field cannot be set when spec.os.name is windows.<br/>
         </td>
         <td>false</td>
@@ -26439,7 +26442,6 @@ Note that this field cannot be set when spec.os.name is windows.<br/>
           procMount denotes the type of proc mount to use for the containers.
 The default value is Default which uses the container runtime defaults for
 readonly paths and masked paths.
-This requires the ProcMountType feature flag to be enabled.
 Note that this field cannot be set when spec.os.name is windows.<br/>
         </td>
         <td>false</td>
@@ -29566,7 +29568,6 @@ Note that this field cannot be set when spec.os.name is windows.<br/>
           procMount denotes the type of proc mount to use for the containers.
 The default value is Default which uses the container runtime defaults for
 readonly paths and masked paths.
-This requires the ProcMountType feature flag to be enabled.
 Note that this field cannot be set when spec.os.name is windows.<br/>
         </td>
         <td>false</td>
@@ -30441,6 +30442,14 @@ for the pod.
 It adds a name to it that uniquely identifies the ResourceClaim inside the Pod.
 Containers that need access to the ResourceClaim reference it with this name.
 
+When the DRAWorkloadResourceClaims feature gate is enabled and this Pod
+belongs to a PodGroup, a PodResourceClaim is matched to a
+PodGroupResourceClaim if all of their fields are equal (Name,
+ResourceClaimName, and ResourceClaimTemplateName). A matched claim references
+a single ResourceClaim shared across all Pods in the PodGroup, reserved for
+the PodGroup in ResourceClaimStatus.ReservedFor rather than for individual
+Pods.
+
 <table>
     <thead>
         <tr>
@@ -30481,6 +30490,16 @@ be bound to this pod. When this pod is deleted, the ResourceClaim
 will also be deleted. The pod name and resource name, along with a
 generated component, will be used to form a unique name for the
 ResourceClaim, which will be recorded in pod.status.resourceClaimStatuses.
+
+When the DRAWorkloadResourceClaims feature gate is enabled and the pod
+belongs to a PodGroup that defines a PodGroupResourceClaim with the same
+Name and ResourceClaimTemplateName, this PodResourceClaim resolves to the
+ResourceClaim generated for the PodGroup. All pods in the group that
+define an equivalent PodResourceClaim matching the
+PodGroupResourceClaim's Name and ResourceClaimTemplateName share the same
+generated ResourceClaim. ResourceClaims generated for a PodGroup are
+owned by the PodGroup and their lifecycles are tied to the PodGroup
+instead of any individual pod.
 
 This field is immutable and no changes will be made to the
 corresponding ResourceClaim by the control plane after creating the
@@ -30615,6 +30634,46 @@ PodSchedulingGate is associated to a Pod to guard its scheduling.
 Each scheduling gate must have a unique name field.<br/>
         </td>
         <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### RemoteMachineTemplate.spec.template.spec.provisionJob.jobSpecTemplate.spec.template.spec.schedulingGroup
+<sup><sup>[↩ Parent](#remotemachinetemplatespectemplatespecprovisionjobjobspectemplatespectemplatespec)</sup></sup>
+
+
+
+SchedulingGroup provides a reference to the immediate scheduling runtime
+grouping object that this Pod belongs to.
+This field is used by the scheduler to identify the group and apply the
+correct group scheduling policies. The association with a group also
+impacts other lifecycle aspects of a Pod that are relevant in a wider context
+of scheduling like preemption, resource attachment, etc. If not specified,
+the Pod is treated as a single unit in all of these aspects.
+The group object referenced by this field may not exist at the time the
+Pod is created.
+This field is immutable, but a group object with the same name may be
+recreated with different policies. Doing this during pod scheduling
+may result in the placement not conforming to the expected policies.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>podGroupName</b></td>
+        <td>string</td>
+        <td>
+          PodGroupName specifies the name of the standalone PodGroup object
+that represents the runtime instance of this group.
+Must be a DNS subdomain.<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -31568,7 +31627,7 @@ The volume gets re-resolved if the pod gets deleted and recreated, which means t
 A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message.
 The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field.
 The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images.
-The volume will be mounted read-only (ro) and non-executable files (noexec).
+The volume will be mounted read-only (ro).
 Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath) before 1.33.
 The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.<br/>
         </td>
@@ -31613,8 +31672,7 @@ Deprecated: PhotonPersistentDisk is deprecated and the in-tree photonPersistentD
         <td>
           portworxVolume represents a portworx volume attached and mounted on kubelets host machine.
 Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type
-are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate
-is on.<br/>
+are redirected to the pxd.portworx.com CSI driver.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -33464,7 +33522,7 @@ The volume gets re-resolved if the pod gets deleted and recreated, which means t
 A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message.
 The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field.
 The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images.
-The volume will be mounted read-only (ro) and non-executable files (noexec).
+The volume will be mounted read-only (ro).
 Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath) before 1.33.
 The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.
 
@@ -33777,8 +33835,7 @@ Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
 
 portworxVolume represents a portworx volume attached and mounted on kubelets host machine.
 Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type
-are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate
-is on.
+are redirected to the pxd.portworx.com CSI driver.
 
 <table>
     <thead>
@@ -35304,63 +35361,6 @@ Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
         <td>string</td>
         <td>
           storagePolicyName is the storage Policy Based Management (SPBM) profile name.<br/>
-        </td>
-        <td>false</td>
-      </tr></tbody>
-</table>
-
-
-### RemoteMachineTemplate.spec.template.spec.provisionJob.jobSpecTemplate.spec.template.spec.workloadRef
-<sup><sup>[↩ Parent](#remotemachinetemplatespectemplatespecprovisionjobjobspectemplatespectemplatespec)</sup></sup>
-
-
-
-WorkloadRef provides a reference to the Workload object that this Pod belongs to.
-This field is used by the scheduler to identify the PodGroup and apply the
-correct group scheduling policies. The Workload object referenced
-by this field may not exist at the time the Pod is created.
-This field is immutable, but a Workload object with the same name
-may be recreated with different policies. Doing this during pod scheduling
-may result in the placement not conforming to the expected policies.
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>name</b></td>
-        <td>string</td>
-        <td>
-          Name defines the name of the Workload object this Pod belongs to.
-Workload must be in the same namespace as the Pod.
-If it doesn't match any existing Workload, the Pod will remain unschedulable
-until a Workload object is created and observed by the kube-scheduler.
-It must be a DNS subdomain.<br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
-        <td><b>podGroup</b></td>
-        <td>string</td>
-        <td>
-          PodGroup is the name of the PodGroup within the Workload that this Pod
-belongs to. If it doesn't match any existing PodGroup within the Workload,
-the Pod will remain unschedulable until the Workload object is recreated
-and observed by the kube-scheduler. It must be a DNS label.<br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
-        <td><b>podGroupReplicaKey</b></td>
-        <td>string</td>
-        <td>
-          PodGroupReplicaKey specifies the replica key of the PodGroup to which this
-Pod belongs. It is used to distinguish pods belonging to different replicas
-of the same pod group. The pod group policy is applied separately to each replica.
-When set, it must be a DNS label.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
