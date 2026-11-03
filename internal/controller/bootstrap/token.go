@@ -76,6 +76,18 @@ func deleteBootstrapToken(ctx context.Context, c client.Client, tokenID string) 
 	}}))
 }
 
+// revokeBootstrapToken deletes the bootstrap token tracked by the given config once its machine has joined, and
+// stops tracking it so later reconciles do not reach the workload cluster for it again.
+func revokeBootstrapToken(ctx context.Context, c client.Client, config metav1.Object, tokenID string) error {
+	if err := deleteBootstrapToken(ctx, c, tokenID); err != nil {
+		return fmt.Errorf("failed to revoke bootstrap token: %w", err)
+	}
+	annotations := config.GetAnnotations()
+	delete(annotations, bootstrapTokenIDAnnotation)
+	config.SetAnnotations(annotations)
+	return nil
+}
+
 // refreshBootstrapTokenIfNeeded extends the expiration of the given bootstrap token if it is close to expire.
 func refreshBootstrapTokenIfNeeded(ctx context.Context, c client.Client, tokenID string, ttl time.Duration) (bool, error) {
 	s, err := getTokenSecret(ctx, c, tokenID)

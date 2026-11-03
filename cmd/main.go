@@ -144,7 +144,7 @@ func main() {
 	pflag.CommandLine.StringVar(&enabledController, "enable-controller", "", "The controller to enable. Default: all")
 	pflag.CommandLine.StringVar(&watchFilter, "watch-filter", "", "Label value used to filter reconciled objects via label "+clusterv1.WatchLabel+"=<value>. Enables running multiple provider instances in the same cluster.")
 	pflag.CommandLine.DurationVar(&tokenTTL, "bootstrap-token-ttl", bootstrap.DefaultTokenTTL,
-		"The amount of time the bootstrap token will be valid. The token is refreshed until the machine joins the cluster.")
+		"The amount of time the bootstrap token will be valid. The token is refreshed until the machine joins the cluster, and deleted once it has joined.")
 	pflag.CommandLine.StringVar(&namespace, "namespace", "", "Namespace that the controller watches to reconcile cluster-api objects. If unspecified, all namespaces are watched.")
 	opts := zap.Options{
 		Development: true,

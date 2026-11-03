@@ -25,6 +25,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -117,14 +118,25 @@ func TestWorkerReconcileBootstrapToken(t *testing.T) {
 		require.WithinDuration(t, time.Now().Add(ttl), getTokenExpiration(t, wc), 5*time.Second)
 	})
 
-	t.Run("joined machine leaves the token alone", func(t *testing.T) {
-		exp := time.Now().Add(time.Minute).Truncate(time.Second)
-		wc := fake.NewClientBuilder().WithObjects(newTokenSecret(exp)).Build()
+	t.Run("joined machine revokes the token", func(t *testing.T) {
+		config := config.DeepCopy()
+		wc := fake.NewClientBuilder().WithObjects(newTokenSecret(time.Now().Add(ttl))).Build()
 		r := &Controller{TokenTTL: ttl, workloadClusterClient: wc}
-		res, _, err := r.reconcileBootstrapToken(context.Background(), &clusterv1.Cluster{}, config, newConfigOwner(t, joinedMachine))
+		res, rotate, err := r.reconcileBootstrapToken(context.Background(), &clusterv1.Cluster{}, config, newConfigOwner(t, joinedMachine))
 		require.NoError(t, err)
+		require.False(t, rotate)
 		require.Equal(t, ctrl.Result{}, res)
-		require.True(t, getTokenExpiration(t, wc).Equal(exp))
+		requireTokenRevoked(t, wc, config)
+	})
+
+	t.Run("joined machine stops tracking a token that is already gone", func(t *testing.T) {
+		config := config.DeepCopy()
+		r := &Controller{TokenTTL: ttl, workloadClusterClient: fake.NewClientBuilder().Build()}
+		res, rotate, err := r.reconcileBootstrapToken(context.Background(), &clusterv1.Cluster{}, config, newConfigOwner(t, joinedMachine))
+		require.NoError(t, err)
+		require.False(t, rotate)
+		require.Equal(t, ctrl.Result{}, res)
+		require.NotContains(t, config.GetAnnotations(), bootstrapTokenIDAnnotation)
 	})
 
 	pool := &clusterv1.MachinePool{
@@ -164,6 +176,69 @@ func TestWorkerReconcileBootstrapToken(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, ctrl.Result{}, res)
 	})
+}
+
+func TestControllerReconcileBootstrapToken(t *testing.T) {
+	ttl := 15 * time.Minute
+	config := &bootstrapv2.K0sControllerConfig{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        "controller",
+			Annotations: map[string]string{bootstrapTokenIDAnnotation: testTokenID},
+		},
+	}
+	machine := &clusterv1.Machine{
+		TypeMeta:   metav1.TypeMeta{APIVersion: clusterv1.GroupVersion.String(), Kind: "Machine"},
+		ObjectMeta: metav1.ObjectMeta{Name: "controller-0"},
+	}
+	joinedMachine := machine.DeepCopy()
+	joinedMachine.Status.NodeRef = clusterv1.MachineNodeReference{Name: "node"}
+
+	controlNode := &unstructured.Unstructured{}
+	controlNode.SetAPIVersion("autopilot.k0sproject.io/v1beta2")
+	controlNode.SetKind("ControlNode")
+	controlNode.SetName(machine.Name)
+
+	newScope := func(config *bootstrapv2.K0sControllerConfig, owner client.Object) *ControllerScope {
+		return &ControllerScope{Config: config, ConfigOwner: newConfigOwner(t, owner), Cluster: &clusterv1.Cluster{}}
+	}
+
+	t.Run("not joined controller refreshes the token", func(t *testing.T) {
+		config := config.DeepCopy()
+		wc := fake.NewClientBuilder().WithObjects(newTokenSecret(time.Now().Add(time.Minute))).Build()
+		c := &ControlPlaneController{TokenTTL: ttl, workloadClusterClient: wc}
+		res, err := c.reconcileBootstrapToken(t.Context(), newScope(config, machine))
+		require.NoError(t, err)
+		requireRequeueWithinJitter(t, ttl, res)
+		require.WithinDuration(t, time.Now().Add(ttl), getTokenExpiration(t, wc), 5*time.Second)
+		require.Equal(t, testTokenID, config.GetAnnotations()[bootstrapTokenIDAnnotation])
+	})
+
+	for _, tc := range []struct {
+		name  string
+		owner client.Object
+		objs  []client.Object
+	}{
+		{name: "controller with a node revokes the token", owner: joinedMachine},
+		{name: "controller without a worker revokes the token once its ControlNode exists", owner: machine, objs: []client.Object{controlNode}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			config := config.DeepCopy()
+			wc := fake.NewClientBuilder().WithObjects(append(tc.objs, newTokenSecret(time.Now().Add(ttl)))...).Build()
+			c := &ControlPlaneController{TokenTTL: ttl, workloadClusterClient: wc}
+			res, err := c.reconcileBootstrapToken(t.Context(), newScope(config, tc.owner))
+			require.NoError(t, err)
+			require.Equal(t, ctrl.Result{}, res)
+			requireTokenRevoked(t, wc, config)
+		})
+	}
+}
+
+// requireTokenRevoked asserts that the test token is deleted from the workload cluster and no longer tracked by config.
+func requireTokenRevoked(t *testing.T, c client.Client, config client.Object) {
+	t.Helper()
+	_, err := getTokenSecret(context.Background(), c, testTokenID)
+	require.True(t, apierrors.IsNotFound(err), "expected the bootstrap token to be deleted, got %v", err)
+	require.NotContains(t, config.GetAnnotations(), bootstrapTokenIDAnnotation)
 }
 
 // requireRequeueWithinJitter asserts that res requeues after the refresh interval plus up to the allowed jitter.

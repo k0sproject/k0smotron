@@ -1103,6 +1103,83 @@ func TestReconcileRotatesTheTokenOfAJoinedMachinePool(t *testing.T) {
 	require.NotEqual(t, firstData, secondData)
 }
 
+func TestReconcileRevokesTheTokenOfAJoinedMachine(t *testing.T) {
+	ns, err := testEnv.CreateNamespace(t.Context(), "test-worker-joined-machine-token-revocation")
+	require.NoError(t, err)
+
+	cluster := newCluster(ns.Name)
+	require.NoError(t, testEnv.Create(t.Context(), cluster))
+
+	machine := &clusterv1.Machine{
+		ObjectMeta: metav1.ObjectMeta{Name: "joined", Namespace: ns.Name},
+		Spec: clusterv1.MachineSpec{
+			ClusterName: cluster.Name,
+			Version:     "v1.30.0",
+			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+				Kind:     "GenericInfrastructureMachine",
+				Name:     "joined",
+				APIGroup: clusterv1.GroupVersionInfrastructure.Group,
+			},
+			Bootstrap: clusterv1.Bootstrap{ConfigRef: clusterv1.ContractVersionedObjectReference{
+				Kind:     "K0sWorkerConfig",
+				Name:     "joined",
+				APIGroup: clusterv1.GroupVersionBootstrap.Group,
+			}},
+		},
+	}
+	require.NoError(t, testEnv.Create(t.Context(), machine))
+	machine.Status.NodeRef = clusterv1.MachineNodeReference{Name: "node"}
+	require.NoError(t, testEnv.Status().Update(t.Context(), machine))
+
+	const tokenID = "joined"
+	require.NoError(t, testEnv.Create(t.Context(), &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{Name: "bootstrap-token-" + tokenID, Namespace: metav1.NamespaceSystem},
+		Type:       corev1.SecretTypeBootstrapToken,
+		StringData: map[string]string{
+			bootstrapapi.BootstrapTokenIDKey:         tokenID,
+			bootstrapapi.BootstrapTokenExpirationKey: tokenExpiration(DefaultTokenTTL),
+		},
+	}))
+
+	config := &bootstrapv1.K0sWorkerConfig{ObjectMeta: metav1.ObjectMeta{
+		Name:        "joined",
+		Namespace:   ns.Name,
+		Annotations: map[string]string{bootstrapTokenIDAnnotation: tokenID},
+		OwnerReferences: []metav1.OwnerReference{{
+			Kind:       "Machine",
+			APIVersion: clusterv1.GroupVersion.String(),
+			Name:       machine.Name,
+			UID:        machine.UID,
+		}},
+	}}
+	require.NoError(t, testEnv.Create(t.Context(), config))
+	config.Status.Initialization.DataSecretCreated = new(true)
+	require.NoError(t, testEnv.Status().Update(t.Context(), config))
+
+	defer func() {
+		require.NoError(t, testEnv.Cleanup(t.Context(), config, machine, cluster, ns))
+	}()
+
+	r := &Controller{
+		TokenTTL:              DefaultTokenTTL,
+		Client:                testEnv,
+		workloadClusterClient: testEnv,
+	}
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		_, err := r.Reconcile(t.Context(), ctrl.Request{NamespacedName: util.ObjectKey(config)})
+		assert.NoError(c, err)
+
+		_, err = getTokenSecret(t.Context(), testEnv, tokenID)
+		assert.True(c, apierrors.IsNotFound(err), "the token of a joined machine has to be revoked, got %v", err)
+
+		// Uncached, since the annotation is patched and a cached read still answers from
+		// before the patch.
+		stored := &bootstrapv1.K0sWorkerConfig{}
+		assert.NoError(c, testEnv.GetAPIReader().Get(t.Context(), util.ObjectKey(config), stored))
+		assert.NotContains(c, stored.Annotations, bootstrapTokenIDAnnotation)
+	}, 10*time.Second, 100*time.Millisecond)
+}
+
 func TestReconcileRendersAdditionalIgnitionConfigFromASecret(t *testing.T) {
 	ns, err := testEnv.CreateNamespace(t.Context(), "test-worker-additional-ignition-from")
 	require.NoError(t, err)
