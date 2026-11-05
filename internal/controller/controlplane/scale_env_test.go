@@ -496,8 +496,13 @@ func TestReconcileMachinesScaleDown(t *testing.T) {
 		assert.LessOrEqual(c, controlplane.deletedMachines.Len(), 1)
 
 		// Jump into the next phase by adding the MachineDeletingCondition with the reason "WaitingForPreTerminateHook"
-		// for all deleted machines.
+		// for deleted machines still holding the hook.
 		for _, m := range controlplane.deletedMachines {
+			if _, hooked := m.Annotations[cpv1beta2.K0ControlPlanePreTerminateHookCleanupAnnotation]; !hooked {
+				m.Finalizers = nil
+				assert.NoError(c, testEnv.Update(ctx, m))
+				continue
+			}
 			conditions.Set(m, metav1.Condition{
 				Type:               clusterv1.MachineDeletingCondition,
 				Status:             metav1.ConditionTrue,

@@ -29,12 +29,14 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	"sigs.k8s.io/cluster-api/util/conditions"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	bootstrapv1beta2 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
 	cpv1beta2 "github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta2"
+	kapi "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
 )
 
 func TestK0sConfigEnrichment(t *testing.T) {
@@ -237,4 +239,51 @@ func TestEnsureCertificatesGeneratesBeforeInit(t *testing.T) {
 
 	require.NoError(t, c.ensureCertificates(context.Background(), certScope(false)))
 	require.NoError(t, cl.Get(context.Background(), caKey, ca), "an unused authority is still generated")
+}
+
+func TestEnsureCertificatesReportsMissingCertificates(t *testing.T) {
+	cl := fake.NewClientBuilder().WithScheme(certScheme(t)).Build()
+	c := &K0sController{Client: cl, SecretCachingClient: cl}
+	require.NoError(t, c.ensureCertificates(t.Context(), certScope(false)))
+
+	scope := certScope(true)
+
+	require.NoError(t, cl.Delete(t.Context(), &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Namespace: "default", Name: "test-ca"}}))
+	require.Error(t, c.ensureCertificates(t.Context(), scope))
+
+	got := conditions.Get(scope.kcp, kapi.ClusterCertificatesAvailableCondition)
+	require.NotNil(t, got)
+	require.Equal(t, metav1.ConditionFalse, got.Status)
+	require.Equal(t, kapi.NotFoundReason, got.Reason)
+	require.Equal(t, "Missing certificates: ca", got.Message)
+}
+
+func TestEnsureCertificatesReportsAFailedLookup(t *testing.T) {
+	for _, tt := range []struct {
+		name        string
+		initialized bool
+	}{
+		{name: "before init", initialized: false},
+		{name: "after init", initialized: true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			cl := fake.NewClientBuilder().WithScheme(certScheme(t)).Build()
+			c := &K0sController{Client: cl, SecretCachingClient: cl}
+			require.NoError(t, c.ensureCertificates(t.Context(), certScope(false)))
+
+			ca := &corev1.Secret{}
+			require.NoError(t, cl.Get(t.Context(), client.ObjectKey{Namespace: "default", Name: "test-ca"}, ca))
+			delete(ca.Data, "tls.crt")
+			require.NoError(t, cl.Update(t.Context(), ca))
+
+			scope := certScope(tt.initialized)
+			require.ErrorContains(t, c.ensureCertificates(t.Context(), scope), "tls.crt")
+
+			got := conditions.Get(scope.kcp, kapi.ClusterCertificatesAvailableCondition)
+			require.NotNil(t, got)
+			require.Equal(t, metav1.ConditionUnknown, got.Status)
+			require.Equal(t, kapi.InternalErrorReason, got.Reason)
+			require.Equal(t, "Please check controller logs for errors", got.Message)
+		})
+	}
 }

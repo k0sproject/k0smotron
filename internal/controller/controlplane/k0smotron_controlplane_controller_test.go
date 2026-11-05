@@ -36,6 +36,7 @@ import (
 	"sigs.k8s.io/cluster-api/util/contract"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
 )
 
 func TestListControlPlanePods_IsNamespaceScoped(t *testing.T) {
@@ -533,4 +534,55 @@ func TestHostedComputeStatusSetsScalingConditions(t *testing.T) {
 	require.Equal(t, v1.ConditionTrue, conditions.Get(kcp, clusterv1.ScalingUpCondition).Status)
 	require.Equal(t, v1.ConditionFalse, conditions.Get(kcp, clusterv1.ScalingDownCondition).Status)
 	require.NotNil(t, conditions.Get(kcp, clusterv1.RollingOutCondition))
+}
+
+func TestHostedComputeStatusReportsNotDeleting(t *testing.T) {
+	cluster := &clusterv1.Cluster{ObjectMeta: v1.ObjectMeta{Name: "test", Namespace: "default"}}
+	kcp := &cpv1beta2.K0smotronControlPlane{ObjectMeta: v1.ObjectMeta{Name: "test", Namespace: "default", UID: "hosted-uid"}}
+	cl := fake.NewClientBuilder().WithScheme(hostedStatusScheme(t)).Build()
+	c := &K0smotronController{Client: cl, ClusterCache: stubClusterCache{err: fmt.Errorf("connection refused")}}
+
+	_ = c.computeStatus(t.Context(), cluster, kcp, &kmcScope{client: cl})
+
+	require.True(t, conditions.IsFalse(kcp, clusterv1.DeletingCondition))
+}
+
+func TestHostedReconcileDeleteReportsDeleting(t *testing.T) {
+	tests := []struct {
+		name      string
+		kmcExists bool
+		getErr    error
+		reason    string
+	}{
+		{name: "a k0smotron Cluster still present is waited for", kmcExists: true, reason: clusterv1.DeletingReason},
+		{name: "a k0smotron Cluster already gone completes the deletion", reason: clusterv1.DeletionCompletedReason},
+		{name: "a failure reports an internal error", getErr: fmt.Errorf("apiserver unavailable"), reason: clusterv1.InternalErrorReason},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			kcp := &cpv1beta2.K0smotronControlPlane{ObjectMeta: v1.ObjectMeta{
+				Name: "test", Namespace: "default", Finalizers: []string{cpv1beta2.K0smotronControlPlaneFinalizer},
+			}}
+			builder := fake.NewClientBuilder().WithScheme(hostedStatusScheme(t))
+			if tt.kmcExists {
+				builder = builder.WithObjects(&kapi.Cluster{ObjectMeta: v1.ObjectMeta{Name: "test", Namespace: "default"}})
+			}
+			if tt.getErr != nil {
+				builder = builder.WithInterceptorFuncs(interceptor.Funcs{
+					Get: func(context.Context, client.WithWatch, client.ObjectKey, client.Object, ...client.GetOption) error {
+						return tt.getErr
+					},
+				})
+			}
+			c := &K0smotronController{Client: builder.Build()}
+
+			_, _ = c.reconcileDelete(t.Context(), client.ObjectKey{Name: "test", Namespace: "default"}, kcp)
+
+			got := conditions.Get(kcp, clusterv1.DeletingCondition)
+			require.NotNil(t, got)
+			require.Equal(t, v1.ConditionTrue, got.Status)
+			require.Equal(t, tt.reason, got.Reason)
+		})
+	}
 }
