@@ -225,6 +225,25 @@ jobs:
         run: |
           docker load -i k0smotron-image-bundle.tar
 
+      - name: Determine k0smotron version to upgrade from
+        if: matrix.smoke-suite == 'check-upgrade'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Branch the code is merged into: the PR base branch, or the pushed branch.
+          BRANCH: ${{ github.base_ref || github.ref_name }}
+        run: |
+          if [ "$BRANCH" = "main" ]; then
+            version=stable
+          else
+            minor="${BRANCH#release-}"
+            version=$(gh api --paginate "repos/${{ github.repository }}/releases" \
+              --jq '.[] | select(.draft == false and .prerelease == false) | .tag_name' \
+              | grep -E "^v${minor//./\\.}\.[0-9]+$" | sort -V | tail -n1)
+          fi
+          test -n "$version" || { echo "no released version found for branch $BRANCH"; exit 1; }
+          echo "Upgrading from k0smotron $version"
+          echo "K0SMOTRON_UPGRADE_FROM_VERSION=$version" >> "$GITHUB_ENV"
+
       - name: Run inttest
         run: |
           make -C inttest ${{ matrix.smoke-suite }}
