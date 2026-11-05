@@ -71,8 +71,11 @@ func (s *UpgradeSuite) TestK0smotronUpgrade() {
 	err = s.WaitForNodeReady(s.WorkerNode(0), kc)
 	s.NoError(err)
 
-	s.T().Log("deploying stable k0smotron operator")
-	s.Require().NoError(util.InstallStableK0smotronOperator(s.Context(), kc, rc))
+	version := os.Getenv("K0SMOTRON_UPGRADE_FROM_VERSION")
+	s.Require().NotEmpty(version, "K0SMOTRON_UPGRADE_FROM_VERSION must be set")
+
+	s.T().Logf("deploying k0smotron operator %s", version)
+	s.Require().NoError(util.InstallReleasedK0smotronOperator(s.Context(), kc, rc, version))
 	s.Require().NoError(common.WaitForDeployment(s.Context(), kc, "k0smotron-controller-manager", "k0smotron"))
 
 	s.T().Log("deploying k0smotron cluster")

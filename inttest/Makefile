@@ -3,6 +3,7 @@ OS = $(shell go env GOOS)
 FOOTLOOSE_IMAGE ?= footloose-alpine
 K0SMOTRON_IMAGES_BUNDLE ?= $(realpath ../k0smotron-image-bundle.tar)
 K0SMOTRON_STANDALONE_INSTALL_YAML ?= $(realpath ../install-standalone.yaml)
+K0SMOTRON_UPGRADE_FROM_VERSION ?= stable
 LOCAL_STORAGE_INSTALL_YAML ?= $(realpath ./footloose-alpine/local-path-storage.yaml)
 CERT_MANAGER_INSTALL_YAML ?= $(realpath ./footloose-alpine/cert-manager.yaml)
 WEBHOOK_CHECKER_INSTALL_YAML ?= $(realpath ./footloose-alpine/webhook-checker.yaml)
@@ -31,6 +32,7 @@ $(smoketests): ../k0smotron-image-bundle.tar ../install-standalone.yaml .footloo
 	FOOTLOOSE_IMAGE='$(FOOTLOOSE_IMAGE)' \
 	K0SMOTRON_IMAGES_BUNDLE='$(K0SMOTRON_IMAGES_BUNDLE)' \
 	K0SMOTRON_STANDALONE_INSTALL_YAML='$(K0SMOTRON_STANDALONE_INSTALL_YAML)' \
+	K0SMOTRON_UPGRADE_FROM_VERSION='$(K0SMOTRON_UPGRADE_FROM_VERSION)' \
 	K0S_VERSION='$(K0S_VERSION)' \
 	LOCAL_STORAGE_INSTALL_YAML='$(LOCAL_STORAGE_INSTALL_YAML)' \
 	CERT_MANAGER_INSTALL_YAML='$(CERT_MANAGER_INSTALL_YAML)' \
