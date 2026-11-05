@@ -29,6 +29,7 @@ var (
 	noContentSourceMsg          = "either secretRef or configMapRef must be specified"
 	ownerFormatMsg              = "owner must be of the form user[:group], using only alphanumerics, '.', '_' or '-'"
 	ownerOnPowerShellMsg        = "owner is not supported by the powershell provisioner formats or on the windows platform"
+	ignitionRequiredMsg         = "the ignition provisioner needs a variant and a version to render the config"
 )
 
 func init() {

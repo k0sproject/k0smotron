@@ -328,7 +328,6 @@ func (c *K0sWorkerConfig) GetJoinTokenPath() string {
 func (cs *K0sWorkerConfigSpec) Validate(pathPrefix *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 
-	// TODO: validate Ignition
 	allErrs = append(allErrs, cs.validateVersion(pathPrefix)...)
 	allErrs = append(allErrs, cs.validateFiles(pathPrefix)...)
 

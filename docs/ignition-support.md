@@ -209,6 +209,8 @@ k0smotron allows extending the generated Ignition bootstrap data using the `addi
 
 To keep that Butane config out of the resource, put it in a `Secret` or `ConfigMap` in the Cluster's namespace and reference it with `additionalConfigFrom` instead, for example `additionalConfigFrom: {secretRef: {name: extra-butane, key: config}}`. Only one of `additionalConfig` and `additionalConfigFrom` can be set.
 
+The variant and version, and an inline `additionalConfig`, are checked against Butane when the resource is applied, so an unsupported version or an additional config for a different Ignition spec version is rejected right away. A config referenced with `additionalConfigFrom` is only read, and so only checked, when the bootstrap data is generated.
+
 Additionally, because Flatcar is an immutable operating system, it does not allow writing the k0s binary to the default `/usr/local/bin` location. For this reason, an alternative installation directory is specified using `k0sInstallDir`.
 
 We can check the state of our recently created cluster by running:
