@@ -210,7 +210,7 @@ func getK0sControlPlaneByCluster(ctx context.Context, input GetK0sControlPlaneBy
 		return &controlPlaneList.Items[0], nil
 	}
 
-	return nil, nil
+	return nil, nil //nolint:nilnil // None yet, callers poll until it appears.
 }
 
 // byClusterOptions returns a set of ListOptions that allows to identify all the objects belonging to a Cluster.

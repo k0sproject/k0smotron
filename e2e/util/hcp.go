@@ -136,5 +136,5 @@ func getK0smotronControlPlaneByCluster(ctx context.Context, input GetK0smotronCo
 		return &controlPlaneList.Items[0], nil
 	}
 
-	return nil, nil
+	return nil, nil //nolint:nilnil // None yet, callers poll until it appears.
 }

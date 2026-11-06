@@ -372,7 +372,7 @@ func controlPlaneMachineWithInPlaceUpdateAnnotations(ctx context.Context, input 
 			return &m, nil
 		}
 	}
-	return nil, nil
+	return nil, nil //nolint:nilnil // No such machine, callers check for nil.
 }
 
 // checkCAPIInPlace verifies that the runtime extension in-place update path is used: at least one
