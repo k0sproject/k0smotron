@@ -136,7 +136,7 @@ func (s *UpgradeSuite) TestK0smotronUpgrade() {
 	// Check controlplane and etcd pods are running as expected
 	nEtcdReplicas, err := kc.AppsV1().StatefulSets("kmc-test").GetScale(s.Context(), "kmc-kmc-test-etcd", metav1.GetOptions{})
 	s.Require().NoError(err)
-	for i := 0; i < int(nEtcdReplicas.Spec.Replicas); i++ {
+	for i := range nEtcdReplicas.Spec.Replicas {
 		pod, err := kc.CoreV1().Pods("kmc-test").Get(s.Context(), fmt.Sprintf("kmc-kmc-test-etcd-%d", i), metav1.GetOptions{})
 		s.Require().NoError(err)
 		s.Require().Equal(corev1.PodRunning, pod.Status.Phase)
@@ -144,7 +144,7 @@ func (s *UpgradeSuite) TestK0smotronUpgrade() {
 
 	nControlPlaneReplicas, err := kc.AppsV1().StatefulSets("kmc-test").GetScale(s.Context(), "kmc-kmc-test", metav1.GetOptions{})
 	s.Require().NoError(err)
-	for i := 0; i < int(nControlPlaneReplicas.Spec.Replicas); i++ {
+	for i := range nControlPlaneReplicas.Spec.Replicas {
 		pod, err := kc.CoreV1().Pods("kmc-test").Get(s.Context(), fmt.Sprintf("kmc-kmc-test-%d", i), metav1.GetOptions{})
 		s.Require().NoError(err)
 		s.Require().Equal(corev1.PodRunning, pod.Status.Phase)

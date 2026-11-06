@@ -33,6 +33,7 @@ linters:
     - usestdlibvars
     - misspell
     - mirror
+    - intrange
   settings:
     forbidigo:
       analyze-types: false
