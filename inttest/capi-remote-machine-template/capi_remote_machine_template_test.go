@@ -171,7 +171,7 @@ func (s *RemoteMachineTemplateSuite) TestCAPIRemoteMachine() {
 			return false, nil
 		}
 
-		rm, err := s.getRemoteMachine(controlPlaneMachineName, "default")
+		rm, err := s.getRemoteMachine(ctx, controlPlaneMachineName, "default")
 		if err != nil {
 			s.T().Log(err)
 			return false, nil
@@ -203,9 +203,9 @@ func (s *RemoteMachineTemplateSuite) TestCAPIRemoteMachine() {
 
 }
 
-func (s *RemoteMachineTemplateSuite) getRemoteMachine(name string, namespace string) (*infra.RemoteMachine, error) {
+func (s *RemoteMachineTemplateSuite) getRemoteMachine(ctx context.Context, name string, namespace string) (*infra.RemoteMachine, error) {
 	apiPath := fmt.Sprintf("/apis/infrastructure.cluster.x-k8s.io/v1beta2/namespaces/%s/remotemachines/%s", namespace, name)
-	result, err := s.client.RESTClient().Get().AbsPath(apiPath).DoRaw(s.Context())
+	result, err := s.client.RESTClient().Get().AbsPath(apiPath).DoRaw(ctx)
 	if err != nil {
 		return nil, err
 	}

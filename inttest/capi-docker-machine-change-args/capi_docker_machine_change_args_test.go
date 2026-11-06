@@ -106,11 +106,11 @@ func (s *CAPIDevMachineChangeArgs) TestCAPIControlPlaneDockerDownScaling() {
 	kmcKC, err := util.GetKMCClientSet(s.ctx, s.client, "docker-test", "default", localPort)
 	s.Require().NoError(err)
 
-	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(_ context.Context) (bool, error) {
+	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
 		b, _ := s.client.RESTClient().
 			Get().
 			AbsPath("/healthz").
-			DoRaw(context.Background())
+			DoRaw(ctx)
 
 		return string(b) == "ok", nil
 	})
@@ -150,12 +150,12 @@ func (s *CAPIDevMachineChangeArgs) TestCAPIControlPlaneDockerDownScaling() {
 	s.T().Log("updating cluster objects")
 	s.updateClusterObjects()
 
-	err = wait.PollUntilContextCancel(s.ctx, 100*time.Millisecond, true, func(_ context.Context) (bool, error) {
+	err = wait.PollUntilContextCancel(s.ctx, 100*time.Millisecond, true, func(ctx context.Context) (bool, error) {
 		var obj unstructured.UnstructuredList
 		err := s.client.RESTClient().
 			Get().
 			AbsPath("/apis/bootstrap.cluster.x-k8s.io/v1beta2/namespaces/default/k0scontrollerconfigs").
-			Do(s.ctx).
+			Do(ctx).
 			Into(&obj)
 		if err != nil {
 			return false, nil
@@ -175,11 +175,11 @@ func (s *CAPIDevMachineChangeArgs) TestCAPIControlPlaneDockerDownScaling() {
 	})
 	s.Require().NoError(err)
 
-	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(_ context.Context) (bool, error) {
+	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
 		b, _ := s.client.RESTClient().
 			Get().
 			AbsPath("/healthz").
-			DoRaw(context.Background())
+			DoRaw(ctx)
 
 		return string(b) == "ok", nil
 	})

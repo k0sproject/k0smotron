@@ -113,11 +113,11 @@ func (s *CAPIDevMachineTemplateUpdateRecreate) TestCAPIControlPlaneDockerDownSca
 	s.Require().NoError(err)
 
 	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(_ context.Context) (bool, error) {
+	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
 		b, _ := s.client.RESTClient().
 			Get().
 			AbsPath("/healthz").
-			DoRaw(context.Background())
+			DoRaw(ctx)
 
 		return string(b) == "ok", nil
 	})
@@ -167,12 +167,12 @@ func (s *CAPIDevMachineTemplateUpdateRecreate) TestCAPIControlPlaneDockerDownSca
 	s.T().Log("updating cluster objects")
 	s.updateClusterObjects()
 
-	err = wait.PollUntilContextCancel(s.ctx, 100*time.Millisecond, true, func(_ context.Context) (bool, error) {
+	err = wait.PollUntilContextCancel(s.ctx, 100*time.Millisecond, true, func(ctx context.Context) (bool, error) {
 		var obj unstructured.UnstructuredList
 		err := s.client.RESTClient().
 			Get().
 			AbsPath("/apis/cluster.x-k8s.io/v1beta1/namespaces/default/machines").
-			Do(s.ctx).
+			Do(ctx).
 			Into(&obj)
 		if err != nil {
 			return false, nil

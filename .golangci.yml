@@ -21,6 +21,7 @@ linters:
     - testifylint
     - noctx
     - nilerr
+    - contextcheck
   settings:
     forbidigo:
       analyze-types: false

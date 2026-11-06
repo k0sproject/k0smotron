@@ -110,8 +110,8 @@ func (s *UpgradeSuite) TestK0smotronUpgrade() {
 	kmcKC, err := util.GetKMCClientSet(s.Context(), kc, "kmc-test", "kmc-test", localPort)
 	s.Require().NoError(err)
 
-	err = wait.PollUntilContextCancel(s.Context(), 100*time.Millisecond, true, func(_ context.Context) (done bool, err error) {
-		_, err = kmcKC.CoreV1().Namespaces().Get(s.Context(), "test-ns-cm", metav1.GetOptions{})
+	err = wait.PollUntilContextCancel(s.Context(), 100*time.Millisecond, true, func(ctx context.Context) (done bool, err error) {
+		_, err = kmcKC.CoreV1().Namespaces().Get(ctx, "test-ns-cm", metav1.GetOptions{})
 		if err != nil {
 			return false, nil
 		}
@@ -156,7 +156,7 @@ func (s *UpgradeSuite) checkStatePersists(ctx context.Context, mountedPath strin
 	successfulOutput := "File exists"
 	output := ""
 	cmd := fmt.Sprintf("test -f %s/manifests/mystack/manifest.yaml && echo \"%s\" || echo \"File does not exist\"", mountedPath, successfulOutput)
-	err := wait.PollUntilContextCancel(s.Context(), time.Second, true, func(_ context.Context) (done bool, err error) {
+	err := wait.PollUntilContextCancel(ctx, time.Second, true, func(_ context.Context) (done bool, err error) {
 		output, err = exec.PodExecCmdOutput(ctx, kc, rc, "kmc-kmc-test-0", "kmc-test", cmd)
 		if err != nil {
 			return false, nil
@@ -171,7 +171,7 @@ func (s *UpgradeSuite) checkStatePersists(ctx context.Context, mountedPath strin
 func (s *UpgradeSuite) forceControllerRecreation(ctx context.Context, controllerName string, kc *kubernetes.Clientset) {
 	err := kc.CoreV1().Pods("kmc-test").Delete(ctx, controllerName, metav1.DeleteOptions{})
 	s.Require().NoError(err)
-	s.Require().NoError(common.WaitForPod(s.Context(), kc, controllerName, "kmc-test"))
+	s.Require().NoError(common.WaitForPod(ctx, kc, controllerName, "kmc-test"))
 }
 
 func (s *UpgradeSuite) addState(ctx context.Context, mountedPath string, kc *kubernetes.Clientset, rc *rest.Config) {

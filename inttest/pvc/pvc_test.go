@@ -103,8 +103,8 @@ func (s *PVCSuite) TestK0sGetsUp() {
 	s.T().Log("updating k0smotron cluster")
 	s.updateK0smotronCluster(s.Context(), rc)
 
-	err = wait.PollUntilContextCancel(s.Context(), time.Second, true, func(_ context.Context) (done bool, err error) {
-		sts, err := kc.AppsV1().StatefulSets("kmc-test").Get(s.Context(), "kmc-kmc-test", metav1.GetOptions{})
+	err = wait.PollUntilContextCancel(s.Context(), time.Second, true, func(ctx context.Context) (done bool, err error) {
+		sts, err := kc.AppsV1().StatefulSets("kmc-test").Get(ctx, "kmc-kmc-test", metav1.GetOptions{})
 		if err != nil {
 			return false, nil
 		}
@@ -113,8 +113,8 @@ func (s *PVCSuite) TestK0sGetsUp() {
 	})
 	s.Require().NoError(err)
 
-	err = wait.PollUntilContextCancel(s.Context(), time.Second, true, func(_ context.Context) (done bool, err error) {
-		sts, err := kc.AppsV1().StatefulSets("kmc-test").Get(s.Context(), "kmc-kmc-test-etcd", metav1.GetOptions{})
+	err = wait.PollUntilContextCancel(s.Context(), time.Second, true, func(ctx context.Context) (done bool, err error) {
+		sts, err := kc.AppsV1().StatefulSets("kmc-test").Get(ctx, "kmc-kmc-test-etcd", metav1.GetOptions{})
 		if err != nil {
 			return false, nil
 		}

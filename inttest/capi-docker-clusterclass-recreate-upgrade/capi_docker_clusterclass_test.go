@@ -159,11 +159,11 @@ func (s *CAPIDockerClusterClassSuite) TestCAPIDockerClusterClass() {
 
 	s.T().Log("waiting for control-plane")
 	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(_ context.Context) (bool, error) {
+	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
 		b, _ := s.client.RESTClient().
 			Get().
 			AbsPath("/healthz").
-			DoRaw(context.Background())
+			DoRaw(ctx)
 
 		return string(b) == "ok", nil
 	})
@@ -171,8 +171,8 @@ func (s *CAPIDockerClusterClassSuite) TestCAPIDockerClusterClass() {
 
 	s.T().Log("waiting for worker nodes")
 	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(_ context.Context) (bool, error) {
-		nodes, _ := kmcKC.CoreV1().Nodes().List(s.ctx, metav1.ListOptions{})
+	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+		nodes, _ := kmcKC.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
 		return len(nodes.Items) == 2, nil
 	})
 	s.Require().NoError(err)
@@ -190,8 +190,8 @@ func (s *CAPIDockerClusterClassSuite) TestCAPIDockerClusterClass() {
 	kcpName := kcpList.Items[0].Name
 	// Wait to see the controlplane status is correct
 	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(_ context.Context) (bool, error) {
-		kcp, err := util.GetK0sControlPlane(s.ctx, s.client, kcpName, "default")
+	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+		kcp, err := util.GetK0sControlPlane(ctx, s.client, kcpName, "default")
 		if err != nil {
 			return true, err
 		}
@@ -218,8 +218,8 @@ func (s *CAPIDockerClusterClassSuite) TestCAPIDockerClusterClass() {
 
 	s.T().Log("waiting for control-plane nodes to be updated")
 	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(_ context.Context) (bool, error) {
-		cp, err := util.GetK0sControlPlane(s.ctx, s.client, kcpName, "default")
+	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+		cp, err := util.GetK0sControlPlane(ctx, s.client, kcpName, "default")
 		if err != nil {
 			return false, err
 		}
