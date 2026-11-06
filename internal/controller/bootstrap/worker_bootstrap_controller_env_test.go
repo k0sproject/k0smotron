@@ -34,8 +34,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	bootstrapapi "k8s.io/cluster-bootstrap/token/api"
 	kubeadmbootstrapv1 "sigs.k8s.io/cluster-api/api/bootstrap/kubeadm/v1beta2"
@@ -441,7 +439,7 @@ func TestReconcileControlPlaneNotReady(t *testing.T) {
 	ns, err := testEnv.CreateNamespace(ctx, "test-reconcile-workerconfig-control-plane-not-ready")
 	require.NoError(t, err)
 
-	cluster, kcp, _ := createClusterWithControlPlane(ns.GetName())
+	cluster, kcp := createClusterWithControlPlane(ns.GetName())
 	require.NoError(t, testEnv.Create(ctx, cluster))
 	require.NoError(t, testEnv.Create(ctx, kcp))
 
@@ -529,7 +527,7 @@ func TestReconcileWorkerConfigVersionFallsBackToMachineVersion(t *testing.T) {
 	ns, err := testEnv.CreateNamespace(ctx, "test-reconcile-workerconfig-version-fallback")
 	require.NoError(t, err)
 
-	cluster, kcp, _ := createClusterWithControlPlane(ns.GetName())
+	cluster, kcp := createClusterWithControlPlane(ns.GetName())
 	require.NoError(t, testEnv.Create(ctx, cluster))
 	require.NoError(t, testEnv.Create(ctx, kcp))
 
@@ -631,7 +629,7 @@ func TestReconcileGenerateBootstrapData(t *testing.T) {
 	ns, err := testEnv.CreateNamespace(ctx, "test-reconcile-workerconfig-generate-bootstrap-data")
 	require.NoError(t, err)
 
-	cluster, kcp, _ := createClusterWithControlPlane(ns.GetName())
+	cluster, kcp := createClusterWithControlPlane(ns.GetName())
 	require.NoError(t, testEnv.Create(ctx, cluster))
 	require.NoError(t, testEnv.Create(ctx, kcp))
 
@@ -744,7 +742,7 @@ func TestReconcileGenerateBootstrapData(t *testing.T) {
 	}, 20*time.Second, 100*time.Millisecond)
 }
 
-func createClusterWithControlPlane(namespace string) (*clusterv1.Cluster, *cpv1beta2.K0sControlPlane, *unstructured.Unstructured) {
+func createClusterWithControlPlane(namespace string) (*clusterv1.Cluster, *cpv1beta2.K0sControlPlane) {
 	kcpName := fmt.Sprintf("kcp-foo-%s", util.RandomString(6))
 
 	cluster := newCluster(namespace)
@@ -795,28 +793,7 @@ func createClusterWithControlPlane(namespace string) (*clusterv1.Cluster, *cpv1b
 		},
 	}
 
-	genericMachineTemplate := &unstructured.Unstructured{
-		Object: map[string]any{
-			"kind":       "GenericInfrastructureMachineTemplate",
-			"apiVersion": "infrastructure.cluster.x-k8s.io/v1beta1",
-			"metadata": map[string]any{
-				"name":      "infra-foo",
-				"namespace": namespace,
-				"annotations": map[string]any{
-					clusterv1.TemplateClonedFromNameAnnotation:      kcp.Spec.MachineTemplate.Spec.InfrastructureRef.Name,
-					clusterv1.TemplateClonedFromGroupKindAnnotation: schema.GroupKind{Group: kcp.Spec.MachineTemplate.Spec.InfrastructureRef.APIGroup, Kind: kcp.Spec.MachineTemplate.Spec.InfrastructureRef.Kind}.String(),
-				},
-			},
-			"spec": map[string]any{
-				"template": map[string]any{
-					"spec": map[string]any{
-						"hello": "world",
-					},
-				},
-			},
-		},
-	}
-	return cluster, kcp, genericMachineTemplate
+	return cluster, kcp
 }
 
 // pausedObject is both an object to re-read and a condition holder to inspect.
@@ -901,7 +878,7 @@ func TestReconcileDeletesTheTokenOfBootstrapDataItCouldNotGenerate(t *testing.T)
 	ns, err := testEnv.CreateNamespace(t.Context(), "test-worker-token-of-failed-generation")
 	require.NoError(t, err)
 
-	cluster, kcp, _ := createClusterWithControlPlane(ns.GetName())
+	cluster, kcp := createClusterWithControlPlane(ns.GetName())
 	require.NoError(t, testEnv.Create(t.Context(), cluster))
 	require.NoError(t, testEnv.Create(t.Context(), kcp))
 	conditions.Set(cluster, metav1.Condition{
@@ -991,7 +968,7 @@ func TestReconcileRotatesTheTokenOfAJoinedMachinePool(t *testing.T) {
 	ns, err := testEnv.CreateNamespace(t.Context(), "test-worker-machinepool-token-rotation")
 	require.NoError(t, err)
 
-	cluster, kcp, _ := createClusterWithControlPlane(ns.GetName())
+	cluster, kcp := createClusterWithControlPlane(ns.GetName())
 	require.NoError(t, testEnv.Create(t.Context(), cluster))
 	require.NoError(t, testEnv.Create(t.Context(), kcp))
 	conditions.Set(cluster, metav1.Condition{
@@ -1184,7 +1161,7 @@ func TestReconcileRendersAdditionalIgnitionConfigFromASecret(t *testing.T) {
 	ns, err := testEnv.CreateNamespace(t.Context(), "test-worker-additional-ignition-from")
 	require.NoError(t, err)
 
-	cluster, kcp, _ := createClusterWithControlPlane(ns.GetName())
+	cluster, kcp := createClusterWithControlPlane(ns.GetName())
 	require.NoError(t, testEnv.Create(t.Context(), cluster))
 	require.NoError(t, testEnv.Create(t.Context(), kcp))
 	conditions.Set(cluster, metav1.Condition{

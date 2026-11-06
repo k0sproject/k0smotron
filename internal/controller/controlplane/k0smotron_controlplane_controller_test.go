@@ -524,8 +524,8 @@ func TestHostedComputeStatusSetsScalingConditions(t *testing.T) {
 	cl := fake.NewClientBuilder().WithScheme(hostedStatusScheme(t)).
 		WithObjects(
 			&kapi.Cluster{ObjectMeta: v1.ObjectMeta{Name: "test", Namespace: "default"}},
-			controlPlanePod("cp-0", false),
-			controlPlanePod("cp-1", false),
+			notReadyControlPlanePod("cp-0"),
+			notReadyControlPlanePod("cp-1"),
 		).Build()
 	c := &K0smotronController{Client: cl, ClusterCache: stubClusterCache{err: fmt.Errorf("connection refused")}}
 
