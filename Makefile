@@ -380,6 +380,10 @@ hack/lint/.golangci-lint.stamp: hack/lint/Dockerfile Makefile.variables
 	  .
 	touch -- '$@'
 
+# Build tag sets to lint with. Each set needs its own run: some files are
+# excluded by a tag (//go:build !envtest), so the sets cannot be combined.
+GO_LINT_BUILD_TAGS ?= hack hack,envtest hack,e2e hack,extension
+
 .PHONY: lint
 lint: GOLANGCI_LINT_FLAGS ?= --verbose --max-issues-per-linter=0 --max-same-issues=0
 lint: hack/lint/.golangci-lint.stamp
@@ -387,7 +391,13 @@ lint: hack/lint/.golangci-lint.stamp
 	  --rm \
 	  -v "$(CURDIR):/go/src/github.com/k0sproject/k0smotron:ro" \
 	  -w /go/src/github.com/k0sproject/k0smotron \
-	  k0smotron.golangci-lint golangci-lint run --config .golangci.yml $(GOLANGCI_LINT_FLAGS) $(GO_LINT_DIRS)
+	  k0smotron.golangci-lint sh -c '\
+	    rc=0; \
+	    for tags in $(GO_LINT_BUILD_TAGS); do \
+	      echo "golangci-lint: build tags $$tags"; \
+	      golangci-lint run --config .golangci.yml --build-tags "$$tags" $(GOLANGCI_LINT_FLAGS) $(GO_LINT_DIRS) || rc=1; \
+	    done; \
+	    exit $$rc'
 
 # KinD helpers
 .PHONY: kind-cluster
