@@ -270,7 +270,7 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (re
 	patchHelper, err := patch.NewHelper(kmc, r.Client)
 	if err != nil {
 		logger.Error(err, "Failed to configure the patch helper")
-		return ctrl.Result{Requeue: true}, nil
+		return kutil.RequeueWithBackoff(), nil
 	}
 
 	defer func() {
@@ -296,34 +296,34 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (re
 
 	if err := kmcScope.reconcileServices(ctx, kmc); err != nil {
 		kmc.SetReconciliationStatus(fmt.Sprintf("Failed reconciling services, %s", err.Error()))
-		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
+		return ctrl.Result{RequeueAfter: time.Minute}, err
 	}
 
 	if err := kmcScope.reconcileIngress(ctx, kmc); err != nil {
 		kmc.SetReconciliationStatus(fmt.Sprintf("Failed reconciling ingress, %s", err.Error()))
-		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
+		return ctrl.Result{RequeueAfter: time.Minute}, err
 	}
 
 	if err := kmcScope.reconcileK0sConfig(ctx, kmc, r.Client); err != nil {
 		kmc.SetReconciliationStatus(fmt.Sprintf("Failed reconciling configmap, %s", err.Error()))
-		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
+		return ctrl.Result{RequeueAfter: time.Minute}, err
 	}
 
 	if err := kmcScope.reconcileEntrypointCM(ctx, kmc); err != nil {
 		kmc.SetReconciliationStatus(fmt.Sprintf("Failed reconciling entrypoint configmap, %s", err.Error()))
-		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
+		return ctrl.Result{RequeueAfter: time.Minute}, err
 	}
 
 	if kmc.Spec.Monitoring.Enabled {
 		if err := kmcScope.reconcileMonitoringCM(ctx, kmc); err != nil {
 			kmc.SetReconciliationStatus(fmt.Sprintf("Failed reconciling prometheus configmap, %s", err.Error()))
-			return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
+			return ctrl.Result{RequeueAfter: time.Minute}, err
 		}
 	}
 
 	if kmc.Spec.CertificateRefs == nil {
 		if err := kmcScope.ensureCertificates(ctx, kmc); err != nil {
-			return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
+			return ctrl.Result{RequeueAfter: time.Minute}, err
 		}
 	}
 	kmcScope.certFingerprints = map[string]string{}
@@ -350,7 +350,7 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (re
 			// errors accumulated below use CertificateRenewalFailed.
 			r.Recorder.Eventf(kmc, corev1.EventTypeWarning, "CertificateIssuanceFailed",
 				"Failed to ensure etcd certificates: %v", err)
-			return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, fmt.Errorf("error generating etcd certificates: %w", err)
+			return ctrl.Result{RequeueAfter: time.Minute}, fmt.Errorf("error generating etcd certificates: %w", err)
 		}
 
 		// Each workload rolls only on the certificates it actually mounts.
@@ -373,7 +373,7 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (re
 			// Also covers first issuance; see the etcd case above.
 			r.Recorder.Eventf(kmc, corev1.EventTypeWarning, "CertificateIssuanceFailed",
 				"Failed to ensure ingress certificates: %v", err)
-			return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, fmt.Errorf("error generating ingress certificates: %w", err)
+			return ctrl.Result{RequeueAfter: time.Minute}, fmt.Errorf("error generating ingress certificates: %w", err)
 		}
 		allCertInfos = append(allCertInfos, haproxyInfos...)
 	}
@@ -410,12 +410,12 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (re
 
 	if err := kmcScope.reconcilePVC(ctx, kmc); err != nil {
 		kmc.SetReconciliationStatus(fmt.Sprintf("Failed reconciling PVCs: %s", err.Error()))
-		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
+		return ctrl.Result{RequeueAfter: time.Minute}, err
 	}
 
 	if err := kmcScope.reconcileNats(ctx, kmc); err != nil {
 		kmc.SetReconciliationStatus(fmt.Sprintf("Failed reconciling NATS, %s", err.Error()))
-		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
+		return ctrl.Result{RequeueAfter: time.Minute}, err
 	}
 
 	logger.Info("Reconciling etcd")
@@ -437,13 +437,13 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (re
 	if kmc.Status.ReadyReplicas > 0 {
 		if err := kmcScope.reconcileKubeConfigSecret(ctx, r.Client, kmc); err != nil {
 			kmc.SetReconciliationStatus(fmt.Sprintf("Failed reconciling secret, %s", err.Error()))
-			return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
+			return ctrl.Result{RequeueAfter: time.Minute}, err
 		}
 	} else {
 		// There is still pending work to do, but we need to wait for the statefulset to have a ready replica before trying to
 		// generate the kubeconfig secret.
 		logger.Info("Kubeconfig secret cannot be generated until there is at least one ready replica, requeuing...")
-		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, nil
+		return ctrl.Result{RequeueAfter: time.Minute}, nil
 	}
 
 	kmc.SetReconciliationStatus("Reconciliation successful")

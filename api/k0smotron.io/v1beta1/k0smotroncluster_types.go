@@ -150,7 +150,7 @@ type ServiceSpec struct {
 	// ExternalTrafficPolicy defines the external traffic policy for the service. Used only when service type is NodePort or LoadBalancer.
 	//+kubebuilder:validation:Optional
 	//+kubebuilder:validation:Enum=Cluster;Local
-	ExternalTrafficPolicy v1.ServiceExternalTrafficPolicyType `json:"externalTrafficPolicy,omitempty"`
+	ExternalTrafficPolicy v1.ServiceExternalTrafficPolicy `json:"externalTrafficPolicy,omitempty"`
 }
 
 const (

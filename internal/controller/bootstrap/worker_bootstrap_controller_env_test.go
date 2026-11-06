@@ -500,7 +500,7 @@ func TestReconcileControlPlaneNotReady(t *testing.T) {
 		// Cluster.Spec.ControlPlaneEndpoint is not initialize by infra provider
 		result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: util.ObjectKey(k0sWorkerConfig)})
 		assert.NoError(c, err)
-		assert.Equal(c, ctrl.Result{Requeue: true, RequeueAfter: time.Second * 5}, result)
+		assert.Equal(c, ctrl.Result{RequeueAfter: time.Second * 5}, result)
 
 		updatedK0sWorkerConfig := &bootstrapv1.K0sWorkerConfig{}
 		assert.NoError(c, testEnv.Get(ctx, client.ObjectKeyFromObject(k0sWorkerConfig), updatedK0sWorkerConfig))
@@ -516,7 +516,7 @@ func TestReconcileControlPlaneNotReady(t *testing.T) {
 
 		result, err = r.Reconcile(ctx, ctrl.Request{NamespacedName: util.ObjectKey(k0sWorkerConfig)})
 		assert.NoError(c, err)
-		assert.Equal(c, ctrl.Result{Requeue: true, RequeueAfter: time.Second * 5}, result)
+		assert.Equal(c, ctrl.Result{RequeueAfter: time.Second * 5}, result)
 
 		updatedK0sWorkerConfig = &bootstrapv1.K0sWorkerConfig{}
 		assert.NoError(c, testEnv.Get(ctx, client.ObjectKeyFromObject(k0sWorkerConfig), updatedK0sWorkerConfig))

@@ -76,7 +76,7 @@ func (s *ScalingSuite) TestK0sGetsUp() {
 	s.T().Log("scaling up k0smotron cluster")
 	s.scaleK0smotronCluster(s.Context(), rc, 2)
 
-	// nolint:staticcheck
+	//nolint:staticcheck // Deprecated, but PollUntilContextCancel returns a different error on timeout.
 	err = wait.PollImmediateUntilWithContext(s.Context(), 1*time.Second, func(ctx context.Context) (bool, error) {
 		cpSts, err := kc.AppsV1().StatefulSets("default").Get(ctx, "kmc-scaling", metav1.GetOptions{})
 		if err != nil {
@@ -86,7 +86,7 @@ func (s *ScalingSuite) TestK0sGetsUp() {
 		return cpSts.Status.Replicas == 2, nil
 	})
 	s.Require().NoError(err)
-	// nolint:staticcheck
+	//nolint:staticcheck // Deprecated, but PollUntilContextCancel returns a different error on timeout.
 	err = wait.PollImmediateUntilWithContext(s.Context(), 1*time.Second, func(ctx context.Context) (bool, error) {
 		etcdSts, err := kc.AppsV1().StatefulSets("default").Get(ctx, "kmc-scaling-etcd", metav1.GetOptions{})
 		if err != nil {
@@ -108,7 +108,7 @@ func (s *ScalingSuite) TestK0sGetsUp() {
 	s.Require().NoError(common.WaitForStatefulSet(s.Context(), kc, "kmc-scaling", "default"))
 	s.Require().NoError(common.WaitForStatefulSet(s.Context(), kc, "kmc-scaling-etcd", "default"))
 
-	// nolint:staticcheck
+	//nolint:staticcheck // Deprecated, but PollUntilContextCancel returns a different error on timeout.
 	err = wait.PollImmediateUntilWithContext(s.Context(), 1*time.Second, func(ctx context.Context) (bool, error) {
 		sts, err := kc.AppsV1().StatefulSets("default").Get(ctx, "kmc-scaling", metav1.GetOptions{})
 		if err != nil {
@@ -148,7 +148,7 @@ func (s *ScalingSuite) checkClusterStatus(ctx context.Context, rc *rest.Config) 
 	crdRestClient, err := rest.UnversionedRESTClientFor(&crdConfig)
 	s.Require().NoError(err)
 
-	// nolint:staticcheck
+	//nolint:staticcheck // Deprecated, but PollUntilContextCancel returns a different error on timeout.
 	err = wait.PollImmediateUntilWithContext(ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
 		var kmc km.Cluster
 		err = crdRestClient.

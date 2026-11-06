@@ -94,7 +94,7 @@ func (s *CAPIDevMachineTemplateUpdateRecreateSingle) TestCAPIControlPlaneDockerD
 	s.T().Log("cluster objects applied, waiting for cluster to be ready")
 
 	var localPort int
-	// nolint:staticcheck
+	//nolint:staticcheck // Deprecated, but PollUntilContextCancel returns a different error on timeout.
 	err := wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
 		localPort, _ = getLBPort(ctx, "docker-test-cluster-lb")
 		return localPort > 0, nil
@@ -105,7 +105,7 @@ func (s *CAPIDevMachineTemplateUpdateRecreateSingle) TestCAPIControlPlaneDockerD
 	kmcKC, err := util.GetKMCClientSet(s.ctx, s.client, "docker-test-cluster", "default", localPort)
 	s.Require().NoError(err)
 
-	// nolint:staticcheck
+	//nolint:staticcheck // Deprecated, but PollUntilContextCancel returns a different error on timeout.
 	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
 		b, _ := s.client.RESTClient().
 			Get().
@@ -116,7 +116,7 @@ func (s *CAPIDevMachineTemplateUpdateRecreateSingle) TestCAPIControlPlaneDockerD
 	})
 	s.Require().NoError(err)
 
-	// nolint:staticcheck
+	//nolint:staticcheck // Deprecated, but PollUntilContextCancel returns a different error on timeout.
 	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
 		machines, err := util.GetControlPlaneMachinesByKcpName(ctx, "docker-test-cluster-docker-test", "default", s.client)
 		if err != nil {
@@ -142,7 +142,7 @@ func (s *CAPIDevMachineTemplateUpdateRecreateSingle) TestCAPIControlPlaneDockerD
 	s.T().Log("updating cluster objects")
 	s.updateClusterObjects()
 
-	// nolint:staticcheck
+	//nolint:staticcheck // Deprecated, but PollUntilContextCancel returns a different error on timeout.
 	err = wait.PollImmediateUntilWithContext(s.ctx, 100*time.Millisecond, func(ctx context.Context) (bool, error) {
 		var err error
 		newNodeIDs, err := util.GetControlPlaneNodesIDs(ctx, "docker-test-cluster-docker-test-")
@@ -155,7 +155,7 @@ func (s *CAPIDevMachineTemplateUpdateRecreateSingle) TestCAPIControlPlaneDockerD
 	})
 	s.Require().NoError(err)
 
-	// nolint:staticcheck
+	//nolint:staticcheck // Deprecated, but PollUntilContextCancel returns a different error on timeout.
 	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
 		var err error
 		nodeIDs, err := util.GetControlPlaneNodesIDs(ctx, "docker-test-cluster-docker-test-")
@@ -168,7 +168,7 @@ func (s *CAPIDevMachineTemplateUpdateRecreateSingle) TestCAPIControlPlaneDockerD
 	})
 	s.Require().NoError(err)
 
-	// nolint:staticcheck
+	//nolint:staticcheck // Deprecated, but PollUntilContextCancel returns a different error on timeout.
 	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
 		machines, err := util.GetControlPlaneMachinesByKcpName(ctx, "docker-test-cluster-docker-test", "default", s.client)
 		if err != nil {

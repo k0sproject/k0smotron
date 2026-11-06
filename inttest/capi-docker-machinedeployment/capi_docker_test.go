@@ -130,7 +130,7 @@ func (s *CAPIDockerSuite) TestCAPIDocker() {
 	s.Require().NoError(err)
 	// Check that the MD gets to ready state
 	s.T().Log("waiting for machinedeployment to be ready")
-	// nolint:staticcheck
+	//nolint:staticcheck // Deprecated, but PollUntilContextCancel returns a different error on timeout.
 	s.Require().NoError(wait.PollImmediateUntilWithContext(ctx, 1*time.Second, func(ctx context.Context) (done bool, err error) {
 		// Get the MachineDeployment
 		md := &clusterv1.MachineDeployment{}

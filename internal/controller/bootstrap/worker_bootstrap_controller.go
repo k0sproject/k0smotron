@@ -270,7 +270,7 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 			Reason:  bootstrapv2.WaitingForControlPlaneInitializationReason,
 			Message: "Control plane is not ready yet",
 		})
-		return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 5}, nil
+		return ctrl.Result{RequeueAfter: time.Second * 5}, nil
 	}
 
 	defer func() {

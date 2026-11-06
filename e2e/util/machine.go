@@ -109,7 +109,6 @@ func WaitForMachines(ctx context.Context, input WaitForMachinesInput) ([]string,
 
 	// Ensures the desired set of machines is stable (no further machines are created or deleted).
 	fmt.Printf("Checking the list of machines is stable\n")
-	allMachinesNow := make(map[string]string)
 
 	now := time.Now()
 	timeForConsideredStable := 30 * time.Second
@@ -120,7 +119,7 @@ func WaitForMachines(ctx context.Context, input WaitForMachinesInput) ([]string,
 			return nil, nil, err
 		}
 
-		allMachinesNow = make(map[string]string)
+		allMachinesNow := make(map[string]string)
 		for i := range machineList.Items {
 			allMachinesNow[string(machineList.Items[i].GetUID())] = machineList.Items[i].Name
 		}

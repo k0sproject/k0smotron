@@ -329,6 +329,9 @@ func (c *K0sController) reconcileKubeconfig(ctx context.Context, controlplane *c
 			}
 
 			workloadClusterKubeconfigSecret, err = c.createKubeconfigSecret(ctx, kc, controlplane.cluster, secret.Name(controlplane.cluster.Name, secret.Kubeconfig), controlplane.kcp.Spec.KubeconfigSecretMetadata)
+			if err != nil {
+				return err
+			}
 		} else {
 			return err
 		}

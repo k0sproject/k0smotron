@@ -252,7 +252,7 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 			Reason:  bootstrapv2.WaitingForControlPlaneInitializationReason,
 			Message: "Control plane endpoint is not set",
 		})
-		return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 30}, nil
+		return ctrl.Result{RequeueAfter: time.Second * 30}, nil
 	}
 
 	machines, err := collections.GetFilteredMachinesForCluster(ctx, c.Client, cluster, collections.ControlPlaneMachines(cluster.Name), collections.ActiveMachines)
@@ -275,7 +275,7 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 			Reason:  bootstrapv2.WaitingForInfrastructureInitializationReason,
 			Message: "No control plane machines found, waiting for machines to be created",
 		})
-		return ctrl.Result{Requeue: true}, nil
+		return util.RequeueWithBackoff(), nil
 	}
 	scope.machines = machines
 

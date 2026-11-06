@@ -814,7 +814,7 @@ func (scope *kmcScope) reconcileStatefulSet(ctx context.Context, kmc *km.Cluster
 
 	if foundStatefulSet.Status.ReadyReplicas == 0 {
 		logger.Info(fmt.Sprintf("StatefulSet '%s' has no ready replicas yet (%d/%d)", foundStatefulSet.GetName(), foundStatefulSet.Status.ReadyReplicas, kmc.Spec.Replicas))
-		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, nil
+		return ctrl.Result{RequeueAfter: time.Minute}, nil
 	}
 
 	return ctrl.Result{}, nil

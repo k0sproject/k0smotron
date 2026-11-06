@@ -146,7 +146,7 @@ func (s *CAPIDockerClusterClassSuite) TestCAPIDockerClusterClass() {
 	s.T().Log("cluster objects applied, waiting for cluster to be ready")
 
 	var localPort int
-	// nolint:staticcheck
+	//nolint:staticcheck // Deprecated, but PollUntilContextCancel returns a different error on timeout.
 	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
 		localPort, _ = getLBPort(ctx, "docker-test-cluster-lb")
 		return localPort > 0, nil
@@ -158,7 +158,7 @@ func (s *CAPIDockerClusterClassSuite) TestCAPIDockerClusterClass() {
 	s.Require().NoError(err)
 
 	s.T().Log("waiting for control-plane")
-	// nolint:staticcheck
+	//nolint:staticcheck // Deprecated, but PollUntilContextCancel returns a different error on timeout.
 	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
 		b, _ := s.client.RESTClient().
 			Get().
@@ -170,7 +170,7 @@ func (s *CAPIDockerClusterClassSuite) TestCAPIDockerClusterClass() {
 	s.Require().NoError(err)
 
 	s.T().Log("waiting for worker nodes")
-	// nolint:staticcheck
+	//nolint:staticcheck // Deprecated, but PollUntilContextCancel returns a different error on timeout.
 	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
 		nodes, _ := kmcKC.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
 		return len(nodes.Items) == 2, nil
@@ -189,7 +189,7 @@ func (s *CAPIDockerClusterClassSuite) TestCAPIDockerClusterClass() {
 
 	kcpName := kcpList.Items[0].Name
 	// Wait to see the controlplane status is correct
-	// nolint:staticcheck
+	//nolint:staticcheck // Deprecated, but PollUntilContextCancel returns a different error on timeout.
 	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
 		kcp, err := util.GetK0sControlPlane(ctx, s.client, kcpName, "default")
 		if err != nil {
@@ -217,7 +217,7 @@ func (s *CAPIDockerClusterClassSuite) TestCAPIDockerClusterClass() {
 	s.Require().NoError(err)
 
 	s.T().Log("waiting for control-plane nodes to be updated")
-	// nolint:staticcheck
+	//nolint:staticcheck // Deprecated, but PollUntilContextCancel returns a different error on timeout.
 	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
 		cp, err := util.GetK0sControlPlane(ctx, s.client, kcpName, "default")
 		if err != nil {
