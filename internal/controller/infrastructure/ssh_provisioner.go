@@ -127,7 +127,8 @@ func (p *SSHProvisioner) Provision(ctx context.Context) error {
 	}
 	defer connection.Disconnect()
 	// rig runs commands without a context, so closing the connection is what stops a hung one.
-	defer context.AfterFunc(ctx, connection.SSH.Disconnect)()
+	stopDisconnectOnCancel := context.AfterFunc(ctx, connection.SSH.Disconnect)
+	defer stopDisconnectOnCancel()
 
 	// If sudo is required, run commands with elevated permissions and use the
 	// sudo-capable filesystem for uploads.
