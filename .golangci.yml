@@ -12,6 +12,13 @@ linters:
     - goheader
     - revive
     - modernize
+    - asasalint
+    - bidichk
+    - bodyclose
+    - durationcheck
+    - gocheckcompilerdirectives
+    - nilnesserr
+    - reassign
     - govet
     - recvcheck
     - errchkjson
@@ -24,13 +31,21 @@ linters:
     - contextcheck
     - gosec
     - staticcheck
+    - loggercheck
+    - asciicheck
+    - gochecksumtype
     - ineffassign
     - wastedassign
     - unused
     - unparam
     - gocritic
     - forcetypeassert
+    - usetesting
     - usestdlibvars
+    - exptostd
+    - errname
+    - copyloopvar
+    - canonicalheader
     - misspell
     - mirror
     - intrange
@@ -113,6 +128,12 @@ linters:
         - name: unused-parameter
         - name: unreachable-code
         - name: redefines-builtin-id
+        - name: constant-logical-expr
+        - name: datarace
+        - name: forbidden-call-in-wg-go
+        - name: identical-branches
+        - name: time-equal
+        - name: unconditional-recursion
         - name: defer
         - name: modifies-value-receiver
         - name: deep-exit
