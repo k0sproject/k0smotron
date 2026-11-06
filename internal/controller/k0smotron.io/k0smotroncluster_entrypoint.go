@@ -165,6 +165,7 @@ apk add --no-cache libcap
 # Run the k0s controller
 k0s controller {{ .K0sControllerArgs }}
 `
+	//nolint:dupword // Shell function, sed calls follow each other.
 	universalSedInplace = `
 sedi() {
     # Try GNU sed

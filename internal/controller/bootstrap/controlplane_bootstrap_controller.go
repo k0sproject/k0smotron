@@ -1087,6 +1087,7 @@ command="/etc/bin/k0sleave.sh"
 		{
 			Path:        fmt.Sprintf("%s/k0sleave-sysv", workingDir),
 			Permissions: "0644",
+			//nolint:dupword // Shell script, its nested blocks end in fi fi.
 			Content: `#!/bin/sh
 # For RedHat and cousins:
 # chkconfig: - 99 01
