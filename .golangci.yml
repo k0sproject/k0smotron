@@ -26,6 +26,7 @@ linters:
     - staticcheck
     - ineffassign
     - wastedassign
+    - unused
   settings:
     forbidigo:
       analyze-types: false
