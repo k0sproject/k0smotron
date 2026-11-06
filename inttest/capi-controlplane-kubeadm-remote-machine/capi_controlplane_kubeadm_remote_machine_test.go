@@ -281,7 +281,7 @@ func (s *KubeadmRemoteMachineSuite) installCNI(ctx context.Context) {
 	s.Require().NoError(err)
 	resp, err := http.DefaultClient.Do(req)
 	s.Require().NoError(err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	s.Require().Equal(http.StatusOK, resp.StatusCode, "failed to download Calico manifest from %s", manifestURL)
 
 	manifest, err := io.ReadAll(resp.Body)

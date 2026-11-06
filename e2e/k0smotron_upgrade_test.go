@@ -202,13 +202,14 @@ func k0smotronUpgradeSpec(t *testing.T) {
 
 		fmt.Println(fmt.Sprintf("Upgrading the management cluster to k0smotron %s", latestK0smotronStableMinor))
 
-		mothership.UpgradeManagementClusterAndWait(ctx, clusterctl.UpgradeManagementClusterAndWaitInput{
+		err = mothership.UpgradeManagementClusterAndWait(ctx, clusterctl.UpgradeManagementClusterAndWaitInput{
 			ClusterctlConfigPath:  clusterctlConfigPath,
 			ClusterProxy:          managementClusterProxy,
 			BootstrapProviders:    k0smotronVersion,
 			ControlPlaneProviders: k0smotronVersion,
 			LogFolder:             managementClusterLogFolder,
 		}, e2eutil.GetInterval(e2eConfig, "bootstrap", "wait-deployment-available"))
+		require.NoError(t, err, "upgrading the management cluster")
 
 		controlPlane, err := e2eutil.DiscoveryAndWaitForControlPlaneInitialized(ctx, capiframework.DiscoveryAndWaitForControlPlaneInitializedInput{
 			Lister:  managementClusterProxy.GetClient(),
@@ -234,13 +235,14 @@ func k0smotronUpgradeSpec(t *testing.T) {
 
 	fmt.Println("Upgrading the management cluster to development version of k0smotron")
 	// We apply development version of the providers to the management cluster.
-	mothership.UpgradeManagementClusterAndWait(ctx, clusterctl.UpgradeManagementClusterAndWaitInput{
+	err = mothership.UpgradeManagementClusterAndWait(ctx, clusterctl.UpgradeManagementClusterAndWaitInput{
 		ClusterctlConfigPath: clusterctlConfigPath,
 		ClusterProxy:         managementClusterProxy,
 		// TODO: make contract configurable
 		Contract:  clusterv1.GroupVersion.Version,
 		LogFolder: managementClusterLogFolder,
 	}, e2eutil.GetInterval(e2eConfig, "bootstrap", "wait-deployment-available"))
+	require.NoError(t, err, "upgrading the management cluster")
 
 	// Wait a few minutes for any unexpected change in the development version to be applied in the workload cluster.
 	time.Sleep(5 * time.Minute)

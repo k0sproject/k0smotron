@@ -160,16 +160,14 @@ spec:
   api:
     port: 6443`
 
-			tmpFile, err := os.CreateTemp("", "k0s-test-*.yaml")
+			tmpFile, err := os.CreateTemp(t.TempDir(), "k0s-test-*.yaml")
 			require.NoError(t, err)
-			t.Cleanup(func() { os.Remove(tmpFile.Name()) })
 
 			_, err = tmpFile.WriteString(testK0sConfig)
 			require.NoError(t, err)
 			require.NoError(t, tmpFile.Close())
 
-			os.Setenv("K0SMOTRON_KINE_DATASOURCE_URL", tc.kineDataSourceURL)
-			t.Cleanup(func() { os.Unsetenv("K0SMOTRON_KINE_DATASOURCE_URL") })
+			t.Setenv("K0SMOTRON_KINE_DATASOURCE_URL", tc.kineDataSourceURL)
 
 			actualSediCmd := strings.Replace(sedLine, "/etc/k0s/k0s.yaml", tmpFile.Name(), 1)
 

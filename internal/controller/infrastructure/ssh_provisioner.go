@@ -335,9 +335,13 @@ func (p *SSHProvisioner) uploadFile(runner commandRunner, execOpts []exec.Option
 	if err != nil {
 		return fmt.Errorf("failed to open remote file for writing: %w", err)
 	}
-	defer destFile.Close()
 	if _, err := destFile.Write(content); err != nil {
+		_ = destFile.Close()
 		return fmt.Errorf("failed to write to remote file: %w", err)
+	}
+	// Close the file before the chown, and report a close error instead of dropping it.
+	if err := destFile.Close(); err != nil {
+		return fmt.Errorf("failed to close remote file: %w", err)
 	}
 
 	// rigfs.Fsys cannot change ownership, so shell out for it. Done after the

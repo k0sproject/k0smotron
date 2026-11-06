@@ -16,6 +16,7 @@ linters:
     - recvcheck
     - errchkjson
     - exhaustive
+    - errcheck
   settings:
     forbidigo:
       analyze-types: false
