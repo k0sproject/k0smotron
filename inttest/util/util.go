@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-//nolint:revive
 package util
 
 import (
@@ -352,7 +351,7 @@ func GetNodeAddress(ctx context.Context, kc *kubernetes.Clientset, node string) 
 func WaitForSecret(ctx context.Context, kc *kubernetes.Clientset, name string, namespace string) error {
 	// Use apimachinery wait directly as the k0s common polls bit too much and sometimes it results into client side throttling
 	// Since it's marked deprecated in a wrong way, there's no replacement for it yet, we'll disable the linter for now
-	// nolint:staticcheck
+	//nolint:staticcheck // Deprecated, but PollUntilContextCancel returns a different error on timeout.
 	return wait.PollImmediateUntilWithContext(ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
 		secret, err := kc.CoreV1().Secrets(namespace).Get(ctx, name, metav1.GetOptions{})
 
