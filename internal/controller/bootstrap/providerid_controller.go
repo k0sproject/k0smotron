@@ -204,7 +204,8 @@ func resourceBelongsToK0sWorkerNode() predicate.Funcs {
 }
 
 func processIfResourceBelongsToK0sWorkerNode(logger logr.Logger, obj client.Object) bool {
-	machine := obj.(*clusterv1.Machine)
+	// The controller only watches Machines.
+	machine, _ := obj.(*clusterv1.Machine)
 
 	// Skip non-k0smotron managed machines
 	if machine.Spec.Bootstrap.ConfigRef.Kind != "K0sControllerConfig" && machine.Spec.Bootstrap.ConfigRef.Kind != "K0sWorkerConfig" &&

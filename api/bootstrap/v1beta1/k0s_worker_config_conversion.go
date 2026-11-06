@@ -27,7 +27,7 @@ var _ conversion.Convertible = &K0sWorkerConfigTemplate{}
 
 // ConvertTo converts this version (v1beta1) to the hub version (v1beta2).
 func (k *K0sWorkerConfig) ConvertTo(dstRaw conversion.Hub) error {
-	dst := dstRaw.(*v1beta2.K0sWorkerConfig)
+	dst, _ := dstRaw.(*v1beta2.K0sWorkerConfig)
 	dst.ObjectMeta = k.ObjectMeta
 	dst.Spec = k0sWorkerConfigV1beta1ToV1beta2Spec(k.Spec)
 	dst.Status = v1beta2.K0sWorkerConfigStatus{
@@ -73,7 +73,7 @@ func k0sWorkerConfigV1beta1ToV1beta2Spec(spec K0sWorkerConfigSpec) v1beta2.K0sWo
 
 // ConvertFrom converts from the hub version (v1beta2) to this version (v1beta1).
 func (k *K0sWorkerConfig) ConvertFrom(srcRaw conversion.Hub) error {
-	src := srcRaw.(*v1beta2.K0sWorkerConfig)
+	src, _ := srcRaw.(*v1beta2.K0sWorkerConfig)
 	k.ObjectMeta = src.ObjectMeta
 
 	k.Spec = k0sWorkerConfigV1beta2ToV1beta1Spec(src.Spec)
@@ -110,7 +110,7 @@ func k0sWorkerConfigV1beta2ToV1beta1Spec(spec v1beta2.K0sWorkerConfigSpec) K0sWo
 
 // ConvertTo converts this version (v1beta1) to the hub version (v1beta2).
 func (kwcv1beta1 *K0sWorkerConfigTemplate) ConvertTo(dstRaw conversion.Hub) error {
-	dst := dstRaw.(*v1beta2.K0sWorkerConfigTemplate)
+	dst, _ := dstRaw.(*v1beta2.K0sWorkerConfigTemplate)
 	dst.ObjectMeta = kwcv1beta1.ObjectMeta
 	dst.Spec = v1beta2.K0sWorkerConfigTemplateSpec{
 		Template: v1beta2.K0sWorkerConfigTemplateResource{
@@ -123,7 +123,7 @@ func (kwcv1beta1 *K0sWorkerConfigTemplate) ConvertTo(dstRaw conversion.Hub) erro
 
 // ConvertFrom converts from the hub version (v1beta2) to this version (v1beta1).
 func (kwcv1beta1 *K0sWorkerConfigTemplate) ConvertFrom(srcRaw conversion.Hub) error {
-	src := srcRaw.(*v1beta2.K0sWorkerConfigTemplate)
+	src, _ := srcRaw.(*v1beta2.K0sWorkerConfigTemplate)
 	kwcv1beta1.ObjectMeta = src.ObjectMeta
 	kwcv1beta1.Spec = K0sWorkerConfigTemplateSpec{
 		Template: K0sWorkerConfigTemplateResource{

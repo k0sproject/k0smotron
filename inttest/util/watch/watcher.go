@@ -137,7 +137,8 @@ func itemsFromList[L metav1.ListInterface, I any]() (func(L) []I, error) {
 	return func(l L) []I {
 		// The compatibility of the types has been checked above.
 		// This will not panic at runtime.
-		return reflect.ValueOf(l).Elem().FieldByIndex(index).Interface().([]I)
+		items, _ := reflect.TypeAssert[[]I](reflect.ValueOf(l).Elem().FieldByIndex(index))
+		return items
 	}, nil
 }
 

@@ -92,6 +92,9 @@ linters:
         - name: defer
         - name: modifies-value-receiver
         - name: deep-exit
+        - name: unchecked-type-assertion
+          arguments:
+            - acceptIgnoredAssertionResult: true
   exclusions:
     generated: strict
     rules:

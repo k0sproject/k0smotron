@@ -26,7 +26,7 @@ var _ conversion.Convertible = &PooledRemoteMachine{}
 
 // ConvertTo converts this version (v1beta1) to the hub version (v1beta2).
 func (rm *RemoteMachine) ConvertTo(dstRaw conversion.Hub) error {
-	dst := dstRaw.(*v1beta2.RemoteMachine)
+	dst, _ := dstRaw.(*v1beta2.RemoteMachine)
 	dst.ObjectMeta = *rm.ObjectMeta.DeepCopy()
 	dst.Spec = convertRemoteMachineSpecV1beta1ToV1beta2(rm.Spec)
 	dst.Status = v1beta2.RemoteMachineStatus{
@@ -42,7 +42,7 @@ func (rm *RemoteMachine) ConvertTo(dstRaw conversion.Hub) error {
 
 // ConvertFrom converts from the hub version (v1beta2) to this version.
 func (rm *RemoteMachine) ConvertFrom(srcRaw conversion.Hub) error {
-	src := srcRaw.(*v1beta2.RemoteMachine)
+	src, _ := srcRaw.(*v1beta2.RemoteMachine)
 	rm.ObjectMeta = src.ObjectMeta
 	rm.Spec = convertRemoteMachineSpecV1beta2ToV1beta1(src.Spec)
 	ready := false
@@ -61,7 +61,7 @@ func (rm *RemoteMachine) ConvertFrom(srcRaw conversion.Hub) error {
 
 // ConvertTo converts this version (v1beta1) to the hub version (v1beta2).
 func (prm *PooledRemoteMachine) ConvertTo(dstRaw conversion.Hub) error {
-	dst := dstRaw.(*v1beta2.PooledRemoteMachine)
+	dst, _ := dstRaw.(*v1beta2.PooledRemoteMachine)
 	dst.ObjectMeta = *prm.ObjectMeta.DeepCopy()
 	dst.Spec = convertPooledRemoteMachineSpecV1beta1ToV1beta2(prm.Spec)
 	dst.Status = *prm.Status.DeepCopy()
@@ -70,7 +70,7 @@ func (prm *PooledRemoteMachine) ConvertTo(dstRaw conversion.Hub) error {
 
 // ConvertFrom converts from the hub version (v1beta2) to this version.
 func (prm *PooledRemoteMachine) ConvertFrom(srcRaw conversion.Hub) error {
-	src := srcRaw.(*v1beta2.PooledRemoteMachine)
+	src, _ := srcRaw.(*v1beta2.PooledRemoteMachine)
 	prm.ObjectMeta = src.ObjectMeta
 	prm.Spec = convertPooledRemoteMachineSpecV1beta2ToV1beta1(src.Spec)
 	prm.Status = *src.Status.DeepCopy()

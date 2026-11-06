@@ -28,7 +28,7 @@ var _ conversion.Convertible = &K0sControlPlaneTemplate{}
 
 // ConvertTo converts this version (v1beta1) to the hub version (v1beta2).
 func (kcpv1beta1 *K0sControlPlane) ConvertTo(dstRaw conversion.Hub) error {
-	dst := dstRaw.(*v1beta2.K0sControlPlane)
+	dst, _ := dstRaw.(*v1beta2.K0sControlPlane)
 	dst.ObjectMeta = *kcpv1beta1.ObjectMeta.DeepCopy()
 	dst.Spec = k0sControlPlaneSpecV1beta1ToV1beta2(kcpv1beta1.Spec)
 	dst.Status = v1beta2.K0sControlPlaneStatus{
@@ -59,7 +59,7 @@ func k0sControlPlaneSpecV1beta1ToV1beta2(spec K0sControlPlaneSpec) v1beta2.K0sCo
 
 // ConvertFrom converts from the hub version (v1beta2) to this version.
 func (kcpv1beta1 *K0sControlPlane) ConvertFrom(srcRaw conversion.Hub) error {
-	src := srcRaw.(*v1beta2.K0sControlPlane)
+	src, _ := srcRaw.(*v1beta2.K0sControlPlane)
 	kcpv1beta1.ObjectMeta = *src.ObjectMeta.DeepCopy()
 
 	configSpec := bootstrapv1.ConvertK0sConfigSpecV1beta2ToV1beta1(&src.Spec.K0sConfigSpec)
@@ -98,7 +98,7 @@ func (kcpv1beta1 *K0sControlPlane) ConvertFrom(srcRaw conversion.Hub) error {
 
 // ConvertTo converts this version (v1beta1) to the hub version (v1beta2 - self).
 func (kcpv1beta1 *K0sControlPlaneTemplate) ConvertTo(dstRaw conversion.Hub) error {
-	dst := dstRaw.(*v1beta2.K0sControlPlaneTemplate)
+	dst, _ := dstRaw.(*v1beta2.K0sControlPlaneTemplate)
 	dst.ObjectMeta = *kcpv1beta1.ObjectMeta.DeepCopy()
 
 	configSpec := bootstrapv1.ConvertK0sConfigSpecV1beta1ToV1beta2(&kcpv1beta1.Spec.Template.Spec.K0sConfigSpec)
@@ -118,7 +118,7 @@ func (kcpv1beta1 *K0sControlPlaneTemplate) ConvertTo(dstRaw conversion.Hub) erro
 
 // ConvertFrom converts from the hub version (v1beta2 - self) to this version.
 func (kcpv1beta1 *K0sControlPlaneTemplate) ConvertFrom(srcRaw conversion.Hub) error {
-	src := srcRaw.(*v1beta2.K0sControlPlaneTemplate)
+	src, _ := srcRaw.(*v1beta2.K0sControlPlaneTemplate)
 	kcpv1beta1.ObjectMeta = *src.ObjectMeta.DeepCopy()
 	configSpec := bootstrapv1.ConvertK0sConfigSpecV1beta2ToV1beta1(&src.Spec.Template.Spec.K0sConfigSpec)
 	kcpv1beta1.Spec = K0sControlPlaneTemplateSpec{

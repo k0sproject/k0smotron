@@ -310,7 +310,7 @@ func (e *Environment) CleanupAndWait(ctx context.Context, objs ...client.Object)
 			continue
 		}
 
-		oCopy := o.DeepCopyObject().(client.Object)
+		oCopy, _ := o.DeepCopyObject().(client.Object)
 		key := client.ObjectKeyFromObject(o)
 		err := wait.ExponentialBackoff(
 			cacheSyncBackoff,
