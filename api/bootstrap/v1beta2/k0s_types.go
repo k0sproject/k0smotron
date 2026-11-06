@@ -522,12 +522,12 @@ func (c *K0sWorkerConfig) GetJoinTokenPath() string {
 
 // appliesAppend reports whether the format can add to a file another entry in the
 // same list already writes. Ignition cannot, it emits one entry per file.
-func (p ProvisionerSpec) appliesAppend() bool {
+func (p *ProvisionerSpec) appliesAppend() bool {
 	return p.Type != provisioner.IgnitionProvisioningFormat
 }
 
 // appliesOwner reports whether the selected provisioner writes file ownership.
-func (p ProvisionerSpec) appliesOwner() bool {
+func (p *ProvisionerSpec) appliesOwner() bool {
 	if p.Platform == PlatformWindows {
 		return false
 	}
