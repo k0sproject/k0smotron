@@ -379,6 +379,11 @@ func (c *K0smotronController) reconcile(ctx context.Context, cluster *clusterv1.
 		return ctrl.Result{}, fmt.Errorf("failed to enrich k0s config with cluster data for K0smotronControlPlane %s/%s", kcp.Namespace, kcp.Name)
 	}
 
+	specHash, err := generateClusterSpecHashWithoutExternalAddress(kcp.Spec)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
 	desiredK0smotronCluster := kapi.Cluster{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: kapi.GroupVersion.String(),
@@ -391,7 +396,7 @@ func (c *K0smotronController) reconcile(ctx context.Context, cluster *clusterv1.
 				clusterv1.ClusterNameLabel: cluster.Name,
 			},
 			Annotations: map[string]string{
-				kapi.AnnotationKeyClusterSpecHash: generateClusterSpecHashWithoutExternalAddress(kcp.Spec),
+				kapi.AnnotationKeyClusterSpecHash: specHash,
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				{
@@ -450,7 +455,10 @@ func (c *K0smotronController) reconcile(ctx context.Context, cluster *clusterv1.
 // The comparison is done by first checking the hash of the specification stored in the annotation, if present. If the annotation is not present, it falls back to a deprecated
 // logic that compares the specs while ignoring the fields that are expected to be modified by the K0smotron Cluster controller.
 func isClusterSpecSynced(kmc kapi.Cluster, kcpSpec kapi.ClusterSpec) (isSynced bool, kcpSpecHash string, err error) {
-	kcpSpecHash = generateClusterSpecHashWithoutExternalAddress(kcpSpec)
+	kcpSpecHash, err = generateClusterSpecHashWithoutExternalAddress(kcpSpec)
+	if err != nil {
+		return false, "", err
+	}
 	// Use the hash annotation if present, as it is the most reliable way to detect spec changes.
 	if clusterSpecHash, ok := kmc.GetAnnotations()[kapi.AnnotationKeyClusterSpecHash]; ok {
 		// Compare separately at the ExternalAddress because it is a field that is expected to be updated by the controller after the creation of the Cluster, so it is not
@@ -1077,13 +1085,16 @@ func (c *K0smotronController) getKmcScope(ctx context.Context, kcp *cpv1beta2.K0
 // creation and must not be a reason to mark the specs as not synced.
 // JSON marshaling is used instead of spew-based hashing so that fields with omitempty and zero/nil values are omitted from the hash input,
 // making the hash stable when new optional fields are added to ClusterSpec.
-func generateClusterSpecHashWithoutExternalAddress(spec kapi.ClusterSpec) string {
+func generateClusterSpecHashWithoutExternalAddress(spec kapi.ClusterSpec) (string, error) {
 	normalizedSpec := spec.DeepCopy()
 	normalizedSpec.ExternalAddress = ""
-	data, _ := json.Marshal(normalizedSpec)
+	data, err := json.Marshal(normalizedSpec)
+	if err != nil {
+		return "", fmt.Errorf("failed to encode the cluster spec for its hash: %w", err)
+	}
 	hasher := fnv.New32a()
 	_, _ = hasher.Write(data)
-	return rand.SafeEncodeString(fmt.Sprint(hasher.Sum32()))
+	return rand.SafeEncodeString(fmt.Sprint(hasher.Sum32())), nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
