@@ -530,7 +530,8 @@ func TestProvisionStopsWhenTheContextEnds(t *testing.T) {
 		}
 	}()
 
-	addr := listener.Addr().(*net.TCPAddr)
+	addr, ok := listener.Addr().(*net.TCPAddr)
+	require.True(t, ok, "listener address is a %T", listener.Addr())
 	p := &SSHProvisioner{
 		cloudInit: &provisioner.InputProvisionData{Commands: []string{"sleep infinity"}},
 		machine: &api.RemoteMachine{Spec: api.RemoteMachineSpec{

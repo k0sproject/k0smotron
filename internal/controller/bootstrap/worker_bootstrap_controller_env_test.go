@@ -830,10 +830,16 @@ type pausedObject interface {
 func requireCached(t *testing.T, objs ...client.Object) {
 	t.Helper()
 
+	copies := make([]client.Object, len(objs))
+	for i, obj := range objs {
+		into, ok := obj.DeepCopyObject().(client.Object)
+		require.True(t, ok, "%T does not deep copy into a client.Object", obj)
+		copies[i] = into
+	}
+
 	require.Eventually(t, func() bool {
-		for _, obj := range objs {
-			into := obj.DeepCopyObject().(client.Object)
-			if err := testEnv.Get(ctx, client.ObjectKeyFromObject(obj), into); err != nil {
+		for i, obj := range objs {
+			if err := testEnv.Get(ctx, client.ObjectKeyFromObject(obj), copies[i]); err != nil {
 				return false
 			}
 		}

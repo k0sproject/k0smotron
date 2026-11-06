@@ -310,7 +310,11 @@ func (e *Environment) CleanupAndWait(ctx context.Context, objs ...client.Object)
 			continue
 		}
 
-		oCopy := o.DeepCopyObject().(client.Object)
+		oCopy, ok := o.DeepCopyObject().(client.Object)
+		if !ok {
+			errs = append(errs, fmt.Errorf("%T does not deep copy into a client.Object", o))
+			continue
+		}
 		key := client.ObjectKeyFromObject(o)
 		err := wait.ExponentialBackoff(
 			cacheSyncBackoff,

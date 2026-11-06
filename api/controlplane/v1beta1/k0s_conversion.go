@@ -17,6 +17,8 @@ limitations under the License.
 package v1beta1
 
 import (
+	"fmt"
+
 	bootstrapv1 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta1"
 	"github.com/k0sproject/k0smotron/v2/api/controlplane/v1beta2"
 	"k8s.io/utils/ptr"
@@ -28,7 +30,10 @@ var _ conversion.Convertible = &K0sControlPlaneTemplate{}
 
 // ConvertTo converts this version (v1beta1) to the hub version (v1beta2).
 func (kcpv1beta1 *K0sControlPlane) ConvertTo(dstRaw conversion.Hub) error {
-	dst := dstRaw.(*v1beta2.K0sControlPlane)
+	dst, ok := dstRaw.(*v1beta2.K0sControlPlane)
+	if !ok {
+		return fmt.Errorf("expected *v1beta2.K0sControlPlane, got %T", dstRaw)
+	}
 	dst.ObjectMeta = *kcpv1beta1.ObjectMeta.DeepCopy()
 	dst.Spec = k0sControlPlaneSpecV1beta1ToV1beta2(kcpv1beta1.Spec)
 	dst.Status = v1beta2.K0sControlPlaneStatus{
@@ -59,7 +64,10 @@ func k0sControlPlaneSpecV1beta1ToV1beta2(spec K0sControlPlaneSpec) v1beta2.K0sCo
 
 // ConvertFrom converts from the hub version (v1beta2) to this version.
 func (kcpv1beta1 *K0sControlPlane) ConvertFrom(srcRaw conversion.Hub) error {
-	src := srcRaw.(*v1beta2.K0sControlPlane)
+	src, ok := srcRaw.(*v1beta2.K0sControlPlane)
+	if !ok {
+		return fmt.Errorf("expected *v1beta2.K0sControlPlane, got %T", srcRaw)
+	}
 	kcpv1beta1.ObjectMeta = *src.ObjectMeta.DeepCopy()
 
 	configSpec := bootstrapv1.ConvertK0sConfigSpecV1beta2ToV1beta1(&src.Spec.K0sConfigSpec)
@@ -98,7 +106,10 @@ func (kcpv1beta1 *K0sControlPlane) ConvertFrom(srcRaw conversion.Hub) error {
 
 // ConvertTo converts this version (v1beta1) to the hub version (v1beta2 - self).
 func (kcpv1beta1 *K0sControlPlaneTemplate) ConvertTo(dstRaw conversion.Hub) error {
-	dst := dstRaw.(*v1beta2.K0sControlPlaneTemplate)
+	dst, ok := dstRaw.(*v1beta2.K0sControlPlaneTemplate)
+	if !ok {
+		return fmt.Errorf("expected *v1beta2.K0sControlPlaneTemplate, got %T", dstRaw)
+	}
 	dst.ObjectMeta = *kcpv1beta1.ObjectMeta.DeepCopy()
 
 	configSpec := bootstrapv1.ConvertK0sConfigSpecV1beta1ToV1beta2(&kcpv1beta1.Spec.Template.Spec.K0sConfigSpec)
@@ -118,7 +129,10 @@ func (kcpv1beta1 *K0sControlPlaneTemplate) ConvertTo(dstRaw conversion.Hub) erro
 
 // ConvertFrom converts from the hub version (v1beta2 - self) to this version.
 func (kcpv1beta1 *K0sControlPlaneTemplate) ConvertFrom(srcRaw conversion.Hub) error {
-	src := srcRaw.(*v1beta2.K0sControlPlaneTemplate)
+	src, ok := srcRaw.(*v1beta2.K0sControlPlaneTemplate)
+	if !ok {
+		return fmt.Errorf("expected *v1beta2.K0sControlPlaneTemplate, got %T", srcRaw)
+	}
 	kcpv1beta1.ObjectMeta = *src.ObjectMeta.DeepCopy()
 	configSpec := bootstrapv1.ConvertK0sConfigSpecV1beta2ToV1beta1(&src.Spec.Template.Spec.K0sConfigSpec)
 	kcpv1beta1.Spec = K0sControlPlaneTemplateSpec{

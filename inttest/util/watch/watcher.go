@@ -135,9 +135,12 @@ func itemsFromList[L metav1.ListInterface, I any]() (func(L) []I, error) {
 	}
 
 	return func(l L) []I {
-		// The compatibility of the types has been checked above.
-		// This will not panic at runtime.
-		return reflect.ValueOf(l).Elem().FieldByIndex(index).Interface().([]I)
+		// The compatibility of the types has been checked above, so this cannot fail.
+		items, ok := reflect.TypeAssert[[]I](reflect.ValueOf(l).Elem().FieldByIndex(index))
+		if !ok {
+			panic(fmt.Sprintf("the Items field of %T is not a []%T", l, *new(I)))
+		}
+		return items
 	}, nil
 }
 

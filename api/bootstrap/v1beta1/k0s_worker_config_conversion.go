@@ -17,6 +17,7 @@ limitations under the License.
 package v1beta1
 
 import (
+	"fmt"
 	"github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
 	"github.com/k0sproject/k0smotron/v2/internal/provisioner"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
@@ -27,7 +28,10 @@ var _ conversion.Convertible = &K0sWorkerConfigTemplate{}
 
 // ConvertTo converts this version (v1beta1) to the hub version (v1beta2).
 func (k *K0sWorkerConfig) ConvertTo(dstRaw conversion.Hub) error {
-	dst := dstRaw.(*v1beta2.K0sWorkerConfig)
+	dst, ok := dstRaw.(*v1beta2.K0sWorkerConfig)
+	if !ok {
+		return fmt.Errorf("expected *v1beta2.K0sWorkerConfig, got %T", dstRaw)
+	}
 	dst.ObjectMeta = k.ObjectMeta
 	dst.Spec = k0sWorkerConfigV1beta1ToV1beta2Spec(k.Spec)
 	dst.Status = v1beta2.K0sWorkerConfigStatus{
@@ -73,7 +77,10 @@ func k0sWorkerConfigV1beta1ToV1beta2Spec(spec K0sWorkerConfigSpec) v1beta2.K0sWo
 
 // ConvertFrom converts from the hub version (v1beta2) to this version (v1beta1).
 func (k *K0sWorkerConfig) ConvertFrom(srcRaw conversion.Hub) error {
-	src := srcRaw.(*v1beta2.K0sWorkerConfig)
+	src, ok := srcRaw.(*v1beta2.K0sWorkerConfig)
+	if !ok {
+		return fmt.Errorf("expected *v1beta2.K0sWorkerConfig, got %T", srcRaw)
+	}
 	k.ObjectMeta = src.ObjectMeta
 
 	k.Spec = k0sWorkerConfigV1beta2ToV1beta1Spec(src.Spec)
@@ -110,7 +117,10 @@ func k0sWorkerConfigV1beta2ToV1beta1Spec(spec v1beta2.K0sWorkerConfigSpec) K0sWo
 
 // ConvertTo converts this version (v1beta1) to the hub version (v1beta2).
 func (kwcv1beta1 *K0sWorkerConfigTemplate) ConvertTo(dstRaw conversion.Hub) error {
-	dst := dstRaw.(*v1beta2.K0sWorkerConfigTemplate)
+	dst, ok := dstRaw.(*v1beta2.K0sWorkerConfigTemplate)
+	if !ok {
+		return fmt.Errorf("expected *v1beta2.K0sWorkerConfigTemplate, got %T", dstRaw)
+	}
 	dst.ObjectMeta = kwcv1beta1.ObjectMeta
 	dst.Spec = v1beta2.K0sWorkerConfigTemplateSpec{
 		Template: v1beta2.K0sWorkerConfigTemplateResource{
@@ -123,7 +133,10 @@ func (kwcv1beta1 *K0sWorkerConfigTemplate) ConvertTo(dstRaw conversion.Hub) erro
 
 // ConvertFrom converts from the hub version (v1beta2) to this version (v1beta1).
 func (kwcv1beta1 *K0sWorkerConfigTemplate) ConvertFrom(srcRaw conversion.Hub) error {
-	src := srcRaw.(*v1beta2.K0sWorkerConfigTemplate)
+	src, ok := srcRaw.(*v1beta2.K0sWorkerConfigTemplate)
+	if !ok {
+		return fmt.Errorf("expected *v1beta2.K0sWorkerConfigTemplate, got %T", srcRaw)
+	}
 	kwcv1beta1.ObjectMeta = src.ObjectMeta
 	kwcv1beta1.Spec = K0sWorkerConfigTemplateSpec{
 		Template: K0sWorkerConfigTemplateResource{
