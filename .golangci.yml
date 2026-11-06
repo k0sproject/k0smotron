@@ -90,6 +90,7 @@ linters:
         - name: unreachable-code
         - name: redefines-builtin-id
         - name: defer
+        - name: modifies-value-receiver
   exclusions:
     generated: strict
     rules:
