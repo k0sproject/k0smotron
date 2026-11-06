@@ -453,7 +453,7 @@ func TestDeprecatedIsK0sConfigChangedWithNoK0sConfig(t *testing.T) {
 		}
 		bootstrapConfig := &bootstrapv2.K0sControllerConfig{
 			Spec: bootstrapv2.K0sControllerConfigSpec{
-				Version:       "v1.33.0+k0s.0",
+				Version:       "v1.33.0+k0s.0", //nolint:staticcheck // Covers objects that still set the deprecated field.
 				K0sConfigSpec: &bootstrapv2.K0sConfigSpec{},
 			},
 		}
@@ -476,7 +476,7 @@ func TestDeprecatedIsK0sConfigChangedWithNoK0sConfig(t *testing.T) {
 		}
 		bootstrapConfig := &bootstrapv2.K0sControllerConfig{
 			Spec: bootstrapv2.K0sControllerConfigSpec{
-				Version:       "v1.33.0+k0s.0",
+				Version:       "v1.33.0+k0s.0", //nolint:staticcheck // Covers objects that still set the deprecated field.
 				K0sConfigSpec: &bootstrapv2.K0sConfigSpec{},
 			},
 		}

@@ -270,11 +270,11 @@ func Test_resolveK0sWorkerVersion(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			config := &bootstrapv2.K0sWorkerConfig{
-				Spec: bootstrapv2.K0sWorkerConfigSpec{Version: tt.configVersion},
+				Spec: bootstrapv2.K0sWorkerConfigSpec{Version: tt.configVersion}, //nolint:staticcheck // Covers objects that still set the deprecated field.
 			}
 			require.Equal(t, tt.want, resolveK0sWorkerVersion(config, tt.configOwner))
 			// The deprecated field must not be mutated, as the config gets patched back to the API.
-			require.Equal(t, tt.configVersion, config.Spec.Version)
+			require.Equal(t, tt.configVersion, config.Spec.Version) //nolint:staticcheck // Covers objects that still set the deprecated field.
 		})
 	}
 }

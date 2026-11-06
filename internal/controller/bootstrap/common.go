@@ -112,7 +112,7 @@ func mergeExtraArgs(configArgs []string, configOwner *bsutil.ConfigOwner, isWork
 		}
 	}
 	if len(kubeletExtraArgs) > 0 {
-		args = append(args, fmt.Sprintf(`--kubelet-extra-args="%s"`, strings.Join(kubeletExtraArgs, " ")))
+		args = append(args, fmt.Sprintf(`--kubelet-extra-args="%s"`, strings.Join(kubeletExtraArgs, " "))) //nolint:gocritic // Args are shell fragments, double quotes keep the $ expansion users may rely on.
 	}
 
 	return args

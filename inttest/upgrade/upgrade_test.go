@@ -155,7 +155,7 @@ func (s *UpgradeSuite) TestK0smotronUpgrade() {
 func (s *UpgradeSuite) checkStatePersists(ctx context.Context, mountedPath string, kc *kubernetes.Clientset, rc *rest.Config) {
 	successfulOutput := "File exists"
 	output := ""
-	cmd := fmt.Sprintf("test -f %s/manifests/mystack/manifest.yaml && echo \"%s\" || echo \"File does not exist\"", mountedPath, successfulOutput)
+	cmd := fmt.Sprintf("test -f %s/manifests/mystack/manifest.yaml && echo \"%s\" || echo \"File does not exist\"", mountedPath, successfulOutput) //nolint:gocritic // Shell quoting, which %q (Go quoting) does not match.
 	err := wait.PollUntilContextCancel(ctx, time.Second, true, func(_ context.Context) (done bool, err error) {
 		output, err = exec.PodExecCmdOutput(ctx, kc, rc, "kmc-kmc-test-0", "kmc-test", cmd)
 		if err != nil {
