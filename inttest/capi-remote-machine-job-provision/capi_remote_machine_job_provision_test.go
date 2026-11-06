@@ -156,7 +156,7 @@ func (s *RemoteMachineSuite) TestCAPIRemoteMachine() {
 	s.Require().NoError(err)
 	s.Require().NotNil(rm.Status.Initialization.Provisioned)
 	s.Require().True(*rm.Status.Initialization.Provisioned)
-	expectedProviderID := fmt.Sprintf("remote-machine://%s:22", s.getWorkerIP())
+	expectedProviderID := fmt.Sprintf("remote-machine://%s:22", s.getWorkerIP()) //nolint:nosprintfhostport // Matches the providerID format the controller writes.
 	s.Require().Equal(expectedProviderID, rm.Spec.ProviderID)
 
 	s.T().Log("deleting node from cluster")

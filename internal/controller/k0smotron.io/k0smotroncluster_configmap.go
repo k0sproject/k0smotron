@@ -253,7 +253,7 @@ func getV1Beta1Spec(kmc *km.Cluster, sans []string) map[string]any {
 			"type": "etcd",
 			"etcd": map[string]any{
 				"externalCluster": map[string]any{
-					"endpoints":      []any{fmt.Sprintf("https://%s:2379", kmc.GetEtcdServiceName())},
+					"endpoints":      []any{"https://" + kcontrollerutil.JoinHostPort(kmc.GetEtcdServiceName(), "2379")},
 					"etcdPrefix":     kmc.GetName(),
 					"caFile":         "/var/lib/k0s/pki/etcd-ca.crt",
 					"clientCertFile": "/var/lib/k0s/pki/apiserver-etcd-client.crt",

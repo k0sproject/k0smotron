@@ -307,7 +307,7 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 		Reason: infrastructure.RemoteMachineBootstrapExecSucceededReason,
 	})
 
-	rm.Spec.ProviderID = fmt.Sprintf("remote-machine://%s:%d", rm.Spec.Address, rm.Spec.Port)
+	rm.Spec.ProviderID = fmt.Sprintf("remote-machine://%s:%d", rm.Spec.Address, rm.Spec.Port) //nolint:nosprintfhostport // Persisted on Machines and Nodes, the format must not change.
 
 	m := machine.DeepCopy()
 	for l := range rm.Labels {

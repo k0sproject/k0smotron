@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -354,7 +355,7 @@ func (c *K0sController) reconcileKubeconfig(ctx context.Context, controlplane *c
 					}
 
 					for cn := range kc.Clusters {
-						kc.Clusters[cn].ProxyURL = fmt.Sprintf("http://%s:%d", controlplane.kcp.Spec.K0sConfigSpec.Tunneling.ServerAddress, controlplane.kcp.Spec.K0sConfigSpec.Tunneling.TunnelingNodePort)
+						kc.Clusters[cn].ProxyURL = "http://" + util.JoinHostPort(controlplane.kcp.Spec.K0sConfigSpec.Tunneling.ServerAddress, strconv.Itoa(int(controlplane.kcp.Spec.K0sConfigSpec.Tunneling.TunnelingNodePort)))
 					}
 
 					proxiedKubeconfig, err = c.createKubeconfigSecret(ctx, kc, controlplane.cluster, secretName, controlplane.kcp.Spec.KubeconfigSecretMetadata)
@@ -374,7 +375,7 @@ func (c *K0sController) reconcileKubeconfig(ctx context.Context, controlplane *c
 			err := c.SecretCachingClient.Get(ctx, client.ObjectKey{Namespace: controlplane.cluster.Namespace, Name: secretName}, tunneledKubeconfig)
 			if err != nil {
 				if apierrors.IsNotFound(err) {
-					kc, err := c.generateKubeconfig(ctx, clusterKey, fmt.Sprintf("https://%s:%d", controlplane.kcp.Spec.K0sConfigSpec.Tunneling.ServerAddress, controlplane.kcp.Spec.K0sConfigSpec.Tunneling.TunnelingNodePort))
+					kc, err := c.generateKubeconfig(ctx, clusterKey, "https://"+util.JoinHostPort(controlplane.kcp.Spec.K0sConfigSpec.Tunneling.ServerAddress, strconv.Itoa(int(controlplane.kcp.Spec.K0sConfigSpec.Tunneling.TunnelingNodePort))))
 					if err != nil {
 						return err
 					}

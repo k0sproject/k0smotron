@@ -137,7 +137,7 @@ func (s *KubeadmRemoteMachineSuite) TestKubeadmControlPlaneOnRemoteMachine() {
 
 	s.T().Log("cluster objects applied, waiting for the KubeadmControlPlane to provision its RemoteMachine")
 
-	expectedProviderID := fmt.Sprintf("remote-machine://%s:22", workerIP)
+	expectedProviderID := fmt.Sprintf("remote-machine://%s:22", workerIP) //nolint:nosprintfhostport // Matches the providerID format the controller writes.
 	controlPlaneMachineName := ""
 	//nolint:staticcheck // Deprecated, but PollUntilContextCancel returns a different error on timeout.
 	err := wait.PollImmediateUntilWithContext(ctx, 5*time.Second, func(ctx context.Context) (bool, error) {
