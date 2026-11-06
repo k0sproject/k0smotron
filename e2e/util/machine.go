@@ -21,6 +21,7 @@ package util
 import (
 	"context"
 	"fmt"
+	"maps"
 	"reflect"
 	"time"
 
@@ -70,9 +71,7 @@ func WaitForMachines(ctx context.Context, input WaitForMachinesInput) ([]string,
 
 		// Compute new machines (all - old - to be deleted)
 		newMachines = make(map[string]string)
-		for k, v := range allMachines {
-			newMachines[k] = v
-		}
+		maps.Copy(newMachines, allMachines)
 		for k := range input.ExpectedOldMachines {
 			delete(newMachines, k)
 		}

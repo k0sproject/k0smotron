@@ -796,20 +796,20 @@ func createClusterWithControlPlane(namespace string) (*clusterv1.Cluster, *cpv1b
 	}
 
 	genericMachineTemplate := &unstructured.Unstructured{
-		Object: map[string]interface{}{
+		Object: map[string]any{
 			"kind":       "GenericInfrastructureMachineTemplate",
 			"apiVersion": "infrastructure.cluster.x-k8s.io/v1beta1",
-			"metadata": map[string]interface{}{
+			"metadata": map[string]any{
 				"name":      "infra-foo",
 				"namespace": namespace,
-				"annotations": map[string]interface{}{
+				"annotations": map[string]any{
 					clusterv1.TemplateClonedFromNameAnnotation:      kcp.Spec.MachineTemplate.Spec.InfrastructureRef.Name,
 					clusterv1.TemplateClonedFromGroupKindAnnotation: schema.GroupKind{Group: kcp.Spec.MachineTemplate.Spec.InfrastructureRef.APIGroup, Kind: kcp.Spec.MachineTemplate.Spec.InfrastructureRef.Kind}.String(),
 				},
 			},
-			"spec": map[string]interface{}{
-				"template": map[string]interface{}{
-					"spec": map[string]interface{}{
+			"spec": map[string]any{
+				"template": map[string]any{
+					"spec": map[string]any{
 						"hello": "world",
 					},
 				},
