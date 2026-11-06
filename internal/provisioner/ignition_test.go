@@ -361,9 +361,11 @@ func fileEntry(t *testing.T, out []byte) map[string]any {
 
 // bodyBytes decodes the data URL that carries a file body, so a test can assert
 // on the bytes the node would actually write.
-func bodyBytes(t *testing.T, resource map[string]any) []byte {
+func bodyBytes(t *testing.T, value any) []byte {
 	t.Helper()
 
+	resource, ok := value.(map[string]any)
+	require.True(t, ok, "resource is not an object: %v", value)
 	src, ok := resource["source"].(string)
 	require.True(t, ok, "resource has no source: %v", resource)
 
@@ -404,7 +406,7 @@ func TestIgnitionFileOwnerAndAppend(t *testing.T) {
 		list, ok := entry["append"].([]any)
 		require.True(t, ok, "append is not a list: %v", entry["append"])
 		require.Len(t, list, 1)
-		require.Equal(t, "tail\n", string(bodyBytes(t, list[0].(map[string]any))))
+		require.Equal(t, "tail\n", string(bodyBytes(t, list[0])))
 	})
 }
 
@@ -440,7 +442,7 @@ func TestIgnitionAppendContentRoundTrip(t *testing.T) {
 				list, ok := entry["append"].([]any)
 				require.True(t, ok, "append is not a list")
 				require.Len(t, list, 1)
-				require.Equal(t, body, string(bodyBytes(t, list[0].(map[string]any))))
+				require.Equal(t, body, string(bodyBytes(t, list[0])))
 			})
 		}
 	}
@@ -473,7 +475,7 @@ func TestIgnitionEncodedContentIsDecodedOnce(t *testing.T) {
 			require.NoError(t, err)
 
 			entry := fileEntry(t, out)
-			require.Equal(t, plain, string(bodyBytes(t, entry["contents"].(map[string]any))))
+			require.Equal(t, plain, string(bodyBytes(t, entry["contents"])))
 		})
 	}
 }
@@ -548,7 +550,7 @@ func TestIgnitionPreservesContentYAMLCannotCarry(t *testing.T) {
 			require.NoError(t, err)
 
 			entry := fileEntry(t, out)
-			require.Equal(t, tc.content, string(bodyBytes(t, entry["contents"].(map[string]any))))
+			require.Equal(t, tc.content, string(bodyBytes(t, entry["contents"])))
 		})
 	}
 }
@@ -569,7 +571,7 @@ func TestIgnitionPreservesContentAcrossSpecVersions(t *testing.T) {
 			require.NoError(t, err)
 
 			entry := fileEntry(t, out)
-			require.Equal(t, "\n\tboth\n", string(bodyBytes(t, entry["contents"].(map[string]any))))
+			require.Equal(t, "\n\tboth\n", string(bodyBytes(t, entry["contents"])))
 		})
 	}
 }
@@ -583,7 +585,7 @@ func TestIgnitionDefaultsEmptyPermissions(t *testing.T) {
 
 	entry := fileEntry(t, out)
 	require.InDelta(t, 0o644, entry["mode"], 0)
-	require.Equal(t, "cert", string(bodyBytes(t, entry["contents"].(map[string]any))))
+	require.Equal(t, "cert", string(bodyBytes(t, entry["contents"])))
 }
 
 // TestIgnitionRejectsUnparseablePermissions keeps the fallback from swallowing a value

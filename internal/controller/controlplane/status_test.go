@@ -929,7 +929,8 @@ func ageAvailableCondition(t *testing.T, failures *sync.Map, kcp availabilityRep
 	key := availabilityKey(kcp)
 	previous, ok := failures.Load(key)
 	require.True(t, ok, "no failure has been counted yet, so there is no window to age")
-	failures.Store(key, availabilityFailures{since: backdated, seen: previous.(availabilityFailures).seen})
+	prev, _ := previous.(availabilityFailures)
+	failures.Store(key, availabilityFailures{since: backdated, seen: prev.seen})
 }
 
 // anchorOf mirrors how setUnavailableAfterGracePeriod picks the anchor on a first
@@ -1284,11 +1285,13 @@ func TestAvailabilityFailuresAreConsecutive(t *testing.T) {
 	c.computeAvailability(context.Background(), scope, logr.Discard())
 	got, ok := c.availabilityFailures.Load(key)
 	require.True(t, ok)
-	require.Equal(t, 1, got.(availabilityFailures).seen, "one failed read is one failure")
+	gotFailures, _ := got.(availabilityFailures)
+	require.Equal(t, 1, gotFailures.seen, "one failed read is one failure")
 
 	c.computeAvailability(context.Background(), scope, logr.Discard())
 	got, _ = c.availabilityFailures.Load(key)
-	require.Equal(t, 2, got.(availabilityFailures).seen, "and they add up while they keep failing")
+	gotFailures, _ = got.(availabilityFailures)
+	require.Equal(t, 2, gotFailures.seen, "and they add up while they keep failing")
 
 	healthy.Store(true)
 	c.computeAvailability(context.Background(), scope, logr.Discard())

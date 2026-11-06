@@ -916,7 +916,8 @@ func (r *Controller) SetupWithManager(ctx context.Context, mgr ctrl.Manager, opt
 		Watches(
 			&clusterv1.MachinePool{},
 			handler.EnqueueRequestsFromMapFunc(func(_ context.Context, o client.Object) []ctrl.Request {
-				ref := o.(*clusterv1.MachinePool).Spec.Template.Spec.Bootstrap.ConfigRef
+				machinePool, _ := o.(*clusterv1.MachinePool) // This watch only sees MachinePools.
+				ref := machinePool.Spec.Template.Spec.Bootstrap.ConfigRef
 				if !ref.IsDefined() || ref.GroupKind() != bootstrapv2.GroupVersion.WithKind("K0sWorkerConfig").GroupKind() {
 					return nil
 				}

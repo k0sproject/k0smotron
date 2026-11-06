@@ -283,7 +283,8 @@ func (c *K0sController) startUpdateMachineVersions(ctx context.Context, clientse
 func (c *K0sController) stopUpdateMachineVersions(kcp *cpv1beta2.K0sControlPlane) {
 	key := client.ObjectKeyFromObject(kcp)
 	if v, ok := c.autopilotUpdateCancels.LoadAndDelete(key); ok {
-		v.(*cancelHandle).cancel()
+		handle, _ := v.(*cancelHandle) // The map only holds cancel handles.
+		handle.cancel()
 	}
 }
 
