@@ -148,7 +148,7 @@ func (s *CAPIMultiInstanceWatchSelectorSuite) TestWatchFilterIsolatesMultipleCAP
 		}
 		return false, nil
 	})
-	s.ErrorContains(err, "context deadline exceeded", "the secondary controller should stay idle for primary-labeled resources once scoped")
+	s.Require().ErrorContains(err, "context deadline exceeded", "the secondary controller should stay idle for primary-labeled resources once scoped")
 
 	s.verifyReplicaCountingIsNamespaceScoped()
 }

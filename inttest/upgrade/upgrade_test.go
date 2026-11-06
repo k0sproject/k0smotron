@@ -70,7 +70,7 @@ func (s *UpgradeSuite) TestK0smotronUpgrade() {
 	s.Require().NoError(err)
 
 	err = s.WaitForNodeReady(s.WorkerNode(0), kc)
-	s.NoError(err)
+	s.Require().NoError(err)
 
 	s.T().Log("deploying stable k0smotron operator")
 	s.Require().NoError(util.InstallStableK0smotronOperator(s.Context(), kc, rc))

@@ -458,7 +458,7 @@ func TestIgnitionReplaceUsesContents(t *testing.T) {
 
 	contents, ok := entry["contents"].(map[string]any)
 	require.True(t, ok)
-	require.Equal(t, "", contents["compression"], "no compression is requested for a file body")
+	require.Empty(t, contents["compression"], "no compression is requested for a file body")
 	require.Equal(t, "hello world", string(bodyBytes(t, contents)))
 }
 
@@ -582,7 +582,7 @@ func TestIgnitionDefaultsEmptyPermissions(t *testing.T) {
 	require.NoError(t, err)
 
 	entry := fileEntry(t, out)
-	require.Equal(t, float64(0o644), entry["mode"])
+	require.InDelta(t, 0o644, entry["mode"], 0)
 	require.Equal(t, "cert", string(bodyBytes(t, entry["contents"].(map[string]any))))
 }
 

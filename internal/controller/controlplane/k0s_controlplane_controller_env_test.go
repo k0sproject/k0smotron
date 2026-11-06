@@ -1110,7 +1110,7 @@ func TestReconcileInitializeControlPlanes(t *testing.T) {
 	}, 20*time.Second, 200*time.Millisecond, "the reconcile never got far enough to write the status")
 
 	require.Equal(t, "v1.30.0+k0s.0", kcp.Status.Version)
-	require.Equal(t, ptr.Deref(kcp.Status.Replicas, 0), int32(1))
+	require.Equal(t, int32(1), ptr.Deref(kcp.Status.Replicas, 0))
 	require.NoError(t, testEnv.GetAPIReader().Get(ctx, util.ObjectKey(gmt), gmt))
 	require.Contains(t, gmt.GetOwnerReferences(), metav1.OwnerReference{
 		APIVersion:         clusterv1.GroupVersion.String(),

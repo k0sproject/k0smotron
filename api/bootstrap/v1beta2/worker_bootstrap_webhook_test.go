@@ -218,7 +218,7 @@ func TestK0sWorkerConfigValidate(t *testing.T) {
 				require.NoError(t, err)
 			}
 			require.Len(t, warnings, 1)
-			require.Equal(t, warnings[0], deprecatedK0sConfigVersionField)
+			require.Equal(t, deprecatedK0sConfigVersionField, warnings[0])
 
 			warnings, err = validator.ValidateUpdate(context.Background(), nil, tc.in)
 			if tc.expectingError {
@@ -227,7 +227,7 @@ func TestK0sWorkerConfigValidate(t *testing.T) {
 				require.NoError(t, err)
 			}
 			require.Len(t, warnings, 1)
-			require.Equal(t, warnings[0], deprecatedK0sConfigVersionField)
+			require.Equal(t, deprecatedK0sConfigVersionField, warnings[0])
 
 		})
 	}

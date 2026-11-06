@@ -151,7 +151,7 @@ func TestPermissions(t *testing.T) {
 	}
 
 	perm, err := f.PermissionsAsInt()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, int64(420), perm)
 }
 

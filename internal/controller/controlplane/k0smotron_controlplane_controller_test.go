@@ -327,9 +327,9 @@ func TestIsClusterSpecSynced(t *testing.T) {
 				kmc.Spec = tc.kmcSpec
 				result, kcpSpecHash, err := isClusterSpecSynced(kmc, tc.kcpSpec)
 				require.NoError(t, err)
-				require.EqualValues(t, tc.expected, result)
+				require.Equal(t, tc.expected, result)
 				if mode == withAnnotation {
-					require.EqualValues(t, tc.expected, kcpSpecHash == kmc.GetAnnotations()[kapi.AnnotationKeyClusterSpecHash])
+					require.Equal(t, tc.expected, kcpSpecHash == kmc.GetAnnotations()[kapi.AnnotationKeyClusterSpecHash])
 				}
 			})
 		}

@@ -18,6 +18,7 @@ linters:
     - exhaustive
     - errcheck
     - errorlint
+    - testifylint
   settings:
     forbidigo:
       analyze-types: false

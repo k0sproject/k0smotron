@@ -177,7 +177,7 @@ func remoteHCPSpec(t *testing.T) {
 					break
 				}
 			}
-			require.True(t, found, fmt.Sprintf("%s should be controlled by %s", obj.GetName(), ownerName))
+			require.True(t, found, "%s should be controlled by %s", obj.GetName(), ownerName)
 		}
 
 		assertOwnedByRoot(apiserverEtcdClientSecret)

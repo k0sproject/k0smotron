@@ -185,7 +185,7 @@ func TestGetPlanTargetNodesAndSelector(t *testing.T) {
 
 	noCommands := &unstructured.Unstructured{Object: map[string]any{"spec": map[string]any{}}}
 	_, err = GetPlanTargetNodes(noCommands)
-	assert.Error(t, err)
+	require.Error(t, err)
 	_, err = GetPlanTargetSelector(noCommands, WorkersTarget)
 	assert.Error(t, err)
 }
