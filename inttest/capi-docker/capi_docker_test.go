@@ -133,7 +133,7 @@ func (s *CAPIDockerSuite) TestCAPIDocker() {
 	s.T().Log("verifying pod cidrs")
 	k0sConfig, err := exec.Command("kubectl", "exec", "kmc-docker-test-0", "--", "cat", "/etc/k0s/k0s.yaml").Output()
 	s.Require().NoError(err)
-	s.Require().True(strings.Contains(string(k0sConfig), "192.168.0.0/16"))
+	s.Require().Contains(string(k0sConfig), "192.168.0.0/16")
 	s.T().Log("verifying cloud-init extras")
 	preStartFile, err := getDockerNodeFile("docker-test-0", "/tmp/pre-start")
 	s.Require().NoError(err)

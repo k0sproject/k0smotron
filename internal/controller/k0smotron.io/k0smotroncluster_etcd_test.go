@@ -19,7 +19,6 @@ limitations under the License.
 package k0smotronio
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -160,7 +159,7 @@ func TestEtcd_generateEtcdStatefulSet(t *testing.T) {
 		t.Run("", func(t *testing.T) {
 			sts := generateEtcdStatefulSet(tc.cluster, nil, 1, "")
 			for _, w := range tc.want {
-				assert.True(t, strings.Contains(sts.Spec.Template.Spec.Containers[0].Args[1], w))
+				assert.Contains(t, sts.Spec.Template.Spec.Containers[0].Args[1], w)
 			}
 		})
 	}

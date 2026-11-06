@@ -97,7 +97,7 @@ func TestResolveFiles(t *testing.T) {
 		},
 	}
 	output, err := resolveFiles(ctx, testEnv, cluster, filesToResolve)
-	require.NoError(t, err, errExtractingFileContent)
+	require.NoError(t, err)
 	require.Equal(t, expectedOutput, output)
 }
 

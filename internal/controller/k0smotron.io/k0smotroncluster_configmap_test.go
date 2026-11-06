@@ -19,7 +19,6 @@ limitations under the License.
 package k0smotronio
 
 import (
-	"strings"
 	"testing"
 
 	km "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
@@ -58,9 +57,9 @@ func TestGenerateCM(t *testing.T) {
 
 		conf := cm.Data["K0SMOTRON_K0S_YAML"]
 
-		assert.True(t, strings.Contains(conf, "my.external.address"), "The external address must be my.external.address")
-		assert.True(t, strings.Contains(conf, "calico"), "The provider must be calico")
-		assert.False(t, strings.Contains(conf, "kuberouter"), "The provider must not be kuberouter")
+		assert.Contains(t, conf, "my.external.address", "The external address must be my.external.address")
+		assert.Contains(t, conf, "calico", "The provider must be calico")
+		assert.NotContains(t, conf, "kuberouter", "The provider must not be kuberouter")
 	})
 
 	t.Run("sans merge", func(t *testing.T) {
@@ -86,9 +85,9 @@ func TestGenerateCM(t *testing.T) {
 
 		conf := cm.Data["K0SMOTRON_K0S_YAML"]
 
-		assert.True(t, strings.Contains(conf, "1.2.3.4"))
-		assert.True(t, strings.Contains(conf, "my.san.address"))
-		assert.True(t, strings.Contains(conf, "my.san.address2"))
+		assert.Contains(t, conf, "1.2.3.4")
+		assert.Contains(t, conf, "my.san.address")
+		assert.Contains(t, conf, "my.san.address2")
 	})
 
 	t.Run("config with ingress", func(t *testing.T) {
@@ -116,7 +115,7 @@ func TestGenerateCM(t *testing.T) {
 
 		conf := cm.Data["K0SMOTRON_K0S_YAML"]
 		t.Log(conf)
-		assert.True(t, strings.Contains(conf, "my.external.address:443"), "The external address must be my.external.address")
-		assert.True(t, strings.Contains(conf, "my.konnectivity.external.address"), "The konnectivity  address must be my.konnectivity.external.address")
+		assert.Contains(t, conf, "my.external.address:443", "The external address must be my.external.address")
+		assert.Contains(t, conf, "my.konnectivity.external.address", "The konnectivity  address must be my.konnectivity.external.address")
 	})
 }

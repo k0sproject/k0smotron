@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestParseFeatureGateFlags(t *testing.T) {
@@ -90,9 +91,9 @@ func TestParseFeatureGateFlags(t *testing.T) {
 			result, err := parseFeatureGateFlags(tt.input)
 
 			if tt.expectError {
-				assert.Error(t, err, "Expected an error but got none")
+				require.Error(t, err, "Expected an error but got none")
 			} else {
-				assert.NoError(t, err, "Unexpected error")
+				require.NoError(t, err, "Unexpected error")
 			}
 
 			if tt.expected == nil {

@@ -143,7 +143,7 @@ func (s *HAControllerNatsSuite) getPod(ctx context.Context, kc *kubernetes.Clien
 		ctx,
 		metav1.ListOptions{FieldSelector: "status.phase=Running"})
 	s.Require().NoError(err, "failed to list kmc-test pods")
-	s.Require().Equal(3, len(pods.Items), "expected 3 kmc-test pods (NATS is embedded, no separate etcd pods), got %d", len(pods.Items))
+	s.Require().Len(pods.Items, 3, "expected 3 kmc-test pods (NATS is embedded, no separate etcd pods), got %d", len(pods.Items))
 
 	return pods.Items[0]
 }
