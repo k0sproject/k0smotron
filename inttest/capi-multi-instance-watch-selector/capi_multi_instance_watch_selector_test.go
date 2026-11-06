@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"io"
 	"maps"
-	"net"
 	"net/http"
 	"os"
 	"os/exec"
@@ -441,16 +440,6 @@ func (s *CAPIMultiInstanceWatchSelectorSuite) getK0smotronControlPlaneReconcileC
 	defer func() { _ = body.Close() }()
 
 	return parseReconcileCounter(body, controlPlaneMetricLabel)
-}
-
-func getFreeLocalPort(ctx context.Context) (int, error) {
-	listener, err := (&net.ListenConfig{}).Listen(ctx, "tcp", "127.0.0.1:0")
-	if err != nil {
-		return 0, err
-	}
-	defer func() { _ = listener.Close() }()
-
-	return listener.Addr().(*net.TCPAddr).Port, nil
 }
 
 func fetchMetricsBody(ctx context.Context, localPort int) (io.ReadCloser, error) {

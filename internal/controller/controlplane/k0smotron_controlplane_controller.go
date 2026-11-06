@@ -83,8 +83,6 @@ const (
 	AnnotationValueManagedByK0smotron = "k0smotron"
 )
 
-var currentSpec kapi.ClusterSpec
-
 // K0smotronController is the controller for K0smotronControlPlane objects.
 type K0smotronController struct {
 	client.Client
@@ -408,7 +406,6 @@ func (c *K0smotronController) reconcile(ctx context.Context, cluster *clusterv1.
 	var foundCluster kapi.Cluster
 	err = c.Client.Get(ctx, types.NamespacedName{Name: desiredK0smotronCluster.Name, Namespace: desiredK0smotronCluster.Namespace}, &foundCluster)
 	if err != nil && apierrors.IsNotFound(err) {
-		currentSpec = *kcp.Spec.DeepCopy()
 		if err := c.Client.Create(ctx, &desiredK0smotronCluster); err != nil {
 			return ctrl.Result{}, err
 		}
