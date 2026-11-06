@@ -40,7 +40,7 @@ func resolveContentFromFile(ctx context.Context, cli client.Client, cluster *clu
 		s := &corev1.Secret{}
 		err := cli.Get(ctx, client.ObjectKey{Namespace: cluster.Namespace, Name: contentFrom.SecretRef.Name}, s)
 		if err != nil {
-			return "", fmt.Errorf("%w: %v", errExtractingFileContent, err)
+			return "", fmt.Errorf("%w: %s", errExtractingFileContent, err.Error()) // Not wrapped, a NotFound here is not the reconciled object.
 		}
 
 		content, ok := s.Data[contentFrom.SecretRef.Key]
@@ -52,7 +52,7 @@ func resolveContentFromFile(ctx context.Context, cli client.Client, cluster *clu
 		cfg := &corev1.ConfigMap{}
 		err := cli.Get(ctx, client.ObjectKey{Namespace: cluster.Namespace, Name: contentFrom.ConfigMapRef.Name}, cfg)
 		if err != nil {
-			return "", fmt.Errorf("%w: %v", errExtractingFileContent, err)
+			return "", fmt.Errorf("%w: %s", errExtractingFileContent, err.Error()) // Not wrapped, a NotFound here is not the reconciled object.
 		}
 
 		content, ok := cfg.Data[contentFrom.ConfigMapRef.Key]

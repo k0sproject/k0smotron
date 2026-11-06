@@ -280,17 +280,17 @@ func createJSONPatch(marshalledOriginal []byte, modified runtime.Object) ([]byte
 	// TODO: avoid producing patches for status (although they will be ignored by the KCP / MD controllers anyway)
 	marshalledModified, err := json.Marshal(modified)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal modified object: %v", err)
+		return nil, fmt.Errorf("failed to marshal modified object: %w", err)
 	}
 
 	patch, err := jsonpatch.CreatePatch(marshalledOriginal, marshalledModified)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create patch: %v", err)
+		return nil, fmt.Errorf("failed to create patch: %w", err)
 	}
 
 	patchBytes, err := json.Marshal(patch)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal patch: %v", err)
+		return nil, fmt.Errorf("failed to marshal patch: %w", err)
 	}
 
 	return patchBytes, nil

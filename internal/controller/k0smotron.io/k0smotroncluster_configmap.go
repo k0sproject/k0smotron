@@ -69,7 +69,7 @@ func (scope *kmcScope) generateConfig(kmc *km.Cluster, sans []string) (v1.Config
 
 			enabled, found, err := unstructured.NestedBool(unstructuredConfig, "spec", "network", "nodeLocalLoadBalancing", "enabled")
 			if err != nil {
-				return v1.ConfigMap{}, nil, fmt.Errorf("error getting nodeLocalLoadBalancing: %v", err)
+				return v1.ConfigMap{}, nil, fmt.Errorf("error getting nodeLocalLoadBalancing: %w", err)
 			}
 			nllbEnabled = found && enabled
 		default:
@@ -81,7 +81,7 @@ func (scope *kmcScope) generateConfig(kmc *km.Cluster, sans []string) (v1.Config
 	if !nllbEnabled && kmc.Spec.Ingress == nil {
 		err := unstructured.SetNestedField(k0smotronValues, kmc.Spec.ExternalAddress, "spec", "api", "externalAddress")
 		if err != nil {
-			return v1.ConfigMap{}, nil, fmt.Errorf("error setting externalAddress: %v", err)
+			return v1.ConfigMap{}, nil, fmt.Errorf("error setting externalAddress: %w", err)
 		}
 	}
 

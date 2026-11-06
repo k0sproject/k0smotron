@@ -452,7 +452,7 @@ func (c *ControlPlaneController) generateBootstrapDataForController(ctx context.
 	if scope.Config.Spec.K0s != nil {
 		k0sConfigBytes, err := scope.Config.Spec.K0s.MarshalJSON()
 		if err != nil {
-			return nil, fmt.Errorf("error marshalling k0s config: %v", err)
+			return nil, fmt.Errorf("error marshalling k0s config: %w", err)
 		}
 		k0sConfigPath := scope.Config.Spec.GetK0sConfigPath()
 		files = append(files, provisioner.File{
@@ -466,7 +466,7 @@ func (c *ControlPlaneController) generateBootstrapDataForController(ctx context.
 	if mayInitControlPlane(scope) && scope.machines.Oldest().Name == scope.Config.Name {
 		files, err = c.genInitialControlPlaneFiles(ctx, scope, files)
 		if err != nil {
-			return nil, fmt.Errorf("error generating initial control plane files: %v", err)
+			return nil, fmt.Errorf("error generating initial control plane files: %w", err)
 		}
 		installCmd = createCPInstallCmd(scope)
 	} else {
@@ -480,7 +480,7 @@ func (c *ControlPlaneController) generateBootstrapDataForController(ctx context.
 	if scope.Config.Spec.Tunneling.Enabled {
 		tunnelingFiles, err := c.genTunnelingFiles(ctx, scope)
 		if err != nil {
-			return nil, fmt.Errorf("error generating tunneling files: %v", err)
+			return nil, fmt.Errorf("error generating tunneling files: %w", err)
 		}
 		files = append(files, tunnelingFiles...)
 	}

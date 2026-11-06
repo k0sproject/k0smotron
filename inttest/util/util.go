@@ -188,7 +188,7 @@ func ParseManifests(data []byte) ([]*unstructured.Unstructured, error) {
 	var resource map[string]any
 	for {
 		err := decoder.Decode(&resource)
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			return resources, nil
 		} else if err != nil {
 			return nil, err
@@ -300,7 +300,7 @@ func applyResources(ctx context.Context, resources []*unstructured.Unstructured,
 func GetJoinToken(kc *kubernetes.Clientset, rc *rest.Config, name string, namespace string) (string, error) {
 	output, err := kexec.PodExecCmdOutput(context.TODO(), kc, rc, name, namespace, "k0s token create --role=worker")
 	if err != nil {
-		return "", fmt.Errorf("failed to get join token: %s", err)
+		return "", fmt.Errorf("failed to get join token: %w", err)
 	}
 
 	return output, nil
@@ -621,21 +621,21 @@ func downloadStableStandaloneInstall() (string, error) {
 
 	response, err := http.Get(url)
 	if err != nil {
-		return "", fmt.Errorf("failed to download k0smotron install file: %v", err)
+		return "", fmt.Errorf("failed to download k0smotron install file: %w", err)
 	}
 	defer func() { _ = response.Body.Close() }()
 
 	installFile, err := os.Create(filepath.Join(os.TempDir(), "install.yaml"))
 	if err != nil {
-		return "", fmt.Errorf("failed to create k0smotron install file: %v", err)
+		return "", fmt.Errorf("failed to create k0smotron install file: %w", err)
 	}
 	_, err = io.Copy(installFile, response.Body)
 	if err != nil {
 		_ = installFile.Close()
-		return "", fmt.Errorf("failed to save k0smotron install file: %v", err)
+		return "", fmt.Errorf("failed to save k0smotron install file: %w", err)
 	}
 	if err := installFile.Close(); err != nil {
-		return "", fmt.Errorf("failed to save k0smotron install file: %v", err)
+		return "", fmt.Errorf("failed to save k0smotron install file: %w", err)
 	}
 	return installFile.Name(), nil
 }

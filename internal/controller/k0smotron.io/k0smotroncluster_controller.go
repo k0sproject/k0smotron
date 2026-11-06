@@ -481,7 +481,7 @@ func (r *ClusterReconciler) reconcileDelete(ctx context.Context, scope *kmcScope
 		if err != nil {
 			scope.currentReconcileState.reason = km.InternalErrorReason
 			scope.currentReconcileState.message = fmt.Sprintf("Error deleting external owner: %v", err)
-			return ctrl.Result{}, fmt.Errorf("error deleting root configmap: %v", err)
+			return ctrl.Result{}, fmt.Errorf("error deleting root configmap: %w", err)
 		}
 	}
 
