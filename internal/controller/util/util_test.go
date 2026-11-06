@@ -126,3 +126,14 @@ func TestAnnotationsForK0smotronCluster_NilAnnotations(t *testing.T) {
 	assert.Empty(t, got)
 	assert.Nil(t, kmc.Annotations, "the helper must not allocate annotations on the Cluster object")
 }
+
+func TestJoinHostPort(t *testing.T) {
+	for host, want := range map[string]string{
+		"example.com": "example.com:6443",
+		"10.0.0.1":    "10.0.0.1:6443",
+		"fd00::1":     "[fd00::1]:6443",
+		"[fd00::1]":   "[fd00::1]:6443",
+	} {
+		assert.Equal(t, want, JoinHostPort(host, "6443"), "host %q", host)
+	}
+}

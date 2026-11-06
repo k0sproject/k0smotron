@@ -360,7 +360,7 @@ func generateEtcdStatefulSet(kmc *km.Cluster, existingSts *apps.StatefulSet, rep
 						Args:            []string{"-c", etcdEntrypointScriptBuf.String()},
 						Env: []v1.EnvVar{
 							{Name: "SVC_NAME", Value: kmc.GetEtcdServiceName()},
-							{Name: "ETCDCTL_ENDPOINTS", Value: fmt.Sprintf("https://%s:2379", kmc.GetEtcdServiceName())},
+							{Name: "ETCDCTL_ENDPOINTS", Value: "https://" + kcontrollerutil.JoinHostPort(kmc.GetEtcdServiceName(), "2379")},
 							{Name: "ETCDCTL_CACERT", Value: "/var/lib/k0s/pki/etcd/ca.crt"},
 							{Name: "ETCDCTL_CERT", Value: "/var/lib/k0s/pki/etcd/server.crt"},
 							{Name: "ETCDCTL_KEY", Value: "/var/lib/k0s/pki/etcd/server.key"},

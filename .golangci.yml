@@ -38,6 +38,7 @@ linters:
     - thelper
     - nilnil
     - unconvert
+    - nosprintfhostport
   settings:
     forbidigo:
       analyze-types: false

@@ -178,7 +178,7 @@ func (s *RemoteMachineTemplateUpdateSuite) TestCAPIRemoteMachine() {
 			return false, err
 		}
 
-		expectedProviderID := fmt.Sprintf("remote-machine://%s:22", s.getWorkerIP(ctx))
+		expectedProviderID := fmt.Sprintf("remote-machine://%s:22", s.getWorkerIP(ctx)) //nolint:nosprintfhostport // Matches the providerID format the controller writes.
 		fmt.Println(expectedProviderID, rm.Spec.ProviderID)
 		return rm.Status.Initialization.Provisioned != nil && *rm.Status.Initialization.Provisioned && expectedProviderID == rm.Spec.ProviderID, nil
 	})
