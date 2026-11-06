@@ -38,16 +38,19 @@ import (
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-type InPlaceVersionUpdateHandler struct {
+// Handler serves the in-place update hooks for k0s version changes.
+type Handler struct {
 	client ctrlclient.Client
 }
 
-func NewInPlaceVersionUpdateHandler(client ctrlclient.Client) *InPlaceVersionUpdateHandler {
-	return &InPlaceVersionUpdateHandler{
+// NewInPlaceVersionUpdateHandler returns a handler that reads cluster objects through client.
+func NewInPlaceVersionUpdateHandler(client ctrlclient.Client) *Handler {
+	return &Handler{
 		client: client,
 	}
 }
 
+// DoCanUpdateMachine answers the CanUpdateMachine hook: a version change can be applied in place.
 func DoCanUpdateMachine(ctx context.Context, req *runtimehooksv1.CanUpdateMachineRequest, resp *runtimehooksv1.CanUpdateMachineResponse) {
 	log := ctrl.LoggerFrom(ctx).WithValues("Machine", klog.KObj(&req.Desired.Machine))
 	log.Info("CanUpdateMachine for version update handler is called")
@@ -70,6 +73,7 @@ func DoCanUpdateMachine(ctx context.Context, req *runtimehooksv1.CanUpdateMachin
 	resp.Status = runtimehooksv1.ResponseStatusSuccess
 }
 
+// DoCanUpdateMachineSet answers the CanUpdateMachineSet hook: a version change can be applied in place.
 func DoCanUpdateMachineSet(ctx context.Context, req *runtimehooksv1.CanUpdateMachineSetRequest, resp *runtimehooksv1.CanUpdateMachineSetResponse) {
 	log := ctrl.LoggerFrom(ctx).WithValues("MachineSet", klog.KObj(&req.Desired.MachineSet))
 	log.Info("CanUpdateMachineSet for version update handler is called")
@@ -92,7 +96,8 @@ func DoCanUpdateMachineSet(ctx context.Context, req *runtimehooksv1.CanUpdateMac
 	resp.Status = runtimehooksv1.ResponseStatusSuccess
 }
 
-func (ipuv *InPlaceVersionUpdateHandler) DoUpdateMachine(ctx context.Context, req *runtimehooksv1.UpdateMachineRequest, resp *runtimehooksv1.UpdateMachineResponse) {
+// DoUpdateMachine answers the UpdateMachine hook by updating the machine's k0s version in place.
+func (ipuv *Handler) DoUpdateMachine(ctx context.Context, req *runtimehooksv1.UpdateMachineRequest, resp *runtimehooksv1.UpdateMachineResponse) {
 	log := ctrl.LoggerFrom(ctx).WithValues("Machine", klog.KObj(&req.Desired.Machine))
 	log.Info("UpdateMachine for version update handler is called")
 

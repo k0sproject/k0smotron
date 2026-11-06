@@ -33,6 +33,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+// WaitForMachinesInput is the input for WaitForMachines.
 type WaitForMachinesInput struct {
 	Lister                   framework.Lister
 	Namespace                string
@@ -141,6 +142,7 @@ func WaitForMachines(ctx context.Context, input WaitForMachinesInput) ([]string,
 	return allMachinesNames, newMachinesNames, nil
 }
 
+// WaitForWorkersMachineInput is the input for WaitForWorkerMachine.
 type WaitForWorkersMachineInput struct {
 	Lister                   framework.Lister
 	ExpectedWorkers          int
