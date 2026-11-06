@@ -65,8 +65,8 @@ func (c *CloudInitProvisioner) ToProvisionData(input *InputProvisionData) ([]byt
 		// Marshal the data
 		enc := yaml.NewEncoder(&b)
 		enc.SetIndent(2)
-		defer enc.Close()
-
+		// Encode already flushes the document; Close only ends the stream.
+		defer func() { _ = enc.Close() }()
 		err = enc.Encode(input)
 		if err != nil {
 			return nil, err

@@ -623,16 +623,18 @@ func downloadStableStandaloneInstall() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to download k0smotron install file: %v", err)
 	}
-	defer response.Body.Close()
+	defer func() { _ = response.Body.Close() }()
 
 	installFile, err := os.Create(filepath.Join(os.TempDir(), "install.yaml"))
 	if err != nil {
 		return "", fmt.Errorf("failed to create k0smotron install file: %v", err)
 	}
-	defer installFile.Close()
-
 	_, err = io.Copy(installFile, response.Body)
 	if err != nil {
+		_ = installFile.Close()
+		return "", fmt.Errorf("failed to save k0smotron install file: %v", err)
+	}
+	if err := installFile.Close(); err != nil {
 		return "", fmt.Errorf("failed to save k0smotron install file: %v", err)
 	}
 	return installFile.Name(), nil

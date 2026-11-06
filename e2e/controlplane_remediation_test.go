@@ -60,7 +60,7 @@ func controlplaneRemediationSpec(t *testing.T) {
 	namespace, _ := util.SetupSpecNamespace(ctx, testName, bootstrapClusterProxy, artifactFolder)
 
 	// creates the mhc-test ConfigMap that will be used to control machines bootstrap during the remediation tests.
-	createConfigMapForMachinesBootstrapSignal(ctx, bootstrapClusterProxy.GetClient(), namespace.Name)
+	require.NoError(t, createConfigMapForMachinesBootstrapSignal(ctx, bootstrapClusterProxy.GetClient(), namespace.Name))
 
 	clusterName := fmt.Sprintf("%s-%s", testName, capiutil.RandomString(6))
 

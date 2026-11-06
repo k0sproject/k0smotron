@@ -436,7 +436,7 @@ func (s *CAPIMultiInstanceWatchSelectorSuite) getK0smotronControlPlaneReconcileC
 	if err != nil {
 		return 0, fmt.Errorf("fetch metrics: %w", err)
 	}
-	defer body.Close()
+	defer func() { _ = body.Close() }()
 
 	return parseReconcileCounter(body, controlPlaneMetricLabel)
 }
@@ -446,7 +446,7 @@ func getFreeLocalPort() (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	defer listener.Close()
+	defer func() { _ = listener.Close() }()
 
 	return listener.Addr().(*net.TCPAddr).Port, nil
 }
@@ -461,7 +461,7 @@ func fetchMetricsBody(localPort int) (io.ReadCloser, error) {
 		return nil, err
 	}
 	if resp.StatusCode != http.StatusOK {
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		return nil, fmt.Errorf("unexpected metrics status code %d", resp.StatusCode)
 	}
 	return resp.Body, nil

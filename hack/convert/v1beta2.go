@@ -86,7 +86,7 @@ WARNING: This is an experimental staging tool. Output should be reviewed before 
 			if err != nil {
 				return err
 			}
-			defer f.Close()
+			defer func() { _ = f.Close() }()
 			return processStream(f, os.Stdout)
 		},
 	}
@@ -121,10 +121,14 @@ func processStream(r io.Reader, w io.Writer) error {
 		}
 
 		if !first {
-			fmt.Fprint(w, "---\n")
+			if _, err := fmt.Fprint(w, "---\n"); err != nil {
+				return err
+			}
 		}
 		first = false
-		fmt.Fprintf(w, "%s\n", converted)
+		if _, err := fmt.Fprintf(w, "%s\n", converted); err != nil {
+			return err
+		}
 	}
 	return nil
 }
