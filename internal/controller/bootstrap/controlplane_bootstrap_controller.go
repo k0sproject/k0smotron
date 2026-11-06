@@ -620,12 +620,11 @@ func (c *ControlPlaneController) genTunnelingFiles(ctx context.Context, scope *C
 	}
 	frpToken := string(frpSecret.Data["value"])
 
-	localIP := "10.96.0.1"
 	kubeSvcIP, err := constants.GetAPIServerVirtualIP(scope.Cluster.Spec.ClusterNetwork.Services.String())
 	if err != nil {
 		return nil, err
 	}
-	localIP = kubeSvcIP.String()
+	localIP := kubeSvcIP.String()
 
 	var modeConfig string
 	if scope.Config.Spec.Tunneling.Mode == "proxy" {
