@@ -506,7 +506,10 @@ func (c *K0sController) checkMachineLeft(ctx context.Context, name string, clien
 	}
 
 	for _, condition := range conditions {
-		conditionMap := condition.(map[string]any)
+		conditionMap, ok := condition.(map[string]any)
+		if !ok {
+			continue
+		}
 		if conditionMap["type"] == etcdMemberConditionTypeJoined && conditionMap["status"] == "False" {
 			err = clientset.RESTClient().
 				Delete().

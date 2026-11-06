@@ -1413,7 +1413,7 @@ func normalizeUnstructured(obj *unstructured.Unstructured) *unstructured.Unstruc
 	if err == nil && found {
 		strSans := make([]string, len(sans))
 		for i, v := range sans {
-			strSans[i] = v.(string)
+			strSans[i] = fmt.Sprint(v)
 		}
 
 		sort.Strings(strSans)

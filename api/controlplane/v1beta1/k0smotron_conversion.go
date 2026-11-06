@@ -29,7 +29,10 @@ import (
 
 // ConvertTo converts this version (v1beta2) to the hub version (v1beta2 - self).
 func (k *K0smotronControlPlane) ConvertTo(dstRaw conversion.Hub) error {
-	dst := dstRaw.(*v1beta2.K0smotronControlPlane)
+	dst, ok := dstRaw.(*v1beta2.K0smotronControlPlane)
+	if !ok {
+		return fmt.Errorf("expected *v1beta2.K0smotronControlPlane, got %T", dstRaw)
+	}
 	dst.ObjectMeta = *k.ObjectMeta.DeepCopy()
 
 	v2Spec, nonSupportedFields := kmcv1beta1.ClusterSpecToV2(k.Spec)
@@ -64,7 +67,10 @@ func (k *K0smotronControlPlane) ConvertTo(dstRaw conversion.Hub) error {
 
 // ConvertTo converts this K0smotronControlPlaneTemplate (v1beta1) to the hub version (v1beta2).
 func (k *K0smotronControlPlaneTemplate) ConvertTo(dstRaw conversion.Hub) error {
-	dst := dstRaw.(*v1beta2.K0smotronControlPlaneTemplate)
+	dst, ok := dstRaw.(*v1beta2.K0smotronControlPlaneTemplate)
+	if !ok {
+		return fmt.Errorf("expected *v1beta2.K0smotronControlPlaneTemplate, got %T", dstRaw)
+	}
 	dst.ObjectMeta = *k.ObjectMeta.DeepCopy()
 	v2Spec, nonSupportedFields := kmcv1beta1.ClusterSpecToV2(k.Spec.Template.Spec)
 	if len(nonSupportedFields) > 0 {
@@ -90,7 +96,10 @@ func (k *K0smotronControlPlaneTemplate) ConvertTo(dstRaw conversion.Hub) error {
 
 // ConvertFrom converts from the hub version (v1beta2) to this K0smotronControlPlaneTemplate (v1beta1).
 func (k *K0smotronControlPlaneTemplate) ConvertFrom(srcRaw conversion.Hub) error {
-	src := srcRaw.(*v1beta2.K0smotronControlPlaneTemplate)
+	src, ok := srcRaw.(*v1beta2.K0smotronControlPlaneTemplate)
+	if !ok {
+		return fmt.Errorf("expected *v1beta2.K0smotronControlPlaneTemplate, got %T", srcRaw)
+	}
 	k.ObjectMeta = *src.ObjectMeta.DeepCopy()
 	spec, err := kmcv1beta1.ClusterSpecFromV2(src.Spec.Template.Spec, src.Annotations)
 	if err != nil {
@@ -107,7 +116,10 @@ func (k *K0smotronControlPlaneTemplate) ConvertFrom(srcRaw conversion.Hub) error
 
 // ConvertFrom converts from the hub version (v1beta2) to this version (v1beta1).
 func (k *K0smotronControlPlane) ConvertFrom(srcRaw conversion.Hub) error {
-	src := srcRaw.(*v1beta2.K0smotronControlPlane)
+	src, ok := srcRaw.(*v1beta2.K0smotronControlPlane)
+	if !ok {
+		return fmt.Errorf("expected *v1beta2.K0smotronControlPlane, got %T", srcRaw)
+	}
 	k.ObjectMeta = *src.ObjectMeta.DeepCopy()
 	v1beta1Spec, err := kmcv1beta1.ClusterSpecFromV2(src.Spec, src.Annotations)
 	if err != nil {
