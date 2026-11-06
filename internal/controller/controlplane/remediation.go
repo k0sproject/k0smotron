@@ -262,7 +262,7 @@ func remediationDataFrom(objAnnotations map[string]string, key string) (remediat
 	if data.Machine == "" || len(data.Machine) > maxReportedMachineName {
 		return remediationData{}, false
 	}
-	if data.Timestamp.IsZero() || data.RetryCount < 0 || data.RetryCount >= math.MaxInt32 {
+	if data.Timestamp.IsZero() || data.RetryCount < 0 || data.RetryCount == math.MaxInt32 {
 		return remediationData{}, false
 	}
 

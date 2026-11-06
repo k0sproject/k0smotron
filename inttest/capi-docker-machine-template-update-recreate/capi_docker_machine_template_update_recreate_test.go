@@ -96,7 +96,7 @@ func (s *CAPIDevMachineTemplateUpdateRecreate) TestCAPIControlPlaneDockerDownSca
 	s.T().Log("cluster objects applied, waiting for cluster to be ready")
 
 	var localPort int
-	// nolint:staticcheck
+	//nolint:staticcheck // Deprecated, but PollUntilContextCancel returns a different error on timeout.
 	err := wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
 		var portErr error
 		localPort, portErr = getLBPort(ctx, "docker-test-lb")
@@ -112,7 +112,7 @@ func (s *CAPIDevMachineTemplateUpdateRecreate) TestCAPIControlPlaneDockerDownSca
 	kmcKC, err := util.GetKMCClientSet(s.ctx, s.client, "docker-test", "default", localPort)
 	s.Require().NoError(err)
 
-	// nolint:staticcheck
+	//nolint:staticcheck // Deprecated, but PollUntilContextCancel returns a different error on timeout.
 	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
 		b, _ := s.client.RESTClient().
 			Get().

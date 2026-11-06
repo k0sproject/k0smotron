@@ -156,12 +156,12 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 	kcpPatchHelper, err := patch.NewHelper(kcp, c.Client)
 	if err != nil {
 		log.Error(err, "Failed to configure K0smotronControlPlane patch helper")
-		return ctrl.Result{Requeue: true}, nil
+		return util.RequeueWithBackoff(), nil
 	}
 	clusterPatchHelper, err := patch.NewHelper(cluster, c.Client)
 	if err != nil {
 		log.Error(err, "Failed to configure Cluster patch helper")
-		return ctrl.Result{Requeue: true}, nil
+		return util.RequeueWithBackoff(), nil
 	}
 
 	log = log.WithValues("cluster", cluster.Name)
@@ -203,7 +203,7 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 			serr = c.computeStatus(ctx, cluster, kcp, kmcScope)
 			if serr != nil {
 				if errors.Is(serr, util.ErrNotReady) {
-					res = ctrl.Result{RequeueAfter: 10 * time.Second, Requeue: true}
+					res = ctrl.Result{RequeueAfter: 10 * time.Second}
 				} else {
 					log.Error(serr, "Failed to update K0smotronControlPlane status")
 					// Recorded without returning, since the availability computed above is
@@ -414,7 +414,7 @@ func (c *K0smotronController) reconcile(ctx context.Context, cluster *clusterv1.
 		}
 
 		logger.Info("Requeuing because k0smotron Cluster has just been created")
-		return ctrl.Result{RequeueAfter: 5 * time.Second, Requeue: true}, nil
+		return ctrl.Result{RequeueAfter: 5 * time.Second}, nil
 	}
 
 	if kcp.Spec.ExternalAddress == "" {
@@ -1023,7 +1023,7 @@ func (c *K0smotronController) reconcileDelete(ctx context.Context, key types.Nam
 
 	if !kmc.GetDeletionTimestamp().IsZero() {
 		// Requeue the reconciliation to wait for the complete deletion of the k0smotron Cluster meaning all dependent resources are deleted.
-		return ctrl.Result{Requeue: true, RequeueAfter: 5 * time.Second}, nil
+		return ctrl.Result{RequeueAfter: 5 * time.Second}, nil
 	}
 
 	if err := c.Client.Delete(ctx, kmc); err != nil {

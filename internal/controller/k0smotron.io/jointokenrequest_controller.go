@@ -88,7 +88,7 @@ func (r *JoinTokenRequestReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	patchHelper, err := patch.NewHelper(&jtr, r.Client)
 	if err != nil {
 		logger.Error(err, "Failed to configure the patch helper")
-		return ctrl.Result{Requeue: true}, nil
+		return util.RequeueWithBackoff(), nil
 	}
 
 	isJTRBeingDeleted := !jtr.ObjectMeta.DeletionTimestamp.IsZero()
@@ -122,7 +122,7 @@ func (r *JoinTokenRequestReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			err = r.Client.Get(ctx, types.NamespacedName{Name: jtr.Spec.ClusterName, Namespace: clusterNamespace}, &kmc)
 			if err != nil {
 				reconcileFailureMessage = "Failed to get k0smotron cluster"
-				return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
+				return ctrl.Result{RequeueAfter: time.Minute}, err
 			}
 			if ownerRefAdded := ensureOwnerReference(&jtr, kmc); ownerRefAdded {
 				// If the owner reference was updated, we need to patch the JoinTokenRequest to persist it before proceeding with the reconciliation,
@@ -131,7 +131,7 @@ func (r *JoinTokenRequestReconciler) Reconcile(ctx context.Context, req ctrl.Req
 				if err != nil {
 					logger.Error(err, "Failed to patch JoinTokenRequest with owner reference")
 				}
-				return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 5}, err
+				return ctrl.Result{RequeueAfter: time.Second * 5}, err
 			}
 		}
 	}
@@ -140,7 +140,7 @@ func (r *JoinTokenRequestReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	pod, err := util.FindStatefulSetPod(ctx, r.ClientSet, km.GetStatefulSetName(jtr.Spec.ClusterName), clusterNamespace)
 	if err != nil && !isJTRBeingDeleted {
 		reconcileFailureMessage = "Failed finding pods in statefulset"
-		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
+		return ctrl.Result{RequeueAfter: time.Minute}, err
 	}
 
 	if isJTRBeingDeleted {
@@ -168,7 +168,7 @@ func (r *JoinTokenRequestReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	err = r.Client.Get(ctx, types.NamespacedName{Name: jtr.Spec.ClusterName, Namespace: clusterNamespace}, &cluster)
 	if err != nil {
 		reconcileFailureMessage = "Failed to get cluster"
-		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
+		return ctrl.Result{RequeueAfter: time.Minute}, err
 	}
 	clusterUID = cluster.GetUID()
 	if isV1Beta1WithPossibleCrossNamespace {
@@ -181,26 +181,26 @@ func (r *JoinTokenRequestReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	token, err := exec.PodExecCmdOutput(ctx, r.ClientSet, r.RESTConfig, pod.Name, pod.Namespace, cmd)
 	if err != nil {
 		reconcileFailureMessage = "Failed getting token"
-		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
+		return ctrl.Result{RequeueAfter: time.Minute}, err
 	}
 
 	if cluster.Spec.Ingress != nil {
 		token, err = updateJoinTokenURL(token, cluster)
 		if err != nil {
 			reconcileFailureMessage = "Failed updating token URL"
-			return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
+			return ctrl.Result{RequeueAfter: time.Minute}, err
 		}
 	}
 
 	if err := r.reconcileSecret(ctx, jtr, token); err != nil {
 		reconcileFailureMessage = "Failed creating secret"
-		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
+		return ctrl.Result{RequeueAfter: time.Minute}, err
 	}
 
 	tokenID, err := getTokenID(token, jtr.Spec.Role)
 	if err != nil {
 		reconcileFailureMessage = "Failed getting token id"
-		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
+		return ctrl.Result{RequeueAfter: time.Minute}, err
 	}
 
 	jtr.Status.TokenID = tokenID

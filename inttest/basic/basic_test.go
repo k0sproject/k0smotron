@@ -79,7 +79,7 @@ func (s *BasicSuite) TestK0sGetsUp() {
 	s.T().Log("updating k0smotron cluster")
 	s.updateK0smotronCluster(s.Context(), rc)
 
-	// nolint:staticcheck
+	//nolint:staticcheck // Deprecated, but PollUntilContextCancel returns a different error on timeout.
 	err = wait.PollImmediateUntilWithContext(s.Context(), 100*time.Millisecond, func(ctx context.Context) (bool, error) {
 		pod, err := kc.CoreV1().Pods("kmc-test").Get(ctx, "kmc-kmc-test-0", metav1.GetOptions{})
 		if err != nil {
@@ -162,7 +162,7 @@ func (s *BasicSuite) checkClusterStatus(ctx context.Context, rc *rest.Config) {
 	crdRestClient, err := rest.UnversionedRESTClientFor(&crdConfig)
 	s.Require().NoError(err)
 
-	// nolint:staticcheck
+	//nolint:staticcheck // Deprecated, but PollUntilContextCancel returns a different error on timeout.
 	err = wait.PollImmediateUntilWithContext(ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
 		var kmc km.Cluster
 		err = crdRestClient.

@@ -523,7 +523,7 @@ func TestReconcileControllerConfigControlPlaneIsZero(t *testing.T) {
 		// Cluster.Spec.ControlPlaneEndpoint is not set by infra provider
 		result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: util.ObjectKey(k0sControllerConfig)})
 		assert.NoError(c, err)
-		assert.Equal(c, ctrl.Result{Requeue: true, RequeueAfter: time.Second * 30}, result)
+		assert.Equal(c, ctrl.Result{RequeueAfter: time.Second * 30}, result)
 
 		updatedK0sControllerConfig := &bootstrapv1.K0sControllerConfig{}
 		assert.NoError(c, testEnv.Get(ctx, client.ObjectKeyFromObject(k0sControllerConfig), updatedK0sControllerConfig))

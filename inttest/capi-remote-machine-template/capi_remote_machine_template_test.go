@@ -140,7 +140,7 @@ func (s *RemoteMachineTemplateSuite) TestCAPIRemoteMachine() {
 
 	s.T().Log("cluster objects applied, waiting for cluster to be ready")
 	var localPort int
-	// nolint:staticcheck
+	//nolint:staticcheck // Deprecated, but PollUntilContextCancel returns a different error on timeout.
 	err = wait.PollImmediateUntilWithContext(ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
 		localPort, _ = getLBPort(ctx, "TestRemoteMachineSuite-k0smotron0")
 		return localPort > 0, nil
@@ -154,7 +154,7 @@ func (s *RemoteMachineTemplateSuite) TestCAPIRemoteMachine() {
 	s.T().Log("verify the RemoteMachine is at expected state")
 	expectedProviderID := fmt.Sprintf("remote-machine://%s:22", s.getWorkerIP())
 	controlPlaneMachineName := ""
-	// nolint:staticcheck
+	//nolint:staticcheck // Deprecated, but PollUntilContextCancel returns a different error on timeout.
 	err = wait.PollImmediateUntilWithContext(ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
 		machines, err := util.GetControlPlaneMachinesByKcpName(ctx, "remote-test", "default", s.client)
 		if err != nil {

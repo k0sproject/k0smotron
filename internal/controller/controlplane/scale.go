@@ -101,7 +101,7 @@ func (c *K0sController) reconcileMachines(ctx context.Context, scope *controlpla
 	// Enqueue until the desired state is reached.
 	if !isDesiredStateReached(scope) {
 		logger.Info("Desired state not reached yet", "upToDate", scope.upToDateMachines.Len(), "notUpToDate", scope.notUpToDateMachines.Len(), "desired", int(scope.kcp.Spec.Replicas))
-		res = ctrl.Result{RequeueAfter: 10 * time.Second, Requeue: true}
+		res = ctrl.Result{RequeueAfter: 10 * time.Second}
 		return
 	}
 
@@ -465,7 +465,7 @@ func (c *K0sController) preflightChecks(ctx context.Context, scope *controlplane
 			logger.Info("Waiting for latest machine to be ready before scaling", "machine", latest.Name)
 			scope.preflightBlockers = append(scope.preflightBlockers, fmt.Sprintf("* waiting for Machine %s to become ready", latest.Name))
 		}
-		return ctrl.Result{RequeueAfter: 10 * time.Second, Requeue: true}, nil
+		return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 	}
 
 	// When a machine is being updated in-place, Updating condition is set to true, and we need to wait for the update to finish before update
@@ -473,7 +473,7 @@ func (c *K0sController) preflightChecks(ctx context.Context, scope *controlplane
 	if isAnyMachineUpdating(scope) {
 		logger.Info("Waiting for machines to finish updating before scaling")
 		scope.preflightBlockers = append(scope.preflightBlockers, "* waiting for control plane Machines to finish updating in place")
-		return ctrl.Result{RequeueAfter: 10 * time.Second, Requeue: true}, nil
+		return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 	}
 
 	return ctrl.Result{}, nil
@@ -544,14 +544,14 @@ func (c *K0sController) reconcileMachineDeletions(ctx context.Context, scope *co
 		if !isWaitingForPreTerminateHook(highestPriorityDeleted) {
 			// When machine is not waiting for pre-terminate hook yet it means that it is still draining or detaching volumes
 			// as part of the machine deletion process in the machine controller side.
-			return ctrl.Result{RequeueAfter: 10 * time.Second, Requeue: true}, nil
+			return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 		}
 		err := c.deleteK0sNodeResources(ctx, scope, highestPriorityDeleted)
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf("error deleting k0s node resources for machine %s: %w", highestPriorityDeleted.Name, err)
 		}
 
-		return ctrl.Result{RequeueAfter: 10 * time.Second, Requeue: true}, nil
+		return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 	}
 
 	// Delete k0s node resources and machine resource when infrastructure has been deleted.

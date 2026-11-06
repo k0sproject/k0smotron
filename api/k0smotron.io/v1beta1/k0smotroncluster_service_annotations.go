@@ -34,8 +34,8 @@ func GetServiceAnnotations(annotations map[string]string) map[string]string {
 }
 
 // GetServiceExternalTrafficPolicy returns the ExternalTrafficPolicy stored in annotations, if any.
-func GetServiceExternalTrafficPolicy(annotations map[string]string) v1.ServiceExternalTrafficPolicyType {
-	return v1.ServiceExternalTrafficPolicyType(getStringAnnotation(annotations, ServiceAnnotationExternalTrafficPolicy))
+func GetServiceExternalTrafficPolicy(annotations map[string]string) v1.ServiceExternalTrafficPolicy {
+	return v1.ServiceExternalTrafficPolicy(getStringAnnotation(annotations, ServiceAnnotationExternalTrafficPolicy))
 }
 
 // GetServiceLoadBalancerClass returns the LoadBalancerClass stored in annotations, if any.

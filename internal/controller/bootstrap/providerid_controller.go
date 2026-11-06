@@ -96,7 +96,7 @@ func (p *ProviderIDController) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	if node == nil {
 		log.Info("waiting for node to be available for machine " + machine.Name)
-		return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 10}, nil
+		return ctrl.Result{RequeueAfter: time.Second * 10}, nil
 	}
 
 	if node.Spec.ProviderID == "" {

@@ -23,6 +23,7 @@ linters:
     - nilerr
     - contextcheck
     - gosec
+    - staticcheck
   settings:
     forbidigo:
       analyze-types: false
@@ -56,6 +57,12 @@ linters:
       disable:
         - shadow
         - fieldalignment
+    staticcheck:
+      # The SA checks without their performance group (SA6). Stylecheck (ST),
+      # quickfix (QF) and simplification (S1) checks are left out.
+      checks:
+        - SA*
+        - -SA6*
     revive:
       rules:
         # The following rules are recommended https://github.com/mgechev/revive#recommended-configuration
@@ -93,6 +100,10 @@ linters:
       - linters: [nilerr]
         path: "^inttest/"
       # Tests drive kubectl, docker and sh with arguments they build themselves.
+      # These deprecations need their own migration: typed server-side apply,
+      # the events.k8s.io recorder, and exported API constants.
+      - linters: [staticcheck]
+        text: "SA1019: (sigs.k8s.io/controller-runtime/pkg/client.Apply|\\(sigs.k8s.io/controller-runtime/pkg/manager.Manager\\).GetEventRecorderFor|sigs.k8s.io/cluster-api/api/core/v1beta2.ConditionType) is deprecated"
       - linters: [gosec]
         text: "G204:"
         path: "(^inttest/|_test\\.go$)"

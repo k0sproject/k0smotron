@@ -139,7 +139,7 @@ func (s *KubeadmRemoteMachineSuite) TestKubeadmControlPlaneOnRemoteMachine() {
 
 	expectedProviderID := fmt.Sprintf("remote-machine://%s:22", workerIP)
 	controlPlaneMachineName := ""
-	// nolint:staticcheck
+	//nolint:staticcheck // Deprecated, but PollUntilContextCancel returns a different error on timeout.
 	err := wait.PollImmediateUntilWithContext(ctx, 5*time.Second, func(ctx context.Context) (bool, error) {
 		machines, err := util.GetControlPlaneMachinesByKcpName(ctx, kcpName, "default", s.client)
 		if err != nil || len(machines) != 1 {
