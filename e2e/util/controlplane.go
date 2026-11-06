@@ -265,7 +265,7 @@ func WaitForKubeProxyUpgrade(ctx context.Context, input WaitForKubeProxyUpgradeI
 	fmt.Println("Ensuring kube-proxy has the correct image")
 
 	// this desired version is sticky to the k0s naming on the kube-proxy image
-	versionPrefix := strings.Split(input.KubernetesVersion, "+")[0]
+	versionPrefix, _, _ := strings.Cut(input.KubernetesVersion, "+")
 	wantKubeProxyImage := fmt.Sprintf("quay.io/k0sproject/kube-proxy:%s", versionPrefix)
 
 	return wait.PollUntilContextTimeout(ctx, interval.tick, interval.timeout, true, func(ctx context.Context) (done bool, err error) {
