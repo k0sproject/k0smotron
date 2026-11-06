@@ -104,11 +104,11 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 	s.Require().NoError(err)
 
 	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(_ context.Context) (bool, error) {
+	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
 		b, _ := s.client.RESTClient().
 			Get().
 			AbsPath("/healthz").
-			DoRaw(context.Background())
+			DoRaw(ctx)
 
 		return string(b) == "ok", nil
 	})

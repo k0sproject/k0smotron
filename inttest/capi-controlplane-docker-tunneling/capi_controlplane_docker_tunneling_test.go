@@ -103,11 +103,11 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 	kmcKC, err := util.GetKMCClientSet(s.ctx, s.client, "docker-test-cluster", "default", localPort)
 	s.Require().NoError(err)
 
-	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(_ context.Context) (bool, error) {
+	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
 		b, _ := s.client.RESTClient().
 			Get().
 			AbsPath("/healthz").
-			DoRaw(context.Background())
+			DoRaw(ctx)
 
 		return string(b) == "ok", nil
 	})

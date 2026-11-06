@@ -143,8 +143,8 @@ func (s *CAPIConfigUpdateVMSuite) TestCAPIConfigUpdateVMWorker() {
 	s.updateClusterObjects()
 
 	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(_ context.Context) (bool, error) {
-		cm, err := kmcKC.CoreV1().ConfigMaps("kube-system").Get(s.ctx, "kube-router-cfg", metav1.GetOptions{})
+	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+		cm, err := kmcKC.CoreV1().ConfigMaps("kube-system").Get(ctx, "kube-router-cfg", metav1.GetOptions{})
 		if err != nil {
 			return false, nil
 		}

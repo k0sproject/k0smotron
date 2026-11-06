@@ -110,11 +110,11 @@ func (p *JobProvisioner) Provision(ctx context.Context) error {
 
 	job.Spec.Template.Spec.Containers[0].Args = []string{"/var/lib/bootstrap-data/k0smotron-entrypoint.sh"}
 
-	if err := p.client.Patch(context.Background(), secret, client.Apply, patchOpts...); err != nil {
+	if err := p.client.Patch(ctx, secret, client.Apply, patchOpts...); err != nil {
 		return fmt.Errorf("failed to create a secret: %w", err)
 	}
 
-	if err := p.client.Create(context.Background(), job, &client.CreateOptions{}); err != nil {
+	if err := p.client.Create(ctx, job, &client.CreateOptions{}); err != nil {
 		return fmt.Errorf("failed to create job: %w", err)
 	}
 

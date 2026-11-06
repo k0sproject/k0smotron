@@ -127,7 +127,7 @@ func (scope *kmcScope) reconcileK0sConfig(ctx context.Context, kmc *km.Cluster, 
 		kmc.Spec.Storage.Kine.DataSourceURL = kineDataSourceURLPlaceholder
 	}
 
-	sans, err := genSANs(kmc, scope.client)
+	sans, err := genSANs(ctx, kmc, scope.client)
 	if err != nil {
 		return fmt.Errorf("failed to generate SANs: %w", err)
 	}
@@ -180,7 +180,7 @@ func reconcileDynamicConfig(ctx context.Context, kmc *km.Cluster, k0sConfig map[
 	return util.ReconcileDynamicConfig(ctx, chCS, u)
 }
 
-func genSANs(kmc *km.Cluster, c client.Client) ([]string, error) {
+func genSANs(ctx context.Context, kmc *km.Cluster, c client.Client) ([]string, error) {
 	var sans []string
 	if kmc.Spec.ExternalAddress != "" {
 		sans = append(sans, kmc.Spec.ExternalAddress)
@@ -193,7 +193,7 @@ func genSANs(kmc *km.Cluster, c client.Client) ([]string, error) {
 	sans = append(sans, fmt.Sprintf("%s.svc", svcNamespacedName))
 
 	kmcService := &v1.Service{}
-	err := c.Get(context.Background(), client.ObjectKey{Name: svcName, Namespace: kmc.Namespace}, kmcService)
+	err := c.Get(ctx, client.ObjectKey{Name: svcName, Namespace: kmc.Namespace}, kmcService)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get service %s: %w", svcName, err)
 	}

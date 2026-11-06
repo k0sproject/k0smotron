@@ -156,8 +156,8 @@ func (s *RemoteMachineTemplateUpdateSuite) TestCAPIRemoteMachine() {
 	s.T().Log("verify the RemoteMachine is at expected state")
 	var rmName string
 	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(ctx, 1*time.Second, func(_ context.Context) (bool, error) {
-		rm, err := s.findRemoteMachines("default")
+	err = wait.PollImmediateUntilWithContext(ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+		rm, err := s.findRemoteMachines(ctx, "default")
 		if err != nil {
 			return false, err
 		}
@@ -172,13 +172,13 @@ func (s *RemoteMachineTemplateUpdateSuite) TestCAPIRemoteMachine() {
 	s.Require().NoError(err)
 
 	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(ctx, 1*time.Second, func(_ context.Context) (bool, error) {
-		rm, err := s.getRemoteMachine(rmName, "default")
+	err = wait.PollImmediateUntilWithContext(ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+		rm, err := s.getRemoteMachine(ctx, rmName, "default")
 		if err != nil {
 			return false, err
 		}
 
-		expectedProviderID := fmt.Sprintf("remote-machine://%s:22", s.getWorkerIP())
+		expectedProviderID := fmt.Sprintf("remote-machine://%s:22", s.getWorkerIP(ctx))
 		fmt.Println(expectedProviderID, rm.Spec.ProviderID)
 		return rm.Status.Initialization.Provisioned != nil && *rm.Status.Initialization.Provisioned && expectedProviderID == rm.Spec.ProviderID, nil
 	})
@@ -213,9 +213,9 @@ func (s *RemoteMachineTemplateUpdateSuite) TestCAPIRemoteMachine() {
 	s.Require().NoError(common.WaitForNodeReadyStatus(ctx, kmcKC, machines[0].GetName(), corev1.ConditionTrue))
 }
 
-func (s *RemoteMachineTemplateUpdateSuite) findRemoteMachines(namespace string) ([]infra.RemoteMachine, error) {
+func (s *RemoteMachineTemplateUpdateSuite) findRemoteMachines(ctx context.Context, namespace string) ([]infra.RemoteMachine, error) {
 	apiPath := fmt.Sprintf("/apis/infrastructure.cluster.x-k8s.io/v1beta2/namespaces/%s/remotemachines", namespace)
-	result, err := s.client.RESTClient().Get().AbsPath(apiPath).DoRaw(s.Context())
+	result, err := s.client.RESTClient().Get().AbsPath(apiPath).DoRaw(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -226,9 +226,9 @@ func (s *RemoteMachineTemplateUpdateSuite) findRemoteMachines(namespace string) 
 	return rm.Items, nil
 }
 
-func (s *RemoteMachineTemplateUpdateSuite) getRemoteMachine(name string, namespace string) (*infra.RemoteMachine, error) {
+func (s *RemoteMachineTemplateUpdateSuite) getRemoteMachine(ctx context.Context, name string, namespace string) (*infra.RemoteMachine, error) {
 	apiPath := fmt.Sprintf("/apis/infrastructure.cluster.x-k8s.io/v1beta2/namespaces/%s/remotemachines/%s", namespace, name)
-	result, err := s.client.RESTClient().Get().AbsPath(apiPath).DoRaw(s.Context())
+	result, err := s.client.RESTClient().Get().AbsPath(apiPath).DoRaw(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -247,7 +247,7 @@ func (s *RemoteMachineTemplateUpdateSuite) updateCluster() {
 func (s *RemoteMachineTemplateUpdateSuite) createCluster() {
 
 	// Get worker IP
-	workerIP := s.getWorkerIP()
+	workerIP := s.getWorkerIP(s.Context())
 	s.Require().NotEmpty(workerIP)
 
 	// Get SSH key
@@ -293,13 +293,13 @@ func getLBPort(ctx context.Context, name string) (int, error) {
 	return strconv.Atoi(ports["6443/tcp"][0]["HostPort"])
 }
 
-func (s *RemoteMachineTemplateUpdateSuite) getWorkerIP() string {
+func (s *RemoteMachineTemplateUpdateSuite) getWorkerIP(ctx context.Context) string {
 	nodeName := s.K0smotronNode(0)
-	ssh, err := s.SSH(s.Context(), nodeName)
+	ssh, err := s.SSH(ctx, nodeName)
 	s.Require().NoError(err)
 	defer ssh.Disconnect()
 
-	ipAddress, err := ssh.ExecWithOutput(s.Context(), "hostname -i")
+	ipAddress, err := ssh.ExecWithOutput(ctx, "hostname -i")
 	s.Require().NoError(err)
 	return ipAddress
 }

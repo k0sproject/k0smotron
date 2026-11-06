@@ -105,7 +105,7 @@ func (p *ProviderIDController) Reconcile(ctx context.Context, req ctrl.Request) 
 		err = retry.OnError(retry.DefaultBackoff, func(_ error) bool {
 			return true
 		}, func() error {
-			_, upErr := childClient.CoreV1().Nodes().Update(context.Background(), node, metav1.UpdateOptions{})
+			_, upErr := childClient.CoreV1().Nodes().Update(ctx, node, metav1.UpdateOptions{})
 			return upErr
 		})
 
