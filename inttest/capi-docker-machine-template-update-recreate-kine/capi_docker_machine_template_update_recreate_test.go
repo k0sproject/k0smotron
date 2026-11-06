@@ -71,7 +71,7 @@ func (s *CAPIDevMachineTemplateUpdateRecreateKine) SetupSuite() {
 	s.Require().NotNil(kubeClient)
 	s.client = kubeClient
 
-	postgressAddress, err := getPostgresAddress()
+	postgressAddress, err := getPostgresAddress(s.T().Context())
 	s.Require().NoError(err)
 
 	tmpDir := s.T().TempDir()
@@ -98,13 +98,13 @@ func (s *CAPIDevMachineTemplateUpdateRecreateKine) TestCAPIControlPlaneDockerDow
 			return
 		}
 		s.T().Log("Deleting cluster objects")
-		s.Require().NoError(util.DeleteCluster("docker-test-cluster"))
+		s.Require().NoError(util.DeleteCluster(context.WithoutCancel(s.ctx), "docker-test-cluster"))
 	}()
 	s.T().Log("cluster objects applied, waiting for cluster to be ready")
 
 	var localPort int
-	err := wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(_ context.Context) (bool, error) {
-		localPort, _ = getLBPort("docker-test-cluster-lb")
+	err := wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
+		localPort, _ = getLBPort(ctx, "docker-test-cluster-lb")
 		return localPort > 0, nil
 	})
 	s.Require().NoError(err)
@@ -124,9 +124,9 @@ func (s *CAPIDevMachineTemplateUpdateRecreateKine) TestCAPIControlPlaneDockerDow
 	s.Require().NoError(err)
 
 	var nodeIDs []string
-	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(_ context.Context) (bool, error) {
+	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
 		var err error
-		nodeIDs, err = util.GetControlPlaneNodesIDs("docker-test-")
+		nodeIDs, err = util.GetControlPlaneNodesIDs(ctx, "docker-test-")
 
 		if err != nil {
 			return false, nil
@@ -147,7 +147,7 @@ func (s *CAPIDevMachineTemplateUpdateRecreateKine) TestCAPIControlPlaneDockerDow
 		}
 
 		for _, m := range machines {
-			output, err := exec.Command("docker", "exec", fmt.Sprintf("docker-test-cluster-%s", m.GetName()), "k0s", "status").Output()
+			output, err := exec.CommandContext(ctx, "docker", "exec", fmt.Sprintf("docker-test-cluster-%s", m.GetName()), "k0s", "status").Output()
 			if err != nil {
 				return false, nil
 			}
@@ -200,24 +200,24 @@ func (s *CAPIDevMachineTemplateUpdateRecreateKine) TestCAPIControlPlaneDockerDow
 
 func (s *CAPIDevMachineTemplateUpdateRecreateKine) installPostgres() {
 	// Exec via kubectl
-	out, err := exec.Command("kubectl", "apply", "-f", "./postgresql.yaml").CombinedOutput()
+	out, err := exec.CommandContext(s.ctx, "kubectl", "apply", "-f", "./postgresql.yaml").CombinedOutput()
 	s.Require().NoError(err, "failed to apply postgres: %s", string(out))
 }
 
 func (s *CAPIDevMachineTemplateUpdateRecreateKine) applyClusterObjects() {
 	// Exec via kubectl
-	out, err := exec.Command("kubectl", "apply", "-f", s.clusterYamlsPath).CombinedOutput()
+	out, err := exec.CommandContext(s.ctx, "kubectl", "apply", "-f", s.clusterYamlsPath).CombinedOutput()
 	s.Require().NoError(err, "failed to apply cluster objects: %s", string(out))
 }
 
 func (s *CAPIDevMachineTemplateUpdateRecreateKine) updateClusterObjects() {
 	// Exec via kubectl
-	out, err := exec.Command("kubectl", "apply", "-f", s.clusterYamlsUpdatePath).CombinedOutput()
+	out, err := exec.CommandContext(s.ctx, "kubectl", "apply", "-f", s.clusterYamlsUpdatePath).CombinedOutput()
 	s.Require().NoError(err, "failed to update cluster objects: %s", string(out))
 }
 
-func getPostgresAddress() (string, error) {
-	b, err := exec.Command("docker", "inspect", "kind-control-plane", "--format", "{{json .NetworkSettings.Networks.kind.IPAddress}}").Output()
+func getPostgresAddress(ctx context.Context) (string, error) {
+	b, err := exec.CommandContext(ctx, "docker", "inspect", "kind-control-plane", "--format", "{{json .NetworkSettings.Networks.kind.IPAddress}}").Output()
 	if err != nil {
 		return "", fmt.Errorf("failed to get inspect info from container kind-control-plane: %w", err)
 	}
@@ -228,8 +228,8 @@ func getPostgresAddress() (string, error) {
 	return net.JoinHostPort(address, "32001"), nil
 }
 
-func getLBPort(name string) (int, error) {
-	b, err := exec.Command("docker", "inspect", name, "--format", "{{json .NetworkSettings.Ports}}").Output()
+func getLBPort(ctx context.Context, name string) (int, error) {
+	b, err := exec.CommandContext(ctx, "docker", "inspect", name, "--format", "{{json .NetworkSettings.Ports}}").Output()
 	if err != nil {
 		return 0, fmt.Errorf("failed to get inspect info from container %s: %w", name, err)
 	}

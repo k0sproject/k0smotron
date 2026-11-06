@@ -85,14 +85,14 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDockerWorker() {
 			return
 		}
 		s.T().Log("Deleting cluster objects")
-		s.Require().NoError(util.DeleteCluster("docker-test-cluster"))
+		s.Require().NoError(util.DeleteCluster(context.WithoutCancel(s.ctx), "docker-test-cluster"))
 	}()
 	s.T().Log("cluster objects applied, waiting for cluster to be ready")
 
 	var localPort int
 	// nolint:staticcheck
-	err := wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(_ context.Context) (bool, error) {
-		localPort, _ = getLBPort("docker-test-cluster-lb")
+	err := wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+		localPort, _ = getLBPort(ctx, "docker-test-cluster-lb")
 		return localPort > 0, nil
 	})
 	s.Require().NoError(err)
@@ -125,7 +125,7 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDockerWorker() {
 
 		controlPlaneMachineName = machines[0].GetName()
 
-		output, err := exec.Command("docker", "exec", fmt.Sprintf("docker-test-cluster-%s", machines[0].GetName()), "k0s", "status").Output()
+		output, err := exec.CommandContext(ctx, "docker", "exec", fmt.Sprintf("docker-test-cluster-%s", machines[0].GetName()), "k0s", "status").Output()
 		if err != nil {
 			return false, nil
 		}
@@ -140,12 +140,12 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDockerWorker() {
 
 func (s *CAPIControlPlaneDockerSuite) applyClusterObjects() {
 	// Exec via kubectl
-	out, err := exec.Command("kubectl", "apply", "-f", s.clusterYamlsPath).CombinedOutput()
+	out, err := exec.CommandContext(s.ctx, "kubectl", "apply", "-f", s.clusterYamlsPath).CombinedOutput()
 	s.Require().NoError(err, "failed to apply cluster objects: %s", string(out))
 }
 
-func getLBPort(name string) (int, error) {
-	b, err := exec.Command("docker", "inspect", name, "--format", "{{json .NetworkSettings.Ports}}").Output()
+func getLBPort(ctx context.Context, name string) (int, error) {
+	b, err := exec.CommandContext(ctx, "docker", "inspect", name, "--format", "{{json .NetworkSettings.Ports}}").Output()
 	if err != nil {
 		return 0, fmt.Errorf("failed to get inspect info from container %s: %w", name, err)
 	}

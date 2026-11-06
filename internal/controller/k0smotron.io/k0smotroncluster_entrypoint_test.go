@@ -173,7 +173,7 @@ spec:
 
 			combinedScript := universalSedInplace + "\n" + printfLine + "\n" + actualSediCmd
 
-			cmd := exec.Command("sh", "-c", combinedScript)
+			cmd := exec.CommandContext(t.Context(), "sh", "-c", combinedScript)
 			cmd.Env = append(os.Environ(), "K0SMOTRON_KINE_DATASOURCE_URL="+tc.kineDataSourceURL)
 
 			output, err := cmd.CombinedOutput()

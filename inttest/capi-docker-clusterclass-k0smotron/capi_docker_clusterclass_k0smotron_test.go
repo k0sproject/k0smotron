@@ -123,17 +123,17 @@ func (s *CAPIDockerClusterClassK0smotronSuite) TestCAPIDocker() {
 
 func (s *CAPIDockerClusterClassK0smotronSuite) applyClusterObjects() {
 	// Exec via kubectl
-	out, err := exec.Command("kubectl", "apply", "-f", s.clusterClassYamlsPath).CombinedOutput()
+	out, err := exec.CommandContext(s.ctx, "kubectl", "apply", "-f", s.clusterClassYamlsPath).CombinedOutput()
 	s.Require().NoError(err, "failed to apply cluster class objects: %s", string(out))
-	out, err = exec.Command("kubectl", "apply", "-f", s.clusterYamlsPath).CombinedOutput()
+	out, err = exec.CommandContext(s.ctx, "kubectl", "apply", "-f", s.clusterYamlsPath).CombinedOutput()
 	s.Require().NoError(err, "failed to apply cluster objects: %s", string(out))
 }
 
 func (s *CAPIDockerClusterClassK0smotronSuite) deleteCluster() {
 	// Exec via kubectl
-	out, err := exec.Command("kubectl", "delete", "-f", s.clusterYamlsPath).CombinedOutput()
+	out, err := exec.CommandContext(context.WithoutCancel(s.ctx), "kubectl", "delete", "-f", s.clusterYamlsPath).CombinedOutput()
 	s.Require().NoError(err, "failed to delete cluster objects: %s", string(out))
-	out, err = exec.Command("kubectl", "delete", "-f", s.clusterClassYamlsPath).CombinedOutput()
+	out, err = exec.CommandContext(context.WithoutCancel(s.ctx), "kubectl", "delete", "-f", s.clusterClassYamlsPath).CombinedOutput()
 	s.Require().NoError(err, "failed to delete cluster class objects: %s", string(out))
 }
 

@@ -93,13 +93,13 @@ func (s *CAPIControlPlaneDockerDownScalingSuite) TestCAPIControlPlaneDockerDownS
 			return
 		}
 		s.T().Log("Deleting cluster objects")
-		s.Require().NoError(util.DeleteCluster("docker-test-cluster"))
+		s.Require().NoError(util.DeleteCluster(context.WithoutCancel(s.ctx), "docker-test-cluster"))
 	}()
 	s.T().Log("cluster objects applied, waiting for cluster to be ready")
 
 	var localPort int
-	err := wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(_ context.Context) (bool, error) {
-		localPort, _ = getLBPort("docker-test-cluster-lb")
+	err := wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
+		localPort, _ = getLBPort(ctx, "docker-test-cluster-lb")
 		return localPort > 0, nil
 	})
 	s.Require().NoError(err)
@@ -129,7 +129,7 @@ func (s *CAPIControlPlaneDockerDownScalingSuite) TestCAPIControlPlaneDockerDownS
 		}
 
 		for _, m := range machines {
-			output, err := exec.Command("docker", "exec", m.GetName(), "k0s", "status").Output()
+			output, err := exec.CommandContext(ctx, "docker", "exec", m.GetName(), "k0s", "status").Output()
 			if err != nil {
 				return false, nil
 			}
@@ -170,7 +170,7 @@ func (s *CAPIControlPlaneDockerDownScalingSuite) TestCAPIControlPlaneDockerDownS
 		}
 
 		for _, m := range machines {
-			output, err := exec.Command("docker", "exec", m.GetName(), "k0s", "status").Output()
+			output, err := exec.CommandContext(ctx, "docker", "exec", m.GetName(), "k0s", "status").Output()
 			if err != nil {
 				return false, nil
 			}
@@ -214,7 +214,7 @@ func (s *CAPIControlPlaneDockerDownScalingSuite) TestCAPIControlPlaneDockerDownS
 		}
 
 		for _, m := range machines {
-			output, err := exec.Command("docker", "exec", m.GetName(), "k0s", "status").Output()
+			output, err := exec.CommandContext(ctx, "docker", "exec", m.GetName(), "k0s", "status").Output()
 			if err != nil {
 				return false, nil
 			}
@@ -233,24 +233,24 @@ func (s *CAPIControlPlaneDockerDownScalingSuite) TestCAPIControlPlaneDockerDownS
 
 func (s *CAPIControlPlaneDockerDownScalingSuite) applyClusterObjects() {
 	// Exec via kubectl
-	out, err := exec.Command("kubectl", "apply", "-f", s.clusterYamlsPath).CombinedOutput()
+	out, err := exec.CommandContext(s.ctx, "kubectl", "apply", "-f", s.clusterYamlsPath).CombinedOutput()
 	s.Require().NoError(err, "failed to apply cluster objects: %s", string(out))
 }
 
 func (s *CAPIControlPlaneDockerDownScalingSuite) updateClusterObjects() {
 	// Exec via kubectl
-	out, err := exec.Command("kubectl", "apply", "-f", s.clusterYamlsUpdatePath).CombinedOutput()
+	out, err := exec.CommandContext(s.ctx, "kubectl", "apply", "-f", s.clusterYamlsUpdatePath).CombinedOutput()
 	s.Require().NoError(err, "failed to update cluster objects: %s", string(out))
 }
 
 func (s *CAPIControlPlaneDockerDownScalingSuite) updateClusterObjectsAgain() {
 	// Exec via kubectl
-	out, err := exec.Command("kubectl", "apply", "-f", s.clusterYamlsSecondUpdatePath).CombinedOutput()
+	out, err := exec.CommandContext(s.ctx, "kubectl", "apply", "-f", s.clusterYamlsSecondUpdatePath).CombinedOutput()
 	s.Require().NoError(err, "failed to update cluster objects: %s", string(out))
 }
 
-func getLBPort(name string) (int, error) {
-	b, err := exec.Command("docker", "inspect", name, "--format", "{{json .NetworkSettings.Ports}}").Output()
+func getLBPort(ctx context.Context, name string) (int, error) {
+	b, err := exec.CommandContext(ctx, "docker", "inspect", name, "--format", "{{json .NetworkSettings.Ports}}").Output()
 	if err != nil {
 		return 0, fmt.Errorf("failed to get inspect info from container %s: %w", name, err)
 	}

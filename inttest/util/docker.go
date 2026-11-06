@@ -16,6 +16,7 @@ limitations under the License.
 package util
 
 import (
+	"context"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -23,8 +24,8 @@ import (
 
 // GetControlPlaneNodesIDs retrieves the IDs of the control plane nodes by executing a `docker ps`
 // command and filtering the output based on the given prefix.
-func GetControlPlaneNodesIDs(prefix string) ([]string, error) {
-	out, err := exec.Command("/bin/sh", "-c", fmt.Sprintf(`docker ps | grep %s | grep -v "\-lb" | grep -v worker | awk '{print $1}'`, prefix)).Output()
+func GetControlPlaneNodesIDs(ctx context.Context, prefix string) ([]string, error) {
+	out, err := exec.CommandContext(ctx, "/bin/sh", "-c", fmt.Sprintf(`docker ps | grep %s | grep -v "\-lb" | grep -v worker | awk '{print $1}'`, prefix)).Output()
 	if err != nil {
 		return nil, err
 	}

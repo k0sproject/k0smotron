@@ -135,7 +135,7 @@ func (s *RemoteMachineTemplateUpdateSuite) TestCAPIRemoteMachine() {
 			return
 		}
 		s.T().Log("Deleting cluster objects")
-		s.Require().NoError(util.DeleteCluster("remote-test-cluster"))
+		s.Require().NoError(util.DeleteCluster(context.WithoutCancel(s.Context()), "remote-test-cluster"))
 	}()
 
 	s.createCluster()
@@ -143,8 +143,8 @@ func (s *RemoteMachineTemplateUpdateSuite) TestCAPIRemoteMachine() {
 	s.T().Log("cluster objects applied, waiting for cluster to be ready")
 	var localPort int
 	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(ctx, 1*time.Second, func(_ context.Context) (bool, error) {
-		localPort, _ = getLBPort("TestRemoteMachineSuite-k0smotron0")
+	err = wait.PollImmediateUntilWithContext(ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+		localPort, _ = getLBPort(ctx, "TestRemoteMachineSuite-k0smotron0")
 		return localPort > 0, nil
 	})
 	s.Require().NoError(err)
@@ -195,8 +195,8 @@ func (s *RemoteMachineTemplateUpdateSuite) TestCAPIRemoteMachine() {
 	s.T().Log("update cluster")
 	s.updateCluster()
 	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(ctx, 1*time.Second, func(_ context.Context) (bool, error) {
-		output, err := exec.Command("docker", "exec", "TestRemoteMachineSuite-k0smotron0", "k0s", "status").Output()
+	err = wait.PollImmediateUntilWithContext(ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+		output, err := exec.CommandContext(ctx, "docker", "exec", "TestRemoteMachineSuite-k0smotron0", "k0s", "status").Output()
 		if err != nil {
 			return false, nil
 		}
@@ -240,7 +240,7 @@ func (s *RemoteMachineTemplateUpdateSuite) getRemoteMachine(name string, namespa
 }
 
 func (s *RemoteMachineTemplateUpdateSuite) updateCluster() {
-	out, err := exec.Command("kubectl", "apply", "-f", s.updatedClusterYamlsPath).CombinedOutput()
+	out, err := exec.CommandContext(s.Context(), "kubectl", "apply", "-f", s.updatedClusterYamlsPath).CombinedOutput()
 	s.Require().NoError(err, "failed to update cluster objects: %s", string(out))
 }
 
@@ -273,13 +273,13 @@ func (s *RemoteMachineTemplateUpdateSuite) createCluster() {
 	bytes := clusterYaml.Bytes()
 
 	s.Require().NoError(os.WriteFile(s.clusterYamlsPath, bytes, 0644))
-	out, err := exec.Command("kubectl", "apply", "-f", s.clusterYamlsPath).CombinedOutput()
+	out, err := exec.CommandContext(s.Context(), "kubectl", "apply", "-f", s.clusterYamlsPath).CombinedOutput()
 	s.Require().NoError(os.WriteFile(s.updatedClusterYamlsPath, []byte(updatedClusterYaml), 0644))
 	s.Require().NoError(err, "failed to update cluster objects: %s", string(out))
 }
 
-func getLBPort(name string) (int, error) {
-	b, err := exec.Command("docker", "inspect", name, "--format", "{{json .NetworkSettings.Ports}}").Output()
+func getLBPort(ctx context.Context, name string) (int, error) {
+	b, err := exec.CommandContext(ctx, "docker", "inspect", name, "--format", "{{json .NetworkSettings.Ports}}").Output()
 	if err != nil {
 		return 0, fmt.Errorf("failed to get inspect info from container %s: %w", name, err)
 	}

@@ -120,9 +120,9 @@ func (s *KubeadmRemoteMachineSuite) TestKubeadmControlPlaneOnRemoteMachine() {
 			return
 		}
 		s.T().Log("deleting cluster objects")
-		s.Require().NoError(util.DeleteCluster(clusterName + "-cluster"))
+		s.Require().NoError(util.DeleteCluster(context.WithoutCancel(s.ctx), clusterName+"-cluster"))
 		s.T().Log("removing the node container")
-		_ = exec.Command("docker", "rm", "-f", nodeContainer).Run()
+		_ = exec.CommandContext(context.WithoutCancel(s.ctx), "docker", "rm", "-f", nodeContainer).Run()
 	}()
 
 	workerIP := s.getNodeIP()
@@ -192,7 +192,7 @@ func (s *KubeadmRemoteMachineSuite) TestKubeadmControlPlaneOnRemoteMachine() {
 // run kindest/node containers, since that's what the image actually needs
 // to boot systemd, containerd and kubelet correctly.
 func (s *KubeadmRemoteMachineSuite) startNodeContainer() {
-	_ = exec.Command("docker", "rm", "-f", nodeContainer).Run()
+	_ = exec.CommandContext(s.ctx, "docker", "rm", "-f", nodeContainer).Run()
 
 	args := []string{
 		"run", "-d",
@@ -209,19 +209,19 @@ func (s *KubeadmRemoteMachineSuite) startNodeContainer() {
 		"-v", "/var",
 		"kubeadm-node",
 	}
-	out, err := exec.Command("docker", args...).CombinedOutput()
+	out, err := exec.CommandContext(s.ctx, "docker", args...).CombinedOutput()
 	s.Require().NoError(err, "failed to start node container: %s", string(out))
 }
 
 func (s *KubeadmRemoteMachineSuite) getNodeIP() string {
-	out, err := exec.Command("docker", "inspect", "-f",
+	out, err := exec.CommandContext(s.ctx, "docker", "inspect", "-f",
 		fmt.Sprintf("{{.NetworkSettings.Networks.%s.IPAddress}}", dockerNetwork), nodeContainer).CombinedOutput()
 	s.Require().NoError(err, "failed to inspect node container: %s", string(out))
 	return strings.TrimSpace(string(out))
 }
 
 func (s *KubeadmRemoteMachineSuite) pushSSHKey() {
-	cmd := exec.Command("docker", "exec", "-i", nodeContainer, "sh", "-c",
+	cmd := exec.CommandContext(s.ctx, "docker", "exec", "-i", nodeContainer, "sh", "-c",
 		"mkdir -p /root/.ssh && cat >> /root/.ssh/authorized_keys && chmod 600 /root/.ssh/authorized_keys")
 	cmd.Stdin = bytes.NewReader(s.publicKey)
 	out, err := cmd.CombinedOutput()
@@ -258,7 +258,7 @@ func (s *KubeadmRemoteMachineSuite) kubectlOnNode(stdin []byte, args ...string) 
 	fullArgs = append(fullArgs, nodeContainer, "kubectl", "--kubeconfig=/etc/kubernetes/admin.conf")
 	fullArgs = append(fullArgs, args...)
 
-	cmd := exec.Command("docker", fullArgs...)
+	cmd := exec.CommandContext(s.ctx, "docker", fullArgs...)
 	if stdin != nil {
 		cmd.Stdin = bytes.NewReader(stdin)
 	}
@@ -327,7 +327,7 @@ func (s *KubeadmRemoteMachineSuite) createCluster(workerIP string) {
 	tmpDir := s.T().TempDir()
 	clusterYamlPath := tmpDir + "/cluster.yaml"
 	s.Require().NoError(os.WriteFile(clusterYamlPath, clusterYamlBuf.Bytes(), 0644))
-	out, err := exec.Command("kubectl", "apply", "-f", clusterYamlPath).CombinedOutput()
+	out, err := exec.CommandContext(s.ctx, "kubectl", "apply", "-f", clusterYamlPath).CombinedOutput()
 	s.Require().NoError(err, "failed to apply cluster objects: %s", string(out))
 }
 

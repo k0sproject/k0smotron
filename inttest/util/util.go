@@ -107,7 +107,7 @@ func InstallStableK0smotronOperator(ctx context.Context, kc *kubernetes.Clientse
 		return err
 	}
 
-	installFileName, err := downloadStableStandaloneInstall()
+	installFileName, err := downloadStableStandaloneInstall(ctx)
 	if err != nil {
 		return err
 	}
@@ -585,8 +585,8 @@ func WaitForRolloutCompleted(ctx context.Context, kc *kubernetes.Clientset, name
 
 // DeleteCluster deletes the cluster with the given name and namespace by executing the
 // `kubectl delete cluster` command.
-func DeleteCluster(clusterName string) error {
-	out, err := exec.Command("kubectl", "delete", "cluster", clusterName).CombinedOutput()
+func DeleteCluster(ctx context.Context, clusterName string) error {
+	out, err := exec.CommandContext(ctx, "kubectl", "delete", "cluster", clusterName).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to delete cluster objects: %s", string(out))
 	}
@@ -616,10 +616,14 @@ func GetControlPlaneMachinesByKcpName(ctx context.Context, kcpName string, names
 	return result, nil
 }
 
-func downloadStableStandaloneInstall() (string, error) {
+func downloadStableStandaloneInstall(ctx context.Context) (string, error) {
 	url := "https://docs.k0smotron.io/stable/install-standalone.yaml"
 
-	response, err := http.Get(url)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return "", fmt.Errorf("failed to download k0smotron install file: %w", err)
+	}
+	response, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("failed to download k0smotron install file: %w", err)
 	}
