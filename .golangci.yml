@@ -91,12 +91,18 @@ linters:
         - name: redefines-builtin-id
         - name: defer
         - name: modifies-value-receiver
+        - name: deep-exit
   exclusions:
     generated: strict
     rules:
       - linters: [revive]
         text: "var-naming: avoid meaningless package names"
         path: "(internal/controller/util/|inttest/util/)"
+      # The OrDie setup helpers in main.go exit on failure by design, and the e2e
+      # setup can only parse its flags once go test has registered its own.
+      - linters: [revive]
+        text: "deep-exit:"
+        path: "^(cmd/main|e2e/setup)\\.go$"
       # Integration test polls return (false, nil) on an error to retry until
       # the poll times out, which is the wait.Poll contract.
       - linters: [nilerr]
