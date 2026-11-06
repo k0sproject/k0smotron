@@ -318,7 +318,7 @@ func GetKMCClientSet(ctx context.Context, kc *kubernetes.Clientset, name string,
 		return nil, err
 	}
 
-	kmcCfg, err := clientcmd.RESTConfigFromKubeConfig([]byte(kubeConf.Data["value"]))
+	kmcCfg, err := clientcmd.RESTConfigFromKubeConfig(kubeConf.Data["value"])
 	if err != nil {
 		return nil, err
 	}

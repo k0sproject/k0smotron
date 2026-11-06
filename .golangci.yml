@@ -37,6 +37,7 @@ linters:
     - dupword
     - thelper
     - nilnil
+    - unconvert
   settings:
     forbidigo:
       analyze-types: false
