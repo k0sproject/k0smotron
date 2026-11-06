@@ -103,8 +103,8 @@ func newEnvironment(setupSecretCachingClient setupSecretCachingClientFn) *Enviro
 	_, filename, _, _ := goruntime.Caller(0)
 	root := path.Join(path.Dir(filename), "..", "..", "..")
 
-	capiCoreCrdsPath := ""
-	if capiCoreCrdsPath = getFilePathToCAPICoreCRDs(); capiCoreCrdsPath == "" {
+	capiCoreCrdsPath := getFilePathToCAPICoreCRDs()
+	if capiCoreCrdsPath == "" {
 		panic(fmt.Errorf("failed to retrieve cluster-api core crds path"))
 	}
 

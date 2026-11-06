@@ -172,13 +172,12 @@ func selectorTargetsMachine(selector string, machineName string) (bool, error) {
 }
 
 func getDownloadURLFromBootstrapConfig(ctx context.Context, client client.Client, configRef clusterv1.ContractVersionedObjectReference, isControlPlane bool, namespace string) (string, error) {
-	downloadURL := ""
-
 	uBootstrapConfig, err := external.GetObjectFromContractVersionedRef(ctx, client, configRef, namespace)
 	if err != nil {
 		return "", fmt.Errorf("error fetching bootstrap config: %w", err)
 	}
 
+	var downloadURL string
 	if isControlPlane {
 		k0sControllerConfig := &bootstrapv1.K0sControllerConfig{}
 		err = runtime.DefaultUnstructuredConverter.FromUnstructured(uBootstrapConfig.Object, k0sControllerConfig)
