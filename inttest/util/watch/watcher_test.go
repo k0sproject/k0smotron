@@ -634,6 +634,8 @@ func TestWatcher(t *testing.T) {
 }
 
 func forbiddenCondition(t *testing.T) Condition[corev1.ConfigMap] {
+	t.Helper()
+
 	return func(*corev1.ConfigMap) (bool, error) {
 		require.Fail(t, "Condition shouldn't be called.")
 		return false, nil
@@ -641,6 +643,8 @@ func forbiddenCondition(t *testing.T) Condition[corev1.ConfigMap] {
 }
 
 func forbiddenWatch(t *testing.T) func(metav1.ListOptions) error {
+	t.Helper()
+
 	return func(metav1.ListOptions) error {
 		require.Fail(t, "Watch shouldn't be called.")
 		return nil
@@ -648,6 +652,8 @@ func forbiddenWatch(t *testing.T) func(metav1.ListOptions) error {
 }
 
 func forbiddenErrorCallback(t *testing.T) ErrorCallback {
+	t.Helper()
+
 	return func(err error) (time.Duration, error) {
 		require.Fail(t, "ErrorCallback shouldn't be called.", "Error was: %v", err)
 		return 0, nil

@@ -41,7 +41,7 @@ import (
 )
 
 func TestMachineDeployment(t *testing.T) {
-	setupAndRun(t, func(t *testing.T) {
+	setupAndRun(t, func(t *testing.T) { //nolint:thelper // Test body run by setupAndRun, t.Helper would move its failures to the caller.
 		testName := "machinedeployment"
 
 		// Setup a Namespace where to host objects for this spec and create a watcher for the namespace events.
@@ -131,6 +131,8 @@ func TestMachineDeployment(t *testing.T) {
 }
 
 func verifyK0smotronControlPlaneVersionFormat(ctx context.Context, t *testing.T, clusterProxy capiframework.ClusterProxy, clusterName, namespace string) {
+	t.Helper()
+
 	kcp := &unstructured.Unstructured{}
 	kcp.SetAPIVersion("controlplane.cluster.x-k8s.io/v1beta1")
 	kcp.SetKind("K0smotronControlPlane")
@@ -164,6 +166,8 @@ func verifyK0smotronControlPlaneVersionFormat(ctx context.Context, t *testing.T,
 }
 
 func getWorkloadClusterKubeconfig(ctx context.Context, t *testing.T, clusterProxy capiframework.ClusterProxy, clusterName, namespace string) *rest.Config {
+	t.Helper()
+
 	kubeconfigSecret := &corev1.Secret{}
 	require.Eventually(t, func() bool {
 		err := clusterProxy.GetClient().Get(ctx, client.ObjectKey{
@@ -183,6 +187,8 @@ func getWorkloadClusterKubeconfig(ctx context.Context, t *testing.T, clusterProx
 }
 
 func verifyWorkerNodesReady(ctx context.Context, t *testing.T, kubeconfig *rest.Config, expectedNodes int) {
+	t.Helper()
+
 	clientset, err := kubernetes.NewForConfig(kubeconfig)
 	require.NoError(t, err, "Failed to create Kubernetes clientset")
 

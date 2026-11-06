@@ -27,6 +27,8 @@ import (
 )
 
 func normalizeJSON(t *testing.T, in []byte) []byte {
+	t.Helper()
+
 	var v any
 	require.NoError(t, json.Unmarshal(in, &v))
 	out, err := json.MarshalIndent(v, "", "  ")

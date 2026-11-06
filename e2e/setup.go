@@ -113,6 +113,8 @@ func init() {
 }
 
 func setupAndRun(t *testing.T, test func(t *testing.T)) {
+	t.Helper()
+
 	ctrl.SetLogger(klog.Background())
 	flag.Parse()
 

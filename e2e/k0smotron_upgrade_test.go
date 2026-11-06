@@ -50,7 +50,7 @@ func TestK0smotronUpgrade(t *testing.T) {
 // development version against the latests stable version of k0smotron.
 var k0smotronMinorVersionsToCheckUpgrades = []string{"1.10", "2.0", "2.1", "2.2"}
 
-func k0smotronUpgradeSpec(t *testing.T) {
+func k0smotronUpgradeSpec(t *testing.T) { //nolint:thelper // Test body run by setupAndRun, t.Helper would move its failures to the caller.
 
 	testName := "k0smotron-upgrade"
 

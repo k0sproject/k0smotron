@@ -68,7 +68,7 @@ func TestRemoteHostedControlPlanes(t *testing.T) {
 	setupAndRun(t, remoteHCPSpec)
 }
 
-func remoteHCPSpec(t *testing.T) {
+func remoteHCPSpec(t *testing.T) { //nolint:thelper // Test body run by setupAndRun, t.Helper would move its failures to the caller.
 	testName := "remote-hcp"
 
 	encodedHostingClusterKubeconfig, err := getEncodedHostingClusterKubeconfig()

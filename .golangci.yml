@@ -35,6 +35,7 @@ linters:
     - mirror
     - intrange
     - dupword
+    - thelper
   settings:
     forbidigo:
       analyze-types: false

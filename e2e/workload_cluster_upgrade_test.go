@@ -54,7 +54,7 @@ func TestWorkloadClusterUpgrade(t *testing.T) {
 //
 // 3. Performing a subsequent control plane version upgrade using the selected (flavor) upgrade strategy.
 //   - Confirms the cluster status is consistent and desired post-update.
-func workloadClusterUpgradeSpec(t *testing.T) {
+func workloadClusterUpgradeSpec(t *testing.T) { //nolint:thelper // Test body run by setupAndRun, t.Helper would move its failures to the caller.
 	testName := "workload-inplace-upgrade"
 
 	require.NotEmpty(t, flavor, "a flavor between InPlace, InPlaceCAPI, Recreate or RecreateDeleteFirst needs to be specified for this test")
