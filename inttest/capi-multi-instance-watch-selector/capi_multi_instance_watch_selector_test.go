@@ -108,7 +108,7 @@ func (s *CAPIMultiInstanceWatchSelectorSuite) TestWatchFilterIsolatesMultipleCAP
 	shadowPodName, err := s.getDeploymentPodName(s.ctx, secondaryDeploymentName, operatorNamespace)
 	s.Require().NoError(err)
 
-	initialCounter, err := s.getK0smotronControlPlaneReconcileCounter(s.ctx, operatorNamespace, shadowPodName)
+	initialCounter, err := s.getK0smotronControlPlaneReconcileCounter(s.ctx, shadowPodName)
 	s.Require().NoError(err)
 
 	s.T().Log("triggering a reconcile on the primary-labeled K0smotronControlPlane")
@@ -116,7 +116,7 @@ func (s *CAPIMultiInstanceWatchSelectorSuite) TestWatchFilterIsolatesMultipleCAP
 
 	var counterAfterUnscopedPatch float64
 	err = wait.PollUntilContextTimeout(s.ctx, 2*time.Second, 30*time.Second, true, func(ctx context.Context) (bool, error) {
-		counterAfterUnscopedPatch, err = s.getK0smotronControlPlaneReconcileCounter(ctx, operatorNamespace, shadowPodName)
+		counterAfterUnscopedPatch, err = s.getK0smotronControlPlaneReconcileCounter(ctx, shadowPodName)
 		if err != nil {
 			return false, err
 		}
@@ -131,14 +131,14 @@ func (s *CAPIMultiInstanceWatchSelectorSuite) TestWatchFilterIsolatesMultipleCAP
 	shadowPodName, err = s.getDeploymentPodName(s.ctx, secondaryDeploymentName, operatorNamespace)
 	s.Require().NoError(err)
 
-	counterBeforeScopedPatch, err := s.getK0smotronControlPlaneReconcileCounter(s.ctx, operatorNamespace, shadowPodName)
+	counterBeforeScopedPatch, err := s.getK0smotronControlPlaneReconcileCounter(s.ctx, shadowPodName)
 	s.Require().NoError(err)
 
 	s.T().Log("triggering the same reconcile after scoping the secondary controller away from the primary-labeled object")
 	s.Require().NoError(s.annotateControlPlane("reconcile-probe", "with-selector"))
 
 	err = wait.PollUntilContextTimeout(s.ctx, 2*time.Second, 20*time.Second, true, func(ctx context.Context) (bool, error) {
-		counterAfterScopedPatch, err := s.getK0smotronControlPlaneReconcileCounter(ctx, operatorNamespace, shadowPodName)
+		counterAfterScopedPatch, err := s.getK0smotronControlPlaneReconcileCounter(ctx, shadowPodName)
 		if err != nil {
 			return false, err
 		}
@@ -409,8 +409,8 @@ func (s *CAPIMultiInstanceWatchSelectorSuite) annotateControlPlane(key, value st
 	return nil
 }
 
-func (s *CAPIMultiInstanceWatchSelectorSuite) getK0smotronControlPlaneReconcileCounter(ctx context.Context, namespace, podName string) (float64, error) {
-	fw, err := util.GetPortForwarderWithPorts(s.restConfig, podName, namespace, 0, 8080)
+func (s *CAPIMultiInstanceWatchSelectorSuite) getK0smotronControlPlaneReconcileCounter(ctx context.Context, podName string) (float64, error) {
+	fw, err := util.GetPortForwarderWithPorts(s.restConfig, podName, operatorNamespace, 0, 8080)
 	if err != nil {
 		return 0, fmt.Errorf("get port forwarder: %w", err)
 	}

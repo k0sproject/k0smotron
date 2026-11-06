@@ -160,7 +160,7 @@ func TestWatcher(t *testing.T) {
 		t.Parallel()
 		provider, underTest := newTestWatcher()
 		provider.nextList.ListMeta.ResourceVersion = t.Name()
-		provider.watch = func(metav1.ListOptions) error {
+		provider.watch = func(metav1.ListOptions) error { //nolint:unparam // The signature is set by the watch field it is assigned to.
 			provider.ch = closedEventChanWith()
 			provider.watch = forbiddenWatch(t)
 			return nil
@@ -494,7 +494,7 @@ func TestWatcher(t *testing.T) {
 
 			return nil
 		}
-		second = func(opts metav1.ListOptions) error {
+		second = func(opts metav1.ListOptions) error { //nolint:unparam // The signature is set by the watch field it is assigned to.
 			assert.Equal(t, "the bookmark", opts.ResourceVersion)
 			assert.True(t, opts.AllowWatchBookmarks)
 
@@ -506,7 +506,7 @@ func TestWatcher(t *testing.T) {
 
 			return nil
 		}
-		third = func(opts metav1.ListOptions) error {
+		third = func(opts metav1.ListOptions) error { //nolint:unparam // The signature is set by the watch field it is assigned to.
 			assert.Equal(t, "someConfigMap", opts.ResourceVersion)
 			assert.True(t, opts.AllowWatchBookmarks)
 

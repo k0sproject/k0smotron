@@ -582,7 +582,7 @@ func TestComputeAvailabilityPing(t *testing.T) {
 		// One lost read is not enough on purpose, so fail once to open the grace
 		// period, age it out, then fail again.
 		c.computeAvailability(context.Background(), scope, logr.Discard())
-		ageAvailableCondition(t, &c.availabilityFailures, scope.kcp, availabilityGracePeriod+time.Second)
+		ageAvailableCondition(t, &c.availabilityFailures, scope.kcp)
 		c.computeAvailability(context.Background(), scope, logr.Discard())
 
 		got := availableCondition(scope.kcp)
@@ -621,7 +621,7 @@ func TestComputeAvailabilityPing(t *testing.T) {
 		}
 
 		c.computeAvailability(context.Background(), scope, logr.Discard())
-		ageAvailableCondition(t, &c.availabilityFailures, scope.kcp, availabilityGracePeriod+time.Second)
+		ageAvailableCondition(t, &c.availabilityFailures, scope.kcp)
 		c.computeAvailability(context.Background(), scope, logr.Discard())
 
 		got := availableCondition(scope.kcp)
@@ -690,7 +690,7 @@ func TestComputeAvailabilityClientBuild(t *testing.T) {
 			// A row that reports nothing has no condition to age.
 			c.computeAvailability(context.Background(), scope, logr.Discard())
 			if _, counted := c.availabilityFailures.Load(availabilityKey(scope.kcp)); counted {
-				ageAvailableCondition(t, &c.availabilityFailures, scope.kcp, availabilityGracePeriod+time.Second)
+				ageAvailableCondition(t, &c.availabilityFailures, scope.kcp)
 			}
 			c.computeAvailability(context.Background(), scope, logr.Discard())
 
@@ -915,13 +915,14 @@ func TestAvailabilityRequeueAfter(t *testing.T) {
 
 // ageAvailableCondition backdates the condition and the in memory anchor, since the
 // anchor is what the decision reads and ageing only the condition proves nothing.
-func ageAvailableCondition(t *testing.T, failures *sync.Map, kcp availabilityReporter, age time.Duration) {
+func ageAvailableCondition(t *testing.T, failures *sync.Map, kcp availabilityReporter) {
 	t.Helper()
 
 	got := conditions.Get(kcp, string(cpv1beta2.ControlPlaneAvailableCondition))
 	require.NotNil(t, got, "there is no condition to age")
 
-	backdated := time.Now().Add(-age)
+	// Just past the grace period, so the next check reports the condition.
+	backdated := time.Now().Add(-(availabilityGracePeriod + time.Second))
 	got.LastTransitionTime = metav1.NewTime(backdated)
 	conditions.Set(kcp, *got)
 
@@ -1110,7 +1111,7 @@ func TestComputeAvailabilityReportsAfterTheGracePeriod(t *testing.T) {
 	c, scope := availabilityFixture(t, srv.URL, true)
 
 	c.computeAvailability(context.Background(), scope, logr.Discard())
-	ageAvailableCondition(t, &c.availabilityFailures, scope.kcp, availabilityGracePeriod+time.Second)
+	ageAvailableCondition(t, &c.availabilityFailures, scope.kcp)
 
 	c.computeAvailability(context.Background(), scope, logr.Discard())
 
@@ -1126,7 +1127,7 @@ func TestComputeAvailabilityRecoversOnOneGoodRead(t *testing.T) {
 	c, scope := availabilityFixture(t, srv.URL, true)
 
 	c.computeAvailability(context.Background(), scope, logr.Discard())
-	ageAvailableCondition(t, &c.availabilityFailures, scope.kcp, availabilityGracePeriod+time.Second)
+	ageAvailableCondition(t, &c.availabilityFailures, scope.kcp)
 	c.computeAvailability(context.Background(), scope, logr.Discard())
 	require.Equal(t, metav1.ConditionFalse, availableCondition(scope.kcp).Status)
 
@@ -1338,7 +1339,7 @@ func TestHostedComputeAvailability(t *testing.T) {
 		c.ClusterCache = stubClusterCache{err: errors.New("connection refused")}
 
 		c.computeAvailability(context.Background(), cluster, kcp)
-		ageAvailableCondition(t, &c.availabilityFailures, kcp, availabilityGracePeriod+time.Second)
+		ageAvailableCondition(t, &c.availabilityFailures, kcp)
 		c.computeAvailability(context.Background(), cluster, kcp)
 
 		got := conditions.Get(kcp, string(cpv1beta2.ControlPlaneAvailableCondition))
@@ -1360,7 +1361,7 @@ func TestHostedComputeAvailability(t *testing.T) {
 		require.Equal(t, cpv1beta2.ControlPlaneConnectionDownReason, got.Reason,
 			"both flavours have to report the same reason for the same event")
 
-		ageAvailableCondition(t, &c.availabilityFailures, kcp, availabilityGracePeriod+time.Second)
+		ageAvailableCondition(t, &c.availabilityFailures, kcp)
 		c.computeAvailability(context.Background(), cluster, kcp)
 		got = conditions.Get(kcp, string(cpv1beta2.ControlPlaneAvailableCondition))
 		require.Equal(t, metav1.ConditionFalse, got.Status)
@@ -1562,7 +1563,7 @@ func TestAvailabilityCountsPerObject(t *testing.T) {
 
 	// Aged, or the inherited anchor is young enough that the grace period holds the
 	// report back on its own and the key scheme is never what decides.
-	ageAvailableCondition(t, failures, dead, availabilityGracePeriod+time.Second)
+	ageAvailableCondition(t, failures, dead)
 
 	// Same namespace and name, new object.
 	fresh := newKCP("second")
@@ -1722,12 +1723,7 @@ func TestHostedComputeStatusDoesNotHalfWriteTheCounters(t *testing.T) {
 
 // controlPlanePod is one hosted control plane pod, ready or not, as computeStatus
 // counts them.
-func controlPlanePod(name string, ready bool) *corev1.Pod {
-	status := corev1.ConditionFalse
-	if ready {
-		status = corev1.ConditionTrue
-	}
-
+func notReadyControlPlanePod(name string) *corev1.Pod {
 	return &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -1738,7 +1734,7 @@ func controlPlanePod(name string, ready bool) *corev1.Pod {
 			},
 		},
 		Status: corev1.PodStatus{
-			Conditions: []corev1.PodCondition{{Type: corev1.PodReady, Status: status}},
+			Conditions: []corev1.PodCondition{{Type: corev1.PodReady, Status: corev1.ConditionFalse}},
 		},
 	}
 }
@@ -1760,9 +1756,9 @@ func TestHostedComputeStatusCounters(t *testing.T) {
 	cl := fake.NewClientBuilder().WithScheme(hostedStatusScheme(t)).
 		WithObjects(
 			&kapi.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default"}},
-			controlPlanePod("cp-0", false),
-			controlPlanePod("cp-1", false),
-			controlPlanePod("cp-2", false),
+			notReadyControlPlanePod("cp-0"),
+			notReadyControlPlanePod("cp-1"),
+			notReadyControlPlanePod("cp-2"),
 		).Build()
 	c := &K0smotronController{
 		Client:       cl,

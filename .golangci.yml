@@ -27,6 +27,7 @@ linters:
     - ineffassign
     - wastedassign
     - unused
+    - unparam
   settings:
     forbidigo:
       analyze-types: false

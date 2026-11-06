@@ -218,15 +218,12 @@ func (r *JoinTokenRequestReconciler) reconcileSecret(ctx context.Context, jtr km
 	logger := log.FromContext(ctx)
 	logger.Info("Reconciling configmap")
 
-	cm, err := r.generateSecret(&jtr, token)
-	if err != nil {
-		return err
-	}
+	cm := r.generateSecret(&jtr, token)
 
 	return r.Client.Patch(ctx, &cm, client.Apply, patchOpts...)
 }
 
-func (r *JoinTokenRequestReconciler) generateSecret(jtr *km.JoinTokenRequest, token string) (v1.Secret, error) {
+func (r *JoinTokenRequestReconciler) generateSecret(jtr *km.JoinTokenRequest, token string) v1.Secret {
 	labels := map[string]string{
 		clusterLabel:                 jtr.Spec.ClusterName,
 		"k0smotron.io/role":          jtr.Spec.Role,
@@ -251,7 +248,7 @@ func (r *JoinTokenRequestReconciler) generateSecret(jtr *km.JoinTokenRequest, to
 	}
 
 	_ = ctrl.SetControllerReference(jtr, &secret, r.Scheme)
-	return secret, nil
+	return secret
 }
 
 func (r *JoinTokenRequestReconciler) updateStatus(jtr *km.JoinTokenRequest, failureMessage string, clusterUID types.UID) {
