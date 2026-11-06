@@ -595,6 +595,7 @@ func (c *K0sController) reconcileTunneling(ctx context.Context, controlplane *co
 
 	var frpsConfig string
 	if controlplane.kcp.Spec.K0sConfigSpec.Tunneling.Mode == "proxy" {
+		//nolint:dupword // frps config, "authentication_method = token" is followed by "token = ...".
 		frpsConfig = `
 [common]
 bind_port = 7000
@@ -603,6 +604,7 @@ authentication_method = token
 token = ` + frpToken + `
 `
 	} else {
+		//nolint:dupword // frps config, "authentication_method = token" is followed by "token = ...".
 		frpsConfig = `
 [common]
 bind_port = 7000

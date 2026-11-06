@@ -261,7 +261,7 @@ func TestValidateFileOwner(t *testing.T) {
 		{name: "dots, dashes and underscores", owner: "sys_user.1:sys-group"},
 		{name: "shell metacharacters are rejected", owner: "root; rm -rf /", wantErr: ownerFormatMsg},
 		{name: "command substitution is rejected", owner: "$(id -u)", wantErr: ownerFormatMsg},
-		{name: "spaces are rejected", owner: "root root", wantErr: ownerFormatMsg},
+		{name: "spaces are rejected", owner: "root root", wantErr: ownerFormatMsg}, //nolint:dupword // The repeat is the input under test.
 		{name: "trailing separator is rejected", owner: "root:", wantErr: ownerFormatMsg},
 		{name: "more than one separator is rejected", owner: "a:b:c", wantErr: ownerFormatMsg},
 		{
