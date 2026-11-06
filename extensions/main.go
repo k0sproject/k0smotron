@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"time"
 
 	inplaceversionupdate "github.com/k0sproject/k0smotron/v2/extensions/inplaceversionupdate"
 	"github.com/spf13/pflag"
@@ -105,7 +106,8 @@ func main() {
 	if profilerAddress != "" {
 		klog.Infof("Profiler listening for requests at %s", profilerAddress)
 		go func() {
-			klog.Info(http.ListenAndServe(profilerAddress, nil))
+			srv := &http.Server{Addr: profilerAddress, ReadHeaderTimeout: 2 * time.Second}
+			klog.Info(srv.ListenAndServe())
 		}()
 	}
 

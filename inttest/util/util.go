@@ -26,7 +26,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"time"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -142,7 +141,7 @@ func InstallLocalPathStorage(ctx context.Context, kc *kubernetes.Clientset, rc *
 
 // CreateFromYAML reads the YAML manifest from the given file and creates the resources in the cluster.
 func CreateFromYAML(ctx context.Context, kc *kubernetes.Clientset, rc *rest.Config, filename string) error {
-	data, err := os.ReadFile(filename)
+	data, err := os.ReadFile(filename) //nolint:gosec // The test configuration names the manifest.
 	if err != nil {
 		return err
 	}
@@ -162,7 +161,7 @@ func CreateFromYAML(ctx context.Context, kc *kubernetes.Clientset, rc *rest.Conf
 
 // ApplyFromYAML reads the YAML manifest from the given file and applies the resources in the cluster.
 func ApplyFromYAML(ctx context.Context, kc *kubernetes.Clientset, rc *rest.Config, filename string) error {
-	data, err := os.ReadFile(filename)
+	data, err := os.ReadFile(filename) //nolint:gosec // The test configuration names the manifest.
 	if err != nil {
 		return err
 	}
@@ -629,7 +628,7 @@ func downloadStableStandaloneInstall(ctx context.Context) (string, error) {
 	}
 	defer func() { _ = response.Body.Close() }()
 
-	installFile, err := os.Create(filepath.Join(os.TempDir(), "install.yaml"))
+	installFile, err := os.CreateTemp("", "install-*.yaml")
 	if err != nil {
 		return "", fmt.Errorf("failed to create k0smotron install file: %w", err)
 	}

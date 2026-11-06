@@ -203,12 +203,12 @@ func (scope *kmcScope) generateStatefulSet(ctx context.Context, kmc *km.Cluster)
 							{
 								Name:          "api",
 								Protocol:      v1.ProtocolTCP,
-								ContainerPort: int32(kmc.Spec.Service.APIPort),
+								ContainerPort: servicePort(kmc.Spec.Service.APIPort),
 							},
 							{
 								Name:          "konnectivity",
 								Protocol:      v1.ProtocolTCP,
-								ContainerPort: int32(kmc.Spec.Service.KonnectivityPort),
+								ContainerPort: servicePort(kmc.Spec.Service.KonnectivityPort),
 							},
 						},
 						EnvFrom: []v1.EnvFromSource{{

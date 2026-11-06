@@ -255,7 +255,7 @@ func initScheme() (*runtime.Scheme, error) {
 }
 
 func loadE2EConfig(ctx context.Context, configPath string) (*clusterctl.E2EConfig, error) {
-	configData, err := os.ReadFile(configPath)
+	configData, err := os.ReadFile(configPath) //nolint:gosec // The -config flag names the e2e config on purpose.
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to read the e2e test config file: %w", err)

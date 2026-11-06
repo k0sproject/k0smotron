@@ -368,7 +368,7 @@ func computeReplicas(controlplane *controlplane) error {
 
 	// One collection feeds all four, so a machine that is deleting but still ready
 	// cannot be counted by one of them and left out of the total.
-	controlplane.kcp.Status.Replicas = new(int32(len(allReplicas)))
+	controlplane.kcp.Status.Replicas = new(int32(len(allReplicas))) //nolint:gosec // A machine count cannot reach MaxInt32.
 	controlplane.kcp.Status.ReadyReplicas = new(int32(readyReplicas))
 	controlplane.kcp.Status.UpToDateReplicas = new(int32(upToDateReplicas))
 	controlplane.kcp.Status.AvailableReplicas = new(int32(availableReplicas))

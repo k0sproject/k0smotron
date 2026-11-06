@@ -30,7 +30,7 @@ func RandomString(length int) string {
 	}
 
 	for i, b := range bytes {
-		bytes[i] = letters[b%byte(len(letters))]
+		bytes[i] = letters[int(b)%len(letters)]
 	}
 	return string(bytes)
 }

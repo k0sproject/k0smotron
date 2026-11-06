@@ -677,7 +677,7 @@ func (c *K0smotronController) computeStatus(ctx context.Context, cluster *cluste
 
 	// Held back until every counter below is known, so an error on the way there
 	// cannot persist one of them against stale values for the rest.
-	replicas := int32(len(contolPlanePods.Items))
+	replicas := int32(len(contolPlanePods.Items)) //nolint:gosec // A pod count cannot reach MaxInt32.
 
 	var upToDateReplicas, readyReplicas, unavailableReplicas, availableReplicas int
 

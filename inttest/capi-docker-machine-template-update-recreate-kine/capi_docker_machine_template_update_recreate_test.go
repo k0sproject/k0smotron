@@ -76,9 +76,9 @@ func (s *CAPIDevMachineTemplateUpdateRecreateKine) SetupSuite() {
 
 	tmpDir := s.T().TempDir()
 	s.clusterYamlsPath = tmpDir + "/cluster.yaml"
-	s.Require().NoError(os.WriteFile(s.clusterYamlsPath, fmt.Appendf(nil, dockerClusterYaml, postgressAddress), 0644))
+	s.Require().NoError(os.WriteFile(s.clusterYamlsPath, fmt.Appendf(nil, dockerClusterYaml, postgressAddress), 0o600))
 	s.clusterYamlsUpdatePath = tmpDir + "/update.yaml"
-	s.Require().NoError(os.WriteFile(s.clusterYamlsUpdatePath, fmt.Appendf(nil, controlPlaneUpdate, postgressAddress), 0644))
+	s.Require().NoError(os.WriteFile(s.clusterYamlsUpdatePath, fmt.Appendf(nil, controlPlaneUpdate, postgressAddress), 0o600))
 
 	s.ctx, _ = util.NewSuiteContext(s.T())
 }

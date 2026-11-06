@@ -66,9 +66,9 @@ func (s *CAPIDockerClusterClassK0smotronSuite) SetupSuite() {
 
 	tmpDir := s.T().TempDir()
 	s.clusterYamlsPath = tmpDir + "/cluster.yaml"
-	s.Require().NoError(os.WriteFile(s.clusterYamlsPath, []byte(clusterYaml), 0644))
+	s.Require().NoError(os.WriteFile(s.clusterYamlsPath, []byte(clusterYaml), 0o600))
 	s.clusterClassYamlsPath = tmpDir + "/cluster-class.yaml"
-	s.Require().NoError(os.WriteFile(s.clusterClassYamlsPath, []byte(clusterClassYaml), 0644))
+	s.Require().NoError(os.WriteFile(s.clusterClassYamlsPath, []byte(clusterClassYaml), 0o600))
 
 	s.ctx, _ = util.NewSuiteContext(s.T())
 }

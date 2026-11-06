@@ -22,6 +22,7 @@ linters:
     - noctx
     - nilerr
     - contextcheck
+    - gosec
   settings:
     forbidigo:
       analyze-types: false
@@ -47,6 +48,9 @@ linters:
               desc: clientcmd is only allowed in specific files
     exhaustive:
       default-signifies-exhaustive: true
+    gosec:
+      severity: medium
+      confidence: medium
     govet:
       enable-all: true
       disable:
@@ -88,6 +92,10 @@ linters:
       # the poll times out, which is the wait.Poll contract.
       - linters: [nilerr]
         path: "^inttest/"
+      # Tests drive kubectl, docker and sh with arguments they build themselves.
+      - linters: [gosec]
+        text: "G204:"
+        path: "(^inttest/|_test\\.go$)"
     paths:
       # Ignore issues in generated files.
       - zz_generated.*\.go$

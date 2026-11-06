@@ -228,11 +228,11 @@ func (s *CAPIDockerClusterClassSuite) createCluster() {
 	s.Require().NoError(err)
 	clusterBytes := clusterYaml.Bytes()
 
-	s.Require().NoError(os.WriteFile(s.clusterClassYamlsPath, clusterClassBytes, 0644))
+	s.Require().NoError(os.WriteFile(s.clusterClassYamlsPath, clusterClassBytes, 0o600))
 	out, err := exec.CommandContext(s.ctx, "kubectl", "apply", "-f", s.clusterClassYamlsPath).CombinedOutput()
 	s.Require().NoError(err, "failed to update cluster objects: %s", string(out))
 
-	s.Require().NoError(os.WriteFile(s.clusterYamlsPath, clusterBytes, 0644))
+	s.Require().NoError(os.WriteFile(s.clusterYamlsPath, clusterBytes, 0o600))
 	out, err = exec.CommandContext(s.ctx, "kubectl", "apply", "-f", s.clusterYamlsPath).CombinedOutput()
 	s.Require().NoError(err, "failed to apply cluster objects: %s", string(out))
 }
