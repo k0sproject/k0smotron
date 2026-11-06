@@ -213,7 +213,7 @@ func (scope *kmcScope) reconcileEtcdStatefulSet(ctx context.Context, kmc *km.Clu
 		// This is to avoid the situation where the new member is not able to join the cluster because the previous member is not ready
 		if desiredReplicas > *foundStatefulSet.Spec.Replicas {
 			// Scale up by 1 replica
-			desiredReplicas = int32(*foundStatefulSet.Spec.Replicas) + 1
+			desiredReplicas = *foundStatefulSet.Spec.Replicas + 1
 		}
 
 		if desiredReplicas > foundStatefulSet.Status.ReadyReplicas+1 {

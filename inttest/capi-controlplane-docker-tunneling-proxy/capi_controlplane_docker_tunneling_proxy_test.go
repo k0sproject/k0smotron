@@ -179,7 +179,7 @@ func GetKMCClientSetWithProxy(ctx context.Context, kc *kubernetes.Clientset, nam
 		return nil, err
 	}
 
-	kmcCfg, err := clientcmd.RESTConfigFromKubeConfig([]byte(kubeConf.Data["value"]))
+	kmcCfg, err := clientcmd.RESTConfigFromKubeConfig(kubeConf.Data["value"])
 	if err != nil {
 		return nil, err
 	}

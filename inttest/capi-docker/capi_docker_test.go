@@ -226,7 +226,7 @@ func getDockerNodeFile(ctx context.Context, nodeName string, path string) (strin
 		return "", fmt.Errorf("failed to get file %s from node %s: %w", path, nodeName, err)
 	}
 
-	return string(string(output)), nil
+	return string(output), nil
 }
 
 var dockerClusterYaml = `

@@ -167,7 +167,7 @@ func getDockerNodeFile(ctx context.Context, nodeName string, path string) (strin
 		return "", fmt.Errorf("failed to get file %s from node %s: %w", path, nodeName, err)
 	}
 
-	return string(string(output)), nil
+	return string(output), nil
 }
 
 func GetKMCClientSet(ctx context.Context, kc *kubernetes.Clientset, name string, namespace string) (*kubernetes.Clientset, error) {
@@ -181,7 +181,7 @@ func GetKMCClientSet(ctx context.Context, kc *kubernetes.Clientset, name string,
 		return nil, err
 	}
 
-	kmcCfg, err := clientcmd.RESTConfigFromKubeConfig([]byte(kubeConf.Data["value"]))
+	kmcCfg, err := clientcmd.RESTConfigFromKubeConfig(kubeConf.Data["value"])
 	if err != nil {
 		return nil, err
 	}

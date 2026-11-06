@@ -344,7 +344,7 @@ func setLastRemediation(controlplane *controlplane) {
 	controlplane.kcp.Status.LastRemediation = cpv1beta2.LastRemediationStatus{
 		Machine:    last.Machine,
 		Time:       last.Timestamp,
-		RetryCount: new(int32(last.RetryCount)),
+		RetryCount: new(last.RetryCount),
 	}
 }
 
@@ -369,9 +369,9 @@ func computeReplicas(controlplane *controlplane) error {
 	// One collection feeds all four, so a machine that is deleting but still ready
 	// cannot be counted by one of them and left out of the total.
 	controlplane.kcp.Status.Replicas = new(int32(len(allReplicas))) //nolint:gosec // A machine count cannot reach MaxInt32.
-	controlplane.kcp.Status.ReadyReplicas = new(int32(readyReplicas))
-	controlplane.kcp.Status.UpToDateReplicas = new(int32(upToDateReplicas))
-	controlplane.kcp.Status.AvailableReplicas = new(int32(availableReplicas))
+	controlplane.kcp.Status.ReadyReplicas = new(readyReplicas)
+	controlplane.kcp.Status.UpToDateReplicas = new(upToDateReplicas)
+	controlplane.kcp.Status.AvailableReplicas = new(availableReplicas)
 
 	// Find the lowest version
 	lowestMachineVersion, err := minVersion(controlplane.activeMachines)
