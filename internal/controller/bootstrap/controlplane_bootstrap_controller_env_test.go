@@ -201,7 +201,7 @@ func TestReconcileControllerConfigPausedCluster(t *testing.T) {
 
 	machineForControllerConfig := &clusterv1.Machine{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-%d", "machine-for-controlelr", 0),
+			Name:      fmt.Sprintf("%s-%d", "machine-for-controllers", 0),
 			Namespace: ns.Name,
 			Labels: map[string]string{
 				clusterv1.ClusterNameLabel:             cluster.Name,

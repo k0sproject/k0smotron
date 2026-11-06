@@ -283,7 +283,7 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 				updatedRemoteMachine := &infrastructure.RemoteMachine{}
 				if err := r.Get(provisionCtx, client.ObjectKeyFromObject(rm), updatedRemoteMachine); err == nil &&
 					!updatedRemoteMachine.DeletionTimestamp.IsZero() {
-					log.Info("Cancelling Bootstrap because the underlying machine has been deleted")
+					log.Info("Canceling Bootstrap because the underlying machine has been deleted")
 					cancel()
 					return
 				}

@@ -87,7 +87,7 @@ type UpgradeControlPlaneAndWaitForUpgradeInput struct {
 	WaitForControlPlaneReadyInterval Interval
 
 	// DuringUpgradeCheck is an optional strategy-specific check that runs in the background while
-	// the upgrade is in progress. Its context is cancelled once the upgrade is done, so the check
+	// the upgrade is in progress. Its context is canceled once the upgrade is done, so the check
 	// is expected to keep running until then and to return its verdict when the context ends.
 	DuringUpgradeCheck func(ctx context.Context, input UpgradeControlPlaneAndWaitForUpgradeInput) error
 

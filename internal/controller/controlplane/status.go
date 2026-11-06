@@ -505,7 +505,7 @@ func versionMatches(machine *clusterv1.Machine, ver string) bool {
 }
 
 // initialized reports whether the control plane has ever been reachable. Takes the
-// latch itself, since the two flavours carry it on different status structs.
+// latch itself, since the two flavors carry it on different status structs.
 func initialized(latch *bool) bool {
 	return ptr.Deref(latch, false)
 }
@@ -588,7 +588,7 @@ func availabilityCondition(existing *metav1.Condition, now, failingSince time.Ti
 	}
 }
 
-// availabilityReporter is what both control plane flavours have in common, so the
+// availabilityReporter is what both control plane flavors have in common, so the
 // grace period is applied the same way to each.
 type availabilityReporter interface {
 	client.Object

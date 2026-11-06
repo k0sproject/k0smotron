@@ -368,7 +368,7 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 	config.Status.Initialization.DataSecretCreated = new(true)
 	config.Status.DataSecretName = new(bootstrapSecret.Name)
 
-	log.Info("Reconciled succesfully")
+	log.Info("Reconciled successfully")
 
 	if scope.bootstrapTokenID == "" {
 		// Empty bootstrap token ID indicates that the initial controller does not use a join token,
@@ -452,7 +452,7 @@ func (c *ControlPlaneController) generateBootstrapDataForController(ctx context.
 	if scope.Config.Spec.K0s != nil {
 		k0sConfigBytes, err := scope.Config.Spec.K0s.MarshalJSON()
 		if err != nil {
-			return nil, fmt.Errorf("error marshalling k0s config: %w", err)
+			return nil, fmt.Errorf("error marshaling k0s config: %w", err)
 		}
 		k0sConfigPath := scope.Config.Spec.GetK0sConfigPath()
 		files = append(files, provisioner.File{

@@ -817,7 +817,7 @@ func (c *K0smotronController) computeAvailability(ctx context.Context, cluster *
 	logger := log.FromContext(ctx).WithValues("cluster", cluster.Name)
 
 	// Assumed unavailable up front for the same reasons as in the K0sControlPlane
-	// flavour, including the read below being what latches initialization.
+	// flavor, including the read below being what latches initialization.
 	everReached := initialized(kcp.Status.Initialization.ControlPlaneInitialized)
 	if !everReached {
 		conditions.Set(kcp, metav1.Condition{

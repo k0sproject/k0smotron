@@ -119,7 +119,7 @@ func newCertConditionsScheme(t *testing.T) *runtime.Scheme {
 }
 
 // TestReconcileCertificateConditions_MirrorsChildConditions verifies both the
-// mirroring behaviour itself, and the client asymmetry the task deliberately
+// mirroring behavior itself, and the client asymmetry the task deliberately
 // introduced: the child k0smotron Cluster always lives in the management
 // cluster and must be read with c.Client, never with scope.client (which is
 // swapped to the remote host cluster's client when replicas run there). The
