@@ -206,6 +206,7 @@ func TestAnnotatedForDeletion(t *testing.T) {
 			deletedMachines: collections.FromMachines(machine("going", true)),
 		}
 
+		require.Equal(t, 1, annotatedForDeletion(scope.deletedMachines).Len(), "the deleting machine carries the annotation")
 		require.Nil(t, annotatedForDeletion(scope.activeMachines).Oldest())
 	})
 }
