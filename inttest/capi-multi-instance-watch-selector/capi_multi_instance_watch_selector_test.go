@@ -284,7 +284,7 @@ func (s *CAPIMultiInstanceWatchSelectorSuite) findControlPlaneDeploymentName(ctx
 }
 
 func (s *CAPIMultiInstanceWatchSelectorSuite) applyClusterObjects() {
-	out, err := exec.Command("kubectl", "apply", "-f", s.clusterYAMLPath).CombinedOutput()
+	out, err := exec.CommandContext(s.ctx, "kubectl", "apply", "-f", s.clusterYAMLPath).CombinedOutput()
 	s.Require().NoError(err, "failed to apply cluster objects: %s", string(out))
 }
 
@@ -297,8 +297,8 @@ func (s *CAPIMultiInstanceWatchSelectorSuite) cleanupResources() {
 		return
 	}
 
-	_, _ = exec.Command("kubectl", "delete", "-f", s.clusterYAMLPath).CombinedOutput()
-	_, _ = exec.Command("kubectl", "delete", "deployment", secondaryDeploymentName, "-n", operatorNamespace).CombinedOutput()
+	_, _ = exec.CommandContext(context.WithoutCancel(s.ctx), "kubectl", "delete", "-f", s.clusterYAMLPath).CombinedOutput()
+	_, _ = exec.CommandContext(context.WithoutCancel(s.ctx), "kubectl", "delete", "deployment", secondaryDeploymentName, "-n", operatorNamespace).CombinedOutput()
 }
 
 func (s *CAPIMultiInstanceWatchSelectorSuite) applySecondaryControllerDeployment(ctx context.Context, watchSelectorArg *string) error {
@@ -403,7 +403,7 @@ func (s *CAPIMultiInstanceWatchSelectorSuite) getDeploymentPodName(ctx context.C
 }
 
 func (s *CAPIMultiInstanceWatchSelectorSuite) annotateControlPlane(key, value string) error {
-	out, err := exec.Command("kubectl", "annotate", "--overwrite", "-n", testResourceNamespace, "k0smotroncontrolplane/"+testControlPlaneName, key+"="+value).CombinedOutput()
+	out, err := exec.CommandContext(s.ctx, "kubectl", "annotate", "--overwrite", "-n", testResourceNamespace, "k0smotroncontrolplane/"+testControlPlaneName, key+"="+value).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("annotate K0smotronControlPlane: %s", string(out))
 	}
@@ -426,8 +426,10 @@ func (s *CAPIMultiInstanceWatchSelectorSuite) getK0smotronControlPlaneReconcileC
 	}
 
 	var body io.ReadCloser
+	// The body is read after the poll returns, which cancels the context it hands the
+	// callback, so the request uses this function's context instead.
 	err = wait.PollUntilContextTimeout(ctx, 500*time.Millisecond, 10*time.Second, true, func(_ context.Context) (bool, error) {
-		body, err = fetchMetricsBody(localPort)
+		body, err = fetchMetricsBody(ctx, localPort)
 		if err != nil {
 			return false, nil
 		}
@@ -441,8 +443,8 @@ func (s *CAPIMultiInstanceWatchSelectorSuite) getK0smotronControlPlaneReconcileC
 	return parseReconcileCounter(body, controlPlaneMetricLabel)
 }
 
-func getFreeLocalPort() (int, error) {
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
+func getFreeLocalPort(ctx context.Context) (int, error) {
+	listener, err := (&net.ListenConfig{}).Listen(ctx, "tcp", "127.0.0.1:0")
 	if err != nil {
 		return 0, err
 	}
@@ -451,8 +453,8 @@ func getFreeLocalPort() (int, error) {
 	return listener.Addr().(*net.TCPAddr).Port, nil
 }
 
-func fetchMetricsBody(localPort int) (io.ReadCloser, error) {
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://127.0.0.1:%d/metrics", localPort), nil)
+func fetchMetricsBody(ctx context.Context, localPort int) (io.ReadCloser, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("http://127.0.0.1:%d/metrics", localPort), nil)
 	if err != nil {
 		return nil, err
 	}

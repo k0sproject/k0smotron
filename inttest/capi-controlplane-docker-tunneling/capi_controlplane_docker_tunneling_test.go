@@ -88,13 +88,13 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 			return
 		}
 		s.T().Log("Deleting cluster objects")
-		s.Require().NoError(util.DeleteCluster("docker-test-cluster"))
+		s.Require().NoError(util.DeleteCluster(context.WithoutCancel(s.ctx), "docker-test-cluster"))
 	}()
 	s.T().Log("cluster objects applied, waiting for cluster to be ready")
 
 	var localPort int
-	err := wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(_ context.Context) (bool, error) {
-		localPort, _ = getLBPort("docker-test-cluster-lb")
+	err := wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
+		localPort, _ = getLBPort(ctx, "docker-test-cluster-lb")
 		return localPort > 0, nil
 	})
 	s.Require().NoError(err)
@@ -123,7 +123,7 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 			return false, nil
 		}
 
-		output, err := exec.Command("docker", "exec", fmt.Sprintf("docker-test-cluster-%s", machines[0].GetName()), "k0s", "status").Output()
+		output, err := exec.CommandContext(ctx, "docker", "exec", fmt.Sprintf("docker-test-cluster-%s", machines[0].GetName()), "k0s", "status").Output()
 		if err != nil {
 			return false, nil
 		}
@@ -151,8 +151,12 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 	}
 
 	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(_ context.Context) (bool, error) {
-		resp, err := cl.Get("https://localhost:" + strconv.Itoa(forwardedPort) + "/healthz")
+	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://localhost:"+strconv.Itoa(forwardedPort)+"/healthz", nil)
+		if err != nil {
+			return false, err
+		}
+		resp, err := cl.Do(req)
 		if err != nil {
 			return false, nil
 		}
@@ -178,12 +182,12 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 
 func (s *CAPIControlPlaneDockerSuite) applyClusterObjects() {
 	// Exec via kubectl
-	out, err := exec.Command("kubectl", "apply", "-f", s.clusterYamlsPath).CombinedOutput()
+	out, err := exec.CommandContext(s.ctx, "kubectl", "apply", "-f", s.clusterYamlsPath).CombinedOutput()
 	s.Require().NoError(err, "failed to apply cluster objects: %s", string(out))
 }
 
-func getLBPort(name string) (int, error) {
-	b, err := exec.Command("docker", "inspect", name, "--format", "{{json .NetworkSettings.Ports}}").Output()
+func getLBPort(ctx context.Context, name string) (int, error) {
+	b, err := exec.CommandContext(ctx, "docker", "inspect", name, "--format", "{{json .NetworkSettings.Ports}}").Output()
 	if err != nil {
 		return 0, fmt.Errorf("failed to get inspect info from container %s: %w", name, err)
 	}

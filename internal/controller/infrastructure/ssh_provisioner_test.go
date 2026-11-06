@@ -456,7 +456,7 @@ func TestExtractCloudInitRejectsAppend(t *testing.T) {
 func remoteArgv(t *testing.T, script string) []string {
 	t.Helper()
 
-	out, err := osexec.Command("sh", "-c", "scp() { :; }\nssh() { [ $# -eq 2 ] || exit 1; eval \"set -- $2\"; printf '%s\\n' \"$@\"; echo; }\n"+script).Output()
+	out, err := osexec.CommandContext(t.Context(), "sh", "-c", "scp() { :; }\nssh() { [ $# -eq 2 ] || exit 1; eval \"set -- $2\"; printf '%s\\n' \"$@\"; echo; }\n"+script).Output()
 	require.NoError(t, err)
 
 	return strings.Split(strings.Split(string(out), "\n\n")[0], "\n")
@@ -496,7 +496,7 @@ func TestProvisionStopsWhenTheContextEnds(t *testing.T) {
 	}
 	serverConfig.AddHostKey(signer)
 
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	listener, err := (&net.ListenConfig{}).Listen(t.Context(), "tcp", "127.0.0.1:0")
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = listener.Close() })
 	go func() {

@@ -79,7 +79,7 @@ func (s *CAPIDockerSuite) TestCAPIDocker() {
 			return
 		}
 		s.T().Log("Deleting cluster objects")
-		s.Require().NoError(util.DeleteCluster("docker-md-test"))
+		s.Require().NoError(util.DeleteCluster(context.WithoutCancel(s.ctx), "docker-md-test"))
 	}()
 	s.T().Log("cluster objects applied, waiting for cluster to be ready")
 
@@ -153,6 +153,6 @@ func (s *CAPIDockerSuite) TestCAPIDocker() {
 
 func (s *CAPIDockerSuite) applyClusterObjects() {
 	// Exec via kubectl
-	out, err := exec.Command("kubectl", "apply", "-f", "../../config/samples/capi/docker/cluster-with-machinedeployment.yaml").CombinedOutput()
+	out, err := exec.CommandContext(s.ctx, "kubectl", "apply", "-f", "../../config/samples/capi/docker/cluster-with-machinedeployment.yaml").CombinedOutput()
 	s.Require().NoError(err, "failed to apply cluster objects: %s", string(out))
 }
