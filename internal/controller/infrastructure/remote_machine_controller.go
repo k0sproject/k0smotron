@@ -219,7 +219,7 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 
 	if !rm.ObjectMeta.DeletionTimestamp.IsZero() {
 		if controllerutil.ContainsFinalizer(rm, RemoteMachineFinalizer) {
-			mode := ModeNonK0s
+			var mode RemoteMachineMode
 			switch machine.Spec.Bootstrap.ConfigRef.Kind {
 			case "K0sWorkerConfig":
 				mode = ModeWorker

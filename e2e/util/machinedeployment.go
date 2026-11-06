@@ -43,8 +43,7 @@ func DiscoveryAndWaitForMachineDeploymentReady(ctx context.Context, input capifr
 		return nil, fmt.Errorf("no MachineDeployments found for Cluster %s", klog.KObj(input.Cluster))
 	}
 
-	machineDeployment := &clusterv1.MachineDeployment{}
-	machineDeployment = machineDeployments[0]
+	machineDeployment := machineDeployments[0]
 
 	err := wait.PollUntilContextTimeout(ctx, time.Second*10, time.Minute*5, true, func(ctx context.Context) (done bool, err error) {
 		mdMachines := &clusterv1.MachineList{}

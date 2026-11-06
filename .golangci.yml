@@ -24,6 +24,7 @@ linters:
     - contextcheck
     - gosec
     - staticcheck
+    - ineffassign
   settings:
     forbidigo:
       analyze-types: false
