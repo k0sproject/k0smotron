@@ -12,6 +12,7 @@ linters:
     - goheader
     - revive
     - modernize
+    - govet
   settings:
     forbidigo:
       analyze-types: false
@@ -35,6 +36,11 @@ linters:
               desc: clientcmd is only allowed in specific files
             - pkg: k8s.io/client-go/tools/clientcmd/api/latest
               desc: clientcmd is only allowed in specific files
+    govet:
+      enable-all: true
+      disable:
+        - shadow
+        - fieldalignment
     revive:
       rules:
         # The following rules are recommended https://github.com/mgechev/revive#recommended-configuration
