@@ -37,7 +37,7 @@ type ClusterDefaulter struct{}
 type ClusterValidator struct{}
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type Cluster.
-func (c ClusterValidator) ValidateCreate(_ context.Context, kmc *Cluster) (warnings admission.Warnings, err error) {
+func (c *ClusterValidator) ValidateCreate(_ context.Context, kmc *Cluster) (warnings admission.Warnings, err error) {
 	if kmc == nil {
 		return nil, fmt.Errorf("expected a Cluster object but got nil")
 	}
@@ -46,7 +46,7 @@ func (c ClusterValidator) ValidateCreate(_ context.Context, kmc *Cluster) (warni
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type Cluster.
-func (c ClusterValidator) ValidateUpdate(_ context.Context, oldKmc, newKmc *Cluster) (warnings admission.Warnings, err error) {
+func (c *ClusterValidator) ValidateUpdate(_ context.Context, oldKmc, newKmc *Cluster) (warnings admission.Warnings, err error) {
 	if oldKmc == nil {
 		return nil, fmt.Errorf("expected an old Cluster object but got nil")
 	}
@@ -58,12 +58,12 @@ func (c ClusterValidator) ValidateUpdate(_ context.Context, oldKmc, newKmc *Clus
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type Cluster.
-func (c ClusterValidator) ValidateDelete(_ context.Context, _ *Cluster) (warnings admission.Warnings, err error) {
+func (c *ClusterValidator) ValidateDelete(_ context.Context, _ *Cluster) (warnings admission.Warnings, err error) {
 	return nil, nil
 }
 
 // ValidateClusterSpecUpdate validates the ClusterSpec during an update and returns any warnings or errors.
-func (c ClusterValidator) ValidateClusterSpecUpdate(oldKCS, kcs *ClusterSpec) (warnings admission.Warnings, err error) {
+func (c *ClusterValidator) ValidateClusterSpecUpdate(oldKCS, kcs *ClusterSpec) (warnings admission.Warnings, err error) {
 	// This doesn't prevent running kubectl scale command, but better than nothing
 	if kcs.Storage.Type == StorageTypeNATS && oldKCS.Replicas != kcs.Replicas {
 		return warnings, fmt.Errorf("NATS storage does not support scaling, replicas cannot be changed from %d to %d. "+
@@ -130,7 +130,7 @@ func imageVersion(image string) (*version.Version, error) {
 }
 
 // ValidateClusterSpec validates the ClusterSpec and returns any warnings or errors.
-func (c ClusterValidator) ValidateClusterSpec(kcs *ClusterSpec) (warnings admission.Warnings, err error) {
+func (c *ClusterValidator) ValidateClusterSpec(kcs *ClusterSpec) (warnings admission.Warnings, err error) {
 	warnings = c.validateVersionSuffix(kcs.Version)
 
 	if err := validateCertificates(kcs); err != nil {
@@ -205,7 +205,7 @@ func validateService(serviceSpec *ServiceSpec) (admission.Warnings, error) {
 }
 
 // validatePatches validates the Patches spec.
-func (c ClusterValidator) validatePatches(patches []ComponentPatch) error {
+func (c *ClusterValidator) validatePatches(patches []ComponentPatch) error {
 	for i, p := range patches {
 		switch p.Patch.Type {
 		case JSONPatchType, StrategicMergePatchType, MergePatchType:
@@ -252,7 +252,7 @@ func validateCertificates(kcs *ClusterSpec) error {
 }
 
 // validateVersionSuffix checks if the version has a k0s suffix and returns a warning if it doesn't
-func (c ClusterValidator) validateVersionSuffix(version string) admission.Warnings {
+func (c *ClusterValidator) validateVersionSuffix(version string) admission.Warnings {
 	warnings := admission.Warnings{}
 	// When using CAPI clusterclass version can be specified with a +k0s. suffix.
 	if version != "" && (!strings.Contains(version, "-k0s.") && !strings.Contains(version, "+k0s.")) {

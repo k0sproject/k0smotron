@@ -13,6 +13,7 @@ linters:
     - revive
     - modernize
     - govet
+    - recvcheck
   settings:
     forbidigo:
       analyze-types: false
