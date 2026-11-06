@@ -824,7 +824,7 @@ func (scope *kmcScope) reconcileStatefulSet(ctx context.Context, kmc *km.Cluster
 func detectAndSetCurrentClusterVersion(foundStatefulSet *apps.StatefulSet, kmc *km.Cluster) {
 	if kmc.Spec.Version == "" {
 		imageParts := strings.Split(foundStatefulSet.Spec.Template.Spec.Containers[0].Image, ":")
-		if len(imageParts) > 1 && versionRegex.Match([]byte(imageParts[1])) {
+		if len(imageParts) > 1 && versionRegex.MatchString(imageParts[1]) {
 			kmc.Spec.Version = imageParts[1]
 		}
 	}
