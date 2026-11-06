@@ -1251,7 +1251,7 @@ func (f *fakeRoundTripper) run(req *http.Request) (*http.Response, error) {
 	header.Set("Content-Type", runtime.ContentTypeJSON)
 
 	switch req.Method {
-	case "GET":
+	case http.MethodGet:
 		if req.URL.Path == etcdMembersAPIPath && f.etcdMembers != nil {
 			res, err := json.Marshal(etcdMemberList{Items: f.etcdMembers})
 			if err != nil {
@@ -1278,11 +1278,11 @@ func (f *fakeRoundTripper) run(req *http.Request) (*http.Response, error) {
 
 			return &http.Response{StatusCode: http.StatusNotFound, Header: header, Body: nil}, nil
 		}
-	case "DELETE":
+	case http.MethodDelete:
 		if strings.HasPrefix(req.URL.Path, "/apis/autopilot.k0sproject.io/v1beta2/controlnodes/") {
 			return &http.Response{StatusCode: http.StatusOK, Header: header, Body: nil}, nil
 		}
-	case "PATCH":
+	case http.MethodPatch:
 		switch {
 		case strings.HasPrefix(req.URL.Path, "/apis/etcd.k0sproject.io/v1beta1/etcdmembers/"):
 			{

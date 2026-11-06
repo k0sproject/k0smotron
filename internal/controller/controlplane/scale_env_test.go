@@ -1100,7 +1100,7 @@ type fakeRoundTripperControlNodeNotFound struct{}
 func (f *fakeRoundTripperControlNodeNotFound) run(req *http.Request) (*http.Response, error) {
 	header := http.Header{}
 	header.Set("Content-Type", "application/json")
-	if req.Method == "GET" && strings.HasPrefix(req.URL.Path, "/apis/autopilot.k0sproject.io/v1beta2/controlnodes/") {
+	if req.Method == http.MethodGet && strings.HasPrefix(req.URL.Path, "/apis/autopilot.k0sproject.io/v1beta2/controlnodes/") {
 		return &http.Response{StatusCode: http.StatusNotFound, Header: header, Body: nil}, nil
 	}
 	return (&fakeRoundTripper{}).run(req)
@@ -1113,7 +1113,7 @@ type fakeRoundTripperWithAutopilotPost struct{}
 func (f *fakeRoundTripperWithAutopilotPost) run(req *http.Request) (*http.Response, error) {
 	header := http.Header{}
 	header.Set("Content-Type", "application/json")
-	if req.Method == "POST" && strings.HasPrefix(req.URL.Path, "/apis/autopilot.k0sproject.io/v1beta2/plans") {
+	if req.Method == http.MethodPost && strings.HasPrefix(req.URL.Path, "/apis/autopilot.k0sproject.io/v1beta2/plans") {
 		body := `{"apiVersion":"autopilot.k0sproject.io/v1beta2","kind":"Plan","metadata":{"name":"autopilot"}}`
 		return &http.Response{
 			StatusCode: http.StatusOK,
