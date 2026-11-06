@@ -123,7 +123,7 @@ func getRESTConfig(ctx context.Context, hubClient client.Client, cache clusterca
 			})
 			if err != nil {
 				if apierrors.IsNotFound(err) {
-					return nil, fmt.Errorf("%w: %v", ErrNotReady, err)
+					return nil, fmt.Errorf("%w: %s", ErrNotReady, err.Error()) // Not wrapped, a NotFound here is not the reconciled object.
 				}
 				return nil, fmt.Errorf("error getting rest config for cluster %s: %w", cluster.Name, err)
 			}
@@ -163,7 +163,7 @@ func getRESTConfig(ctx context.Context, hubClient client.Client, cache clusterca
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			logger.Info("Kubeconfig secret not created yet for tunneled access")
-			return nil, fmt.Errorf("%w: %v", ErrNotReady, err)
+			return nil, fmt.Errorf("%w: %s", ErrNotReady, err.Error()) // Not wrapped, a NotFound here is not the reconciled object.
 		}
 
 		return nil, fmt.Errorf("error getting rest config for cluster %s: %w", cluster.Name, err)

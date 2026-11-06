@@ -516,14 +516,14 @@ func (c *K0sController) reconcileConfig(ctx context.Context, controlplane *contr
 	if controlplane.kcp.Spec.K0sConfigSpec.K0s != nil {
 		nllbEnabled, found, err := unstructured.NestedBool(controlplane.kcp.Spec.K0sConfigSpec.K0s.Object, "spec", "network", "nodeLocalLoadBalancing", "enabled")
 		if err != nil {
-			return fmt.Errorf("error getting nodeLocalLoadBalancing: %v", err)
+			return fmt.Errorf("error getting nodeLocalLoadBalancing: %w", err)
 		}
 		// Set the external address if NLLB is not enabled
 		// Otherwise, just add the external address to the SANs to allow the clients to connect using LB address
 		if !(found && nllbEnabled) {
 			err = unstructured.SetNestedField(controlplane.kcp.Spec.K0sConfigSpec.K0s.Object, controlplane.cluster.Spec.ControlPlaneEndpoint.Host, "spec", "api", "externalAddress")
 			if err != nil {
-				return fmt.Errorf("error setting control plane endpoint: %v", err)
+				return fmt.Errorf("error setting control plane endpoint: %w", err)
 			}
 		} else if controlplane.cluster.Spec.ControlPlaneEndpoint.Host != "" {
 			sans := []string{controlplane.cluster.Spec.ControlPlaneEndpoint.Host}
@@ -533,19 +533,19 @@ func (c *K0sController) reconcileConfig(ctx context.Context, controlplane *contr
 			}
 			err = unstructured.SetNestedStringSlice(controlplane.kcp.Spec.K0sConfigSpec.K0s.Object, sans, "spec", "api", "sans")
 			if err != nil {
-				return fmt.Errorf("error setting sans: %v", err)
+				return fmt.Errorf("error setting sans: %w", err)
 			}
 		}
 
 		if controlplane.kcp.Spec.K0sConfigSpec.Tunneling.ServerAddress != "" {
 			sans, _, err := unstructured.NestedStringSlice(controlplane.kcp.Spec.K0sConfigSpec.K0s.Object, "spec", "api", "sans")
 			if err != nil {
-				return fmt.Errorf("error getting sans from config: %v", err)
+				return fmt.Errorf("error getting sans from config: %w", err)
 			}
 			sans = util.AddToExistingSans(sans, []string{controlplane.kcp.Spec.K0sConfigSpec.Tunneling.ServerAddress})
 			err = unstructured.SetNestedStringSlice(controlplane.kcp.Spec.K0sConfigSpec.K0s.Object, sans, "spec", "api", "sans")
 			if err != nil {
-				return fmt.Errorf("error setting sans to the config: %v", err)
+				return fmt.Errorf("error setting sans to the config: %w", err)
 			}
 		}
 

@@ -18,6 +18,7 @@ package watch
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"time"
@@ -316,9 +317,9 @@ func retry(ctx context.Context, errorCallback ErrorCallback, runWatch func(conte
 			return nil
 		}
 
-		if err, ok := err.(conditionError); ok {
+		if condErr, ok := errors.AsType[conditionError](err); ok {
 			// The user-specified condition returned an error.
-			return err.error
+			return condErr.error
 		}
 
 		if ctx.Err() != nil {

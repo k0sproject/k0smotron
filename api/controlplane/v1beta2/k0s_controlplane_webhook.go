@@ -118,11 +118,11 @@ func (v *K0sControlPlaneValidator) ValidateUpdate(_ context.Context, oldKcp, new
 	if oldKcp.Spec.Version != newKcp.Spec.Version {
 		oldV, err := version.NewVersion(oldKcp.Spec.Version)
 		if err != nil {
-			return warnings, fmt.Errorf("failed to parse old version: %v", err)
+			return warnings, fmt.Errorf("failed to parse old version: %w", err)
 		}
 		newV, err := version.NewVersion(newKcp.Spec.Version)
 		if err != nil {
-			return warnings, fmt.Errorf("failed to parse new version: %v", err)
+			return warnings, fmt.Errorf("failed to parse new version: %w", err)
 		}
 
 		// According to the Kubernetes skew policy, we can't upgrade more than one minor version at a time.
