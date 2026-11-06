@@ -31,6 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+// WaitForMachinesInput is the input for WaitForMachines.
 type WaitForMachinesInput struct {
 	Lister                   framework.Lister
 	Namespace                string
@@ -139,6 +140,7 @@ func WaitForMachines(ctx context.Context, input WaitForMachinesInput) ([]string,
 	return allMachinesNames, newMachinesNames, nil
 }
 
+// WaitForWorkersMachineInput is the input for WaitForWorkerMachine.
 type WaitForWorkersMachineInput struct {
 	Lister                   framework.Lister
 	ExpectedWorkers          int
@@ -147,7 +149,7 @@ type WaitForWorkersMachineInput struct {
 	WaitForMachinesIntervals Interval
 }
 
-// WaitForMachine waits for worker machine to join the cluster. Checks machine.spec has the proper providerId set.
+// WaitForWorkerMachine waits for worker machine to join the cluster. Checks machine.spec has the proper providerId set.
 func WaitForWorkerMachine(ctx context.Context, input WaitForWorkersMachineInput) error {
 	inClustersNamespaceListOption := client.InNamespace(input.Namespace)
 	matchClusterGetOption := client.MatchingLabels{
@@ -166,7 +168,7 @@ func WaitForWorkerMachine(ctx context.Context, input WaitForWorkersMachineInput)
 		currentWorkerMachines := 0
 		for _, m := range machineList.Items {
 			isWorker := true
-			for k, _ := range m.GetLabels() {
+			for k := range m.GetLabels() {
 				if k == clusterv1.MachineControlPlaneLabel {
 					isWorker = false
 					break
@@ -174,8 +176,8 @@ func WaitForWorkerMachine(ctx context.Context, input WaitForWorkersMachineInput)
 			}
 
 			if isWorker {
-				mProviderId := m.Spec.ProviderID
-				if mProviderId == "" {
+				mProviderID := m.Spec.ProviderID
+				if mProviderID == "" {
 					continue
 				}
 
