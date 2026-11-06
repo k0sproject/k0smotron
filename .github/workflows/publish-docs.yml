@@ -6,10 +6,27 @@ on:
   release:
     types:
       - published
+  # Backfills install manifests for all tags of the supported release series.
+  # Does not build or deploy the docs.
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Overwrite install manifests that already exist on gh-pages
+        type: boolean
+        default: false
+
+# Everything pushing to gh-pages must be serialized
+concurrency:
+  group: gh-pages
+  cancel-in-progress: false
+
+permissions:
+  contents: write
 
 jobs:
   build:
     name: Deploy docs
+    if: github.event_name != 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout k0s
@@ -81,31 +98,147 @@ jobs:
           echo LATEST="$LATEST" >> $GITHUB_OUTPUT
           echo STABLE="$STABLE" >> $GITHUB_OUTPUT
 
-      # Ensures the current branch is gh-pages,
-      # Creates / updates the "install.yaml" and "install-standalone.yaml" files with the corresponding versions
-      # Commits if the files were changed
-      # Finally pushes if there are unpushed commits
-      - name: Create install files
-        if: >-
-          github.repository == 'k0sproject/k0smotron' &&
-          github.event_name == 'release' &&
-          github.event.action == 'published' &&
-          !github.event.release.draft &&
-          !github.event.release.prerelease
+  manifests-build:
+    name: Build manifests (${{ matrix.series }})
+    if: >-
+      github.repository == 'k0sproject/k0smotron' &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event_name == 'release' &&
+        !github.event.release.draft && !github.event.release.prerelease))
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # When 2.3 gets its own release-2.3 branch, point "branch" there
+          # and add a new entry for the series developed on main.
+          - series: "2.3"
+            branch: main
+          - series: "2.2"
+            branch: release-2.2
+          - series: "1.10"
+            branch: release-1.10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.branch }}
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        with:
+          go-version-file: go.mod
+
+      - name: Build manifests
         env:
-          VERSION: ${{ github.event.release.tag_name }}
+          SERIES: ${{ matrix.series }}
+          BRANCH: ${{ matrix.branch }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: |
-          make release IMG=quay.io/k0sproject/k0smotron:${VERSION}
-          make release-standalone IMG=quay.io/k0sproject/k0smotron:${VERSION}
-          make release-extension-webhook IMG=quay.io/k0sproject/k0smotron:${VERSION}
-          cp install.yaml /tmp/install.yaml
-          cp install-standalone.yaml /tmp/install-standalone.yaml
-          cp install-extension-webhook.yaml /tmp/install-extension-webhook.yaml
-          git checkout gh-pages
-          mkdir -p ${VERSION}
-          cp /tmp/install.yaml ${VERSION}/install.yaml
-          cp /tmp/install-standalone.yaml ${VERSION}/install-standalone.yaml
-          cp /tmp/install-extension-webhook.yaml ${VERSION}/install-extension-webhook.yaml
-          git add ${VERSION}/install.yaml ${VERSION}/install-standalone.yaml ${VERSION}/install-extension-webhook.yaml && git update-index --refresh
-          git diff-index --quiet HEAD -- || git commit -m "Update install.yaml, install-standalone.yaml, and install-extension-webhook.yaml to ${VERSION}"
-          git push origin gh-pages
+          set -euo pipefail
+
+          if [ "${GITHUB_EVENT_NAME}" = "release" ]; then
+            TAGS=$(printf '%s\n' "${RELEASE_TAG}" | grep -E "^v${SERIES//./\\.}\.[0-9]+$" || true)
+          else
+            TAGS=$(git tag -l "v${SERIES}.*" | grep -E "^v${SERIES//./\\.}\.[0-9]+$" | sort -V)
+          fi
+
+          if [ -z "${TAGS}" ]; then
+            echo "No tags to process for series ${SERIES}"
+            exit 0
+          fi
+
+          mkdir -p "${RUNNER_TEMP}/out"
+          for TAG in ${TAGS}; do
+            echo "::group::${TAG}"
+            git reset --hard --quiet
+            git clean -fdq
+            git checkout --quiet --detach "${TAG}"
+            # Use the series' build recipe, keep the tag's sources. Early
+            # tags predate the current config layout and keep their own.
+            if [ -d config/clusterapi/all ]; then
+              git checkout "origin/${BRANCH}" -- Makefile
+            else
+              echo "${TAG} predates config/clusterapi/all, using its own Makefile"
+            fi
+
+            IMG="quay.io/k0sproject/k0smotron:${TAG}"
+            rm -f install.yaml install-standalone.yaml install-extension-webhook.yaml
+            make release IMG="${IMG}"
+            if grep -q '^release-standalone:' Makefile; then
+              make release-standalone IMG="${IMG}"
+            fi
+            if grep -q '^release-extension-webhook:' Makefile && [ -d extensions/config/webhook ]; then
+              make release-extension-webhook IMG="${IMG}"
+            fi
+
+            mkdir -p "${RUNNER_TEMP}/out/${TAG}"
+            mv install*.yaml "${RUNNER_TEMP}/out/${TAG}/"
+            echo "::endgroup::"
+          done
+
+      - name: Upload manifests
+        uses: actions/upload-artifact@v4
+        with:
+          name: manifests-${{ matrix.series }}
+          path: ${{ runner.temp }}/out
+          if-no-files-found: ignore
+
+  # Runs after the docs deploy: "mike deploy <version>" replaces the version
+  # directory, which would remove the manifests if they were pushed first.
+  manifests-publish:
+    name: Publish install manifests to gh-pages
+    needs: [build, manifests-build]
+    if: >-
+      !cancelled() &&
+      needs.manifests-build.result == 'success' &&
+      (needs.build.result == 'success' || needs.build.result == 'skipped')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout gh-pages
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+
+      - name: Download manifests
+        uses: actions/download-artifact@v4
+        with:
+          pattern: manifests-*
+          path: ${{ runner.temp }}/out
+          merge-multiple: true
+
+      - name: Commit and push
+        env:
+          FORCE: ${{ inputs.force }}
+        run: |
+          set -euo pipefail
+          git config user.email "action@github.com"
+          git config user.name "GitHub Action"
+
+          OUT="${RUNNER_TEMP}/out"
+          [ -d "${OUT}" ] || { echo "Nothing to publish"; exit 0; }
+
+          for dir in "${OUT}"/*/; do
+            TAG=$(basename "${dir}")
+            if [ -f "${TAG}/install.yaml" ] && [ "${FORCE}" != "true" ]; then
+              echo "${TAG}: already published, skipping"
+              continue
+            fi
+            mkdir -p "${TAG}"
+            cp "${dir}"install*.yaml "${TAG}/"
+            git add "${TAG}"
+          done
+
+          if git diff --cached --quiet; then
+            echo "No changes"
+            exit 0
+          fi
+          git commit -m "Update install manifests"
+
+          for attempt in 1 2 3 4 5; do
+            git push origin gh-pages && exit 0
+            git pull --rebase origin gh-pages
+          done
+          echo "Failed to push to gh-pages" >&2
+          exit 1

@@ -277,7 +277,7 @@ release-standalone: manifests-standalone kustomize ## Generate install yaml for 
 	git checkout config/manager/kustomization.yaml
 
 .PHONY: release-extension-webhook
-release-extension-webhook: docker-build kustomize
+release-extension-webhook: kustomize
 	cd extensions/config/webhook && $(KUSTOMIZE) edit set image extension-webhook=${IMG}
 	$(KUSTOMIZE) build extensions/config/default > install-extension-webhook.yaml
 	git checkout extensions/config/webhook/kustomization.yaml
