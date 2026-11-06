@@ -1451,6 +1451,8 @@ func (r *recordingClusterCache) GetClusterSource(controllerName string, mapFunc 
 // reconciles while the control plane still reports itself available.
 func TestSetupWithManagerWatchesTheClusterCache(t *testing.T) {
 	newManager := func(t *testing.T) ctrl.Manager {
+		t.Helper()
+
 		mgr, err := ctrl.NewManager(testEnv.GetConfig(), ctrl.Options{
 			Scheme: testEnv.GetScheme(),
 			Metrics: metricsserver.Options{

@@ -420,6 +420,8 @@ func Test_versionMatches(t *testing.T) {
 // newWorkloadAPI serves just enough of an apiserver for a real client to reach
 // it. nsStatus decides how a read of the kube system namespace answers.
 func newWorkloadAPI(t *testing.T, nsStatus int) *httptest.Server {
+	t.Helper()
+
 	writeJSON := func(w http.ResponseWriter, code int, body any) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(code)
@@ -467,6 +469,8 @@ func newWorkloadAPI(t *testing.T, nsStatus int) *httptest.Server {
 // newSwitchableWorkloadAPI serves the same thing as newWorkloadAPI, but lets a
 // test turn the namespace read on and off so a recovery can be exercised.
 func newSwitchableWorkloadAPI(t *testing.T) (*httptest.Server, *atomic.Bool) {
+	t.Helper()
+
 	healthy := &atomic.Bool{}
 
 	writeJSON := func(w http.ResponseWriter, code int, body any) {
@@ -516,6 +520,8 @@ func newSwitchableWorkloadAPI(t *testing.T) (*httptest.Server, *atomic.Bool) {
 // availabilityFixture builds a control plane whose workload client is reached
 // through a kubeconfig secret, which is the path taken with no cluster cache.
 func availabilityFixture(t *testing.T, serverURL string, everUp bool) (*K0sController, *controlplane) {
+	t.Helper()
+
 	scheme := runtime.NewScheme()
 	require.NoError(t, corev1.AddToScheme(scheme))
 	require.NoError(t, clusterv1.AddToScheme(scheme))

@@ -29,6 +29,8 @@ import (
 
 // NewSuiteContext creates a context for the test suite that is aware of OS signals and test deadlines.
 func NewSuiteContext(t *testing.T) (context.Context, context.CancelCauseFunc) {
+	t.Helper()
+
 	signalCtx, cancel := signalAwareCtx(context.Background())
 
 	// We need to reserve some time to conduct a proper teardown of the suite before the test timeout kicks in.

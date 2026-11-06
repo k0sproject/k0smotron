@@ -61,6 +61,8 @@ func TestEtcd_resourceRequirements(t *testing.T) {
 			name:    "Default - No resources specified",
 			cluster: &km.Cluster{}, // No Resources specified
 			want: func(t *testing.T, resources corev1.ResourceRequirements) {
+				t.Helper()
+
 				assert.Empty(t, resources.Requests)
 				assert.Empty(t, resources.Limits)
 			},
@@ -80,6 +82,8 @@ func TestEtcd_resourceRequirements(t *testing.T) {
 				},
 			},
 			want: func(t *testing.T, resources corev1.ResourceRequirements) {
+				t.Helper()
+
 				assert.Equal(t, resource.MustParse("100m"), *resources.Requests.Cpu())
 				assert.Equal(t, resource.MustParse("128Mi"), *resources.Requests.Memory())
 				assert.Empty(t, resources.Limits)
@@ -104,6 +108,8 @@ func TestEtcd_resourceRequirements(t *testing.T) {
 				},
 			},
 			want: func(t *testing.T, resources corev1.ResourceRequirements) {
+				t.Helper()
+
 				assert.Equal(t, resource.MustParse("100m"), *resources.Requests.Cpu())
 				assert.Equal(t, resource.MustParse("128Mi"), *resources.Requests.Memory())
 				assert.Equal(t, resource.MustParse("200m"), *resources.Limits.Cpu())
