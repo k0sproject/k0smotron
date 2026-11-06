@@ -25,6 +25,7 @@ linters:
     - gosec
     - staticcheck
     - ineffassign
+    - wastedassign
   settings:
     forbidigo:
       analyze-types: false
