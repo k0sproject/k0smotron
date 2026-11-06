@@ -421,7 +421,7 @@ func TestReconcileBootstrapDataAlreadyCreated(t *testing.T) {
 		"a config whose data secret exists is ready, whatever conditions it was missing")
 
 	before := k0sWorkerConfig.Generation
-	k0sWorkerConfig.Spec.Version = "v1.31.0+k0s.0"
+	k0sWorkerConfig.Spec.Version = "v1.31.0+k0s.0" //nolint:staticcheck // Covers objects that still set the deprecated field.
 	require.NoError(t, testEnv.Update(ctx, k0sWorkerConfig))
 	require.NoError(t, testEnv.GetAPIReader().Get(ctx, util.ObjectKey(k0sWorkerConfig), k0sWorkerConfig))
 	require.Greater(t, k0sWorkerConfig.Generation, before, "the edit has to move the generation")
@@ -853,7 +853,7 @@ func TestWorkerConfigRejectsConflictingUserDataRef(t *testing.T) {
 		return &bootstrapv1.K0sWorkerConfig{
 			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns.Name},
 			Spec: bootstrapv1.K0sWorkerConfigSpec{
-				Version:     "v1.30.0+k0s.0",
+				Version:     "v1.30.0+k0s.0", //nolint:staticcheck // Covers objects that still set the deprecated field.
 				Provisioner: bootstrapv1.ProvisionerSpec{CustomUserDataRef: ref},
 			},
 		}

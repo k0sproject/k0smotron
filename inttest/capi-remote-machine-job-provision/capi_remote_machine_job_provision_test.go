@@ -222,7 +222,6 @@ func (s *RemoteMachineSuite) createCluster() {
 	})
 	s.Require().NoError(err)
 	bytes := clusterYaml.Bytes()
-	// s.T().Logf("cluster yaml: %s", string(bytes))
 	resources, err := util.ParseManifests(bytes)
 	s.Require().NoError(err)
 	s.Require().NotEmpty(resources)

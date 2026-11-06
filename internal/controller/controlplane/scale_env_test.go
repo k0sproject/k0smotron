@@ -1644,7 +1644,7 @@ func TestReconcileMachinesElectsTheUnhealthyEtcdMember(t *testing.T) {
 				Labels:    controlPlaneCommonLabelsForCluster(kcp, cluster.Name),
 			},
 			Spec: bootstrapv2.K0sControllerConfigSpec{
-				Version:       kcp.Spec.Version,
+				Version:       kcp.Spec.Version, //nolint:staticcheck // Covers objects that still set the deprecated field.
 				K0sConfigSpec: &outdated.Spec.K0sConfigSpec,
 			},
 		}

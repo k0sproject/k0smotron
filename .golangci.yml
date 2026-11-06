@@ -28,6 +28,7 @@ linters:
     - wastedassign
     - unused
     - unparam
+    - gocritic
   settings:
     forbidigo:
       analyze-types: false
@@ -56,6 +57,13 @@ linters:
     gosec:
       severity: medium
       confidence: medium
+    gocritic:
+      # Bug-finding (diagnostic) checks only.
+      enabled-tags:
+        - diagnostic
+      disabled-tags:
+        - style
+        - performance
     govet:
       enable-all: true
       disable:

@@ -171,7 +171,6 @@ func (s *ScalingSuite) createK0smotronCluster(ctx context.Context, kc *kubernete
 }
 
 func (s *ScalingSuite) scaleK0smotronCluster(ctx context.Context, rc *rest.Config, replicas int) {
-	//kmc := fmt.Sprintf(kmcTmpl, 2)
 	crdConfig := *rc
 	crdConfig.ContentConfig.GroupVersion = &km.GroupVersion
 	crdConfig.APIPath = "/apis"

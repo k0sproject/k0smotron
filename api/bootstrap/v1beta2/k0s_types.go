@@ -149,6 +149,7 @@ type K0sWorkerConfigSpec struct {
 	// Make sure the version is compatible with the k0s version running on the control plane.
 	// For reference see the Kubernetes version skew policy: https://kubernetes.io/docs/setup/release/version-skew-policy/
 	// +kubebuilder:validation:Optional
+	//
 	// Deprecated: Use Machine version instead.
 	Version string `json:"version,omitempty"`
 
@@ -301,6 +302,7 @@ type K0sControllerConfigSpec struct {
 	// Version is ignored: the k0s version is taken from the Machine, which the control plane
 	// controller sets from the K0sControlPlane version.
 	// +kubebuilder:validation:Optional
+	//
 	// Deprecated: This field is ignored and will be removed in a future release.
 	Version string `json:"version,omitempty"`
 

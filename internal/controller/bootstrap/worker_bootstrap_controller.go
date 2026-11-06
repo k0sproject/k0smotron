@@ -881,7 +881,7 @@ func (r *Controller) clusterToWorkerBootstrapMapFunc(ctx context.Context, o clie
 // K0sWorkerConfig.Spec.Version takes precedence if set; otherwise the owner's Kubernetes
 // version is used.
 func resolveK0sWorkerVersion(config *bootstrapv2.K0sWorkerConfig, configOwner *bsutil.ConfigOwner) string {
-	version := config.Spec.Version
+	version := config.Spec.Version //nolint:staticcheck // Still honoured when set, see above.
 	if version == "" {
 		version = configOwner.KubernetesVersion()
 	}

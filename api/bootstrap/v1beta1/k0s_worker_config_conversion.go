@@ -47,7 +47,7 @@ func k0sWorkerConfigV1beta1ToV1beta2Spec(spec K0sWorkerConfigSpec) v1beta2.K0sWo
 			Type: provisioner.CloudInitProvisioningFormat,
 		},
 		K0sInstallDir:     spec.K0sInstallDir,
-		Version:           spec.Version,
+		Version:           spec.Version, //nolint:staticcheck // Conversion carries the deprecated field.
 		UseSystemHostname: spec.UseSystemHostname,
 		Files:             spec.Files,
 		Args:              spec.Args,
@@ -90,7 +90,7 @@ func (k *K0sWorkerConfig) ConvertFrom(srcRaw conversion.Hub) error {
 func k0sWorkerConfigV1beta2ToV1beta1Spec(spec v1beta2.K0sWorkerConfigSpec) K0sWorkerConfigSpec {
 	res := K0sWorkerConfigSpec{
 		K0sInstallDir:     spec.K0sInstallDir,
-		Version:           spec.Version,
+		Version:           spec.Version, //nolint:staticcheck // Conversion carries the deprecated field.
 		UseSystemHostname: spec.UseSystemHostname,
 		Files:             spec.Files,
 		Args:              spec.Args,
