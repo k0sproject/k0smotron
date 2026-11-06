@@ -1,2 +1,3 @@
 resources:
-- extension_config.yaml
+- inplace-update.yaml
+- chain-upgrades.yaml

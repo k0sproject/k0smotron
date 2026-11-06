@@ -29,6 +29,7 @@ import (
 	"github.com/k0sproject/k0smotron/v2/internal/util"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api/test/framework"
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
@@ -109,7 +110,7 @@ func controlplaneConditionsSpec(t *testing.T) {
 	require.NoError(t, err)
 
 	// Wait for the control plane to be ready
-	err = e2eutil.WaitForControlPlaneToBeReady(ctx, bootstrapClusterProxy.GetClient(), controlPlane, e2eutil.GetInterval(e2eConfig, testName, "wait-control-plane"))
+	err = e2eutil.WaitForControlPlaneReplicatedWithDesiredState(ctx, bootstrapClusterProxy.GetClient(), controlPlane, e2eutil.GetInterval(e2eConfig, testName, "wait-control-plane"))
 	require.NoError(t, err)
 
 	// Test: Verify that ControlPlaneReadyCondition transitions to True when cluster is ready
@@ -126,6 +127,5 @@ func controlplaneConditionsSpec(t *testing.T) {
 	require.Equal(t, metav1.ConditionTrue, condition.Status, "ControlPlaneAvailableCondition should be True")
 
 	// Test: Verify that the status is ready
-	require.True(t, controlPlane.Status.Ready, "K0smotronControlPlane should be ready")
-	require.True(t, controlPlane.Status.Initialization.ControlPlaneInitialized, "K0smotronControlPlane should be initialized")
+	require.True(t, ptr.Deref(controlPlane.Status.Initialization.ControlPlaneInitialized, false), "K0smotronControlPlane should be initialized")
 }

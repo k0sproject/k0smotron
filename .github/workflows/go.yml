@@ -307,6 +307,7 @@ jobs:
           - TestRemoteHostedControlPlanes
           - TestIngressKubeRouter
           - TestIngressCalico
+          - TestChainUpgrade
 
     uses: ./.github/workflows/e2e.yaml
     with:
