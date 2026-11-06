@@ -95,7 +95,7 @@ func GetControllerRuntimeClient(ctx context.Context, hubClient client.Client, cl
 // it returns nil without error.
 func FindK0sControlPlane(ctx context.Context, c client.Client, cluster *clusterv1.Cluster) (*cpv1beta2.K0sControlPlane, error) {
 	if cluster.Spec.ControlPlaneRef.Kind != "K0sControlPlane" {
-		return nil, nil
+		return nil, nil //nolint:nilnil // Documented above, callers handle the nil.
 	}
 
 	uControlPlane, err := external.GetObjectFromContractVersionedRef(ctx, c, cluster.Spec.ControlPlaneRef, cluster.Namespace)

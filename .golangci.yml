@@ -36,6 +36,7 @@ linters:
     - intrange
     - dupword
     - thelper
+    - nilnil
   settings:
     forbidigo:
       analyze-types: false

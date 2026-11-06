@@ -100,7 +100,7 @@ func (f *fakeFsys) Stat(name string) (fs.FileInfo, error) {
 	return nil, &fs.PathError{Op: "stat", Path: name, Err: fs.ErrNotExist}
 }
 
-func (f *fakeFsys) Open(_ string) (fs.File, error)  { return nil, nil }
+func (f *fakeFsys) Open(_ string) (fs.File, error)  { return nil, nil } //nolint:nilnil // Stub, the provisioner only calls OpenFile.
 func (f *fakeFsys) Sha256(_ string) (string, error) { return "", nil }
 func (f *fakeFsys) Remove(_ string) error           { return nil }
 func (f *fakeFsys) RemoveAll(_ string) error        { return nil }
@@ -492,7 +492,7 @@ func TestProvisionStopsWhenTheContextEnds(t *testing.T) {
 	keyPEM, err := ssh.MarshalPrivateKey(key, "")
 	require.NoError(t, err)
 	serverConfig := &ssh.ServerConfig{
-		PublicKeyCallback: func(ssh.ConnMetadata, ssh.PublicKey) (*ssh.Permissions, error) { return nil, nil },
+		PublicKeyCallback: func(ssh.ConnMetadata, ssh.PublicKey) (*ssh.Permissions, error) { return nil, nil }, //nolint:nilnil // Accepts any key, the ssh API's (nil, nil).
 	}
 	serverConfig.AddHostKey(signer)
 

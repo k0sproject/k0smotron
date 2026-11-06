@@ -221,7 +221,7 @@ func (w *Watcher[T]) list(ctx context.Context, condition Condition[T]) (*startWa
 			return nil, conditionError{err}
 		}
 		if done {
-			return nil, nil // terminate successfully
+			return nil, nil //nolint:nilnil // terminate successfully
 		}
 	}
 
@@ -271,7 +271,7 @@ func (w *Watcher[T]) watch(ctx context.Context, resourceVersion string, conditio
 		}
 	}
 
-	return nil, nil // terminate successfully
+	return nil, nil //nolint:nilnil // terminate successfully
 }
 
 func (w *Watcher[T]) processWatchEvent(event *watch.Event, condition Condition[T]) (*startWatch, error) {
@@ -288,7 +288,7 @@ func (w *Watcher[T]) processWatchEvent(event *watch.Event, condition Condition[T
 			if done, err := condition(item); err != nil {
 				return nil, conditionError{err}
 			} else if done {
-				return nil, nil // terminate successfully
+				return nil, nil //nolint:nilnil // terminate successfully
 			}
 		}
 
