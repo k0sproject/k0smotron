@@ -1080,7 +1080,7 @@ func (c *K0smotronController) getKmcScope(ctx context.Context, kcp *cpv1beta2.K0
 func generateClusterSpecHashWithoutExternalAddress(spec kapi.ClusterSpec) string {
 	normalizedSpec := spec.DeepCopy()
 	normalizedSpec.ExternalAddress = ""
-	data, _ := json.Marshal(normalizedSpec)
+	data, _ := json.Marshal(normalizedSpec) //nolint:errchkjson // ClusterSpec has no field whose MarshalJSON can fail, Quantity included.
 	hasher := fnv.New32a()
 	_, _ = hasher.Write(data)
 	return rand.SafeEncodeString(fmt.Sprint(hasher.Sum32()))

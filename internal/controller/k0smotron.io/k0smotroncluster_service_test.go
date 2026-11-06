@@ -31,7 +31,10 @@ import (
 )
 
 func mustMarshal(v any) string {
-	b, _ := json.Marshal(v)
+	b, err := json.Marshal(v)
+	if err != nil {
+		panic(err)
+	}
 	return string(b)
 }
 

@@ -239,7 +239,7 @@ type remediationData struct {
 // A string, a time and an int32 cannot fail to marshal, so the error is dropped rather than
 // carried through callers that could do nothing useful with it.
 func (r remediationData) marshal() string {
-	value, _ := json.Marshal(r)
+	value, _ := json.Marshal(r) //nolint:errchkjson // See above, metav1.Time marshaling cannot fail.
 
 	return string(value)
 }

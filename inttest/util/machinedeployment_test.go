@@ -77,7 +77,9 @@ func topologyAPI(t *testing.T, state *topologyState) *kubernetes.Clientset {
 
 	write := func(w http.ResponseWriter, obj any) {
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(obj)
+		if err := json.NewEncoder(w).Encode(obj); err != nil {
+			t.Errorf("encoding %T: %v", obj, err)
+		}
 	}
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
