@@ -875,7 +875,12 @@ func (c *ControlPlaneController) detectJoinHost(ctx context.Context, scope *Cont
 		return "", errors.New("failed to load cluster CA certificate for join host detection")
 	}
 
-	transport := http.DefaultTransport.(*http.Transport).Clone()
+	// http.DefaultTransport is a process-wide variable that something else may have replaced.
+	defaultTransport, ok := http.DefaultTransport.(*http.Transport)
+	if !ok {
+		return "", fmt.Errorf("unexpected http.DefaultTransport %T", http.DefaultTransport)
+	}
+	transport := defaultTransport.Clone()
 	transport.TLSClientConfig = &tls.Config{
 		// The join API serves a certificate signed by the cluster CA, so we
 		// trust it explicitly instead of skipping verification.
@@ -963,7 +968,10 @@ func (c *ControlPlaneController) findFirstControllerIP(ctx context.Context, scop
 
 		if found {
 			for _, addr := range addresses {
-				addrMap, _ := addr.(map[string]any)
+				addrMap, ok := addr.(map[string]any)
+				if !ok {
+					continue
+				}
 				address, ok := addrMap["address"].(string)
 				if !ok {
 					continue

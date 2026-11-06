@@ -610,7 +610,9 @@ func setUnavailableAfterGracePeriod(failures *sync.Map, cp availabilityReporter,
 
 	switch previous, ok := failures.Load(key); {
 	case ok:
-		state = availabilityFailures{since: previous.(availabilityFailures).since, seen: previous.(availabilityFailures).seen + 1}
+		if prev, isFailures := previous.(availabilityFailures); isFailures {
+			state = availabilityFailures{since: prev.since, seen: prev.seen + 1}
+		}
 	case existing != nil && existing.Status == metav1.ConditionUnknown &&
 		existing.Reason == cpv1beta2.ControlPlaneConnectionDownReason &&
 		existing.LastTransitionTime.Time.After(created):

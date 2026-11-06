@@ -491,10 +491,11 @@ func TestReconcileKubeconfigTunnelingModeProxy(t *testing.T) {
 		assert.NoError(c, testEnv.Get(ctx, secretKey, kubeconfigProxiedSecret))
 
 		kubeconfigProxiedSecretCrt, _ := runtime.Decode(clientcmdlatest.Codec, kubeconfigProxiedSecret.Data["value"])
-		if !assert.NotNil(c, kubeconfigProxiedSecretCrt) {
+		kubeconfig, ok := kubeconfigProxiedSecretCrt.(*api.Config)
+		if !assert.True(c, ok, "the secret does not hold a kubeconfig: %T", kubeconfigProxiedSecretCrt) {
 			return
 		}
-		for _, v := range kubeconfigProxiedSecretCrt.(*api.Config).Clusters {
+		for _, v := range kubeconfig.Clusters {
 			assert.Equal(c, "https://test.endpoint:6443", v.Server)
 			assert.Equal(c, "http://test.com:9999", v.ProxyURL)
 		}
@@ -588,10 +589,11 @@ func TestReconcileKubeconfigTunnelingModeTunnel(t *testing.T) {
 		assert.NoError(c, testEnv.Get(ctx, secretKey, kubeconfigProxiedSecret))
 
 		kubeconfigProxiedSecretCrt, _ := runtime.Decode(clientcmdlatest.Codec, kubeconfigProxiedSecret.Data["value"])
-		if !assert.NotNil(c, kubeconfigProxiedSecretCrt) {
+		kubeconfig, ok := kubeconfigProxiedSecretCrt.(*api.Config)
+		if !assert.True(c, ok, "the secret does not hold a kubeconfig: %T", kubeconfigProxiedSecretCrt) {
 			return
 		}
-		for _, v := range kubeconfigProxiedSecretCrt.(*api.Config).Clusters {
+		for _, v := range kubeconfig.Clusters {
 			assert.Equal(c, "https://test.com:9999", v.Server)
 		}
 

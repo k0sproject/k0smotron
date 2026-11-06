@@ -29,6 +29,7 @@ linters:
     - unused
     - unparam
     - gocritic
+    - forcetypeassert
   settings:
     forbidigo:
       analyze-types: false

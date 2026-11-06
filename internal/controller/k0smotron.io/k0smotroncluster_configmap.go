@@ -264,8 +264,13 @@ func getV1Beta1Spec(kmc *km.Cluster, sans []string) map[string]any {
 	}
 
 	if kmc.Spec.Ingress != nil {
-		v1beta1Spec["api"].(map[string]any)["externalAddress"] = net.JoinHostPort(kmc.Spec.Ingress.APIHost, strconv.FormatInt(kmc.Spec.Ingress.Port, 10))
-		v1beta1Spec["api"].(map[string]any)["extraArgs"] = map[string]any{
+		api, ok := v1beta1Spec["api"].(map[string]any)
+		if !ok {
+			api = map[string]any{}
+			v1beta1Spec["api"] = api
+		}
+		api["externalAddress"] = net.JoinHostPort(kmc.Spec.Ingress.APIHost, strconv.FormatInt(kmc.Spec.Ingress.Port, 10))
+		api["extraArgs"] = map[string]any{
 			"endpoint-reconciler-type": "none",
 		}
 		konnectivity := map[string]any{
