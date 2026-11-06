@@ -329,7 +329,7 @@ func checkStandaloneInPlace(ctx context.Context, input util.UpgradeControlPlaneA
 		plan, err := autopilot.GetPlan(fctx, workloadClientSet)
 		if err != nil {
 			// The plan has not been created yet; keep polling.
-			return false, nil
+			return false, nil //nolint:nilerr // See above.
 		}
 		targetVersion, err := autopilot.GetPlanTargetVersion(plan)
 		if err != nil {

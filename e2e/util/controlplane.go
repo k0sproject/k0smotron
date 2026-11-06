@@ -313,12 +313,18 @@ func WaitForK0smotronControlPlaneToBeReady(ctx context.Context, client crclient.
 
 		// Check if the control plane is ready
 		status, found, err := unstructured.NestedMap(kcp.Object, "status")
-		if err != nil || !found {
+		if err != nil {
+			return false, err
+		}
+		if !found {
 			return false, nil
 		}
 
 		ready, found, err := unstructured.NestedBool(status, "initialization", "controlPlaneInitialized")
-		if err != nil || !found {
+		if err != nil {
+			return false, err
+		}
+		if !found {
 			return false, nil
 		}
 
