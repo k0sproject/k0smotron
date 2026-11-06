@@ -390,6 +390,7 @@ func IsRetryable(err error) (time.Duration, error) {
 			metav1.StatusReasonTimeout,
 			metav1.StatusReasonServiceUnavailable:
 			return time.Duration(delaySecs) * time.Second, nil
+		default:
 		}
 	}
 
