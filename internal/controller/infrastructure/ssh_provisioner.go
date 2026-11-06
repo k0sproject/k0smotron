@@ -331,7 +331,7 @@ func (p *SSHProvisioner) uploadFile(runner commandRunner, execOpts []exec.Option
 		}
 	}
 
-	destFile, err := fsys.OpenFile(file.Path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, fs.FileMode(perms))
+	destFile, err := fsys.OpenFile(file.Path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, fs.FileMode(perms)) //nolint:gosec // PermissionsAsInt keeps it within 0-07777.
 	if err != nil {
 		return fmt.Errorf("failed to open remote file for writing: %w", err)
 	}

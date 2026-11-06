@@ -180,7 +180,7 @@ func newEnvironment(setupSecretCachingClient setupSecretCachingClientFn) *Enviro
 		config := kubeconfig.FromEnvTestConfig(env.Config, &clusterv1.Cluster{
 			ObjectMeta: metav1.ObjectMeta{Name: "test"},
 		})
-		if err := os.WriteFile(kubeconfigPath, config, 0o600); err != nil {
+		if err := os.WriteFile(kubeconfigPath, config, 0o600); err != nil { //nolint:gosec // The test runner picks this path on purpose.
 			panic(errors.Wrapf(err, "failed to write the test env kubeconfig"))
 		}
 	}

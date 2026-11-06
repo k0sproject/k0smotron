@@ -74,9 +74,9 @@ func (s *CAPIControlPlaneDockerEtcdHealthSuite) SetupSuite() {
 
 	tmpDir := s.T().TempDir()
 	s.clusterYamlsPath = tmpDir + "/cluster.yaml"
-	s.Require().NoError(os.WriteFile(s.clusterYamlsPath, []byte(dockerClusterYaml), 0644))
+	s.Require().NoError(os.WriteFile(s.clusterYamlsPath, []byte(dockerClusterYaml), 0o600))
 	s.scaleDownPath = tmpDir + "/scaledown.yaml"
-	s.Require().NoError(os.WriteFile(s.scaleDownPath, []byte(controlPlaneScaleDown), 0644))
+	s.Require().NoError(os.WriteFile(s.scaleDownPath, []byte(controlPlaneScaleDown), 0o600))
 
 	s.ctx, _ = util.NewSuiteContext(s.T())
 }

@@ -100,7 +100,14 @@ func (f File) PermissionsAsInt() (int64, error) {
 	if f.Permissions == "" {
 		f.Permissions = "0644"
 	}
-	return strconv.ParseInt(f.Permissions, 8, 32)
+	perms, err := strconv.ParseInt(f.Permissions, 8, 32)
+	if err != nil {
+		return 0, err
+	}
+	if perms < 0 || perms > 0o7777 {
+		return 0, fmt.Errorf("permissions %q are not a file mode", f.Permissions)
+	}
+	return perms, nil
 }
 
 func writeFilesVars(b *bytes.Buffer, files []File) {

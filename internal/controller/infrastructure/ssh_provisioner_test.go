@@ -195,7 +195,7 @@ func TestUploadFileCreatesDirectoryTraversable(t *testing.T) {
 		if permissions != "" {
 			parsed, err := provisioner.File{Permissions: permissions}.PermissionsAsInt()
 			require.NoError(t, err)
-			want = fs.FileMode(parsed)
+			want = fs.FileMode(parsed) //nolint:gosec // PermissionsAsInt keeps it within 0-07777.
 		}
 		require.Equal(t, want, fsys.openPerm, "file mode for permissions %q", permissions)
 	}

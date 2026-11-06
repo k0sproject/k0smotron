@@ -44,9 +44,12 @@ func NewSuiteContext(t *testing.T) (context.Context, context.CancelCauseFunc) {
 	reservedTeardownDuration = time.Duration(math.Max(float64(20*time.Second), float64(reservedTeardownDuration)))
 	// Then construct the context accordingly.
 	deadlineCtx, subCancel := context.WithDeadline(signalCtx, deadline.Add(-reservedTeardownDuration))
-	_ = subCancel // Silence linter: the deadlined context is implicitly canceled when canceling the signal context
 
-	return deadlineCtx, cancel
+	// Canceling the signal context first passes the cause on to the deadlined one.
+	return deadlineCtx, func(cause error) {
+		cancel(cause)
+		subCancel()
+	}
 }
 
 func signalAwareCtx(parent context.Context) (context.Context, context.CancelCauseFunc) {

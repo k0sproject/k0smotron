@@ -92,7 +92,7 @@ func (s *CAPIMultiInstanceWatchSelectorSuite) SetupSuite() {
 
 	tmpDir := s.T().TempDir()
 	s.clusterYAMLPath = tmpDir + "/watch-selector-cluster.yaml"
-	s.Require().NoError(os.WriteFile(s.clusterYAMLPath, []byte(clusterYAML), 0o644))
+	s.Require().NoError(os.WriteFile(s.clusterYAMLPath, []byte(clusterYAML), 0o600))
 
 	s.sourceDeployment, err = s.findControlPlaneDeploymentName(s.ctx)
 	s.Require().NoError(err)

@@ -70,7 +70,7 @@ func (s *CAPIControlPlaneDockerSuite) SetupSuite() {
 
 	tmpDir := s.T().TempDir()
 	s.clusterYamlsPath = tmpDir + "/cluster.yaml"
-	s.Require().NoError(os.WriteFile(s.clusterYamlsPath, []byte(dockerClusterYaml), 0644))
+	s.Require().NoError(os.WriteFile(s.clusterYamlsPath, []byte(dockerClusterYaml), 0o600))
 
 	s.ctx, _ = util.NewSuiteContext(s.T())
 }
@@ -146,7 +146,7 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 	forwardedPort := 31443
 	cl := http.Client{
 		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec // Only probes the local port-forward of a throwaway cluster.
 		},
 	}
 

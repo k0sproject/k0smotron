@@ -18,7 +18,7 @@ package main
 
 import (
 	"context"
-	"crypto/md5"
+	"crypto/md5" //nolint:gosec // Not a security use, see the call site.
 	"crypto/tls"
 	"flag"
 	"fmt"
@@ -225,7 +225,7 @@ func main() {
 		Metrics:                metricsOpts,
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
-		LeaderElectionID:       fmt.Sprintf("%x.k0smotron.io", md5.Sum([]byte(enabledController))),
+		LeaderElectionID:       fmt.Sprintf("%x.k0smotron.io", md5.Sum([]byte(enabledController))), //nolint:gosec // Not a security use, and a new hash would split leader election across an upgrade.
 		Cache:                  cacheOptions,
 		Client: client.Options{
 			Cache: &client.CacheOptions{

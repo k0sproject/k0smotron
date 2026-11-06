@@ -456,7 +456,7 @@ func (scope *kmcScope) generateIngress(kmc *km.Cluster) v1.Ingress {
 									Service: &v1.IngressServiceBackend{
 										Name: kmc.GetServiceName(),
 										Port: v1.ServiceBackendPort{
-											Number: int32(kmc.Spec.Service.APIPort),
+											Number: servicePort(kmc.Spec.Service.APIPort),
 										},
 									},
 								},
@@ -475,7 +475,7 @@ func (scope *kmcScope) generateIngress(kmc *km.Cluster) v1.Ingress {
 									Service: &v1.IngressServiceBackend{
 										Name: kmc.GetServiceName(),
 										Port: v1.ServiceBackendPort{
-											Number: int32(kmc.Spec.Service.KonnectivityPort),
+											Number: servicePort(kmc.Spec.Service.KonnectivityPort),
 										},
 									},
 								},

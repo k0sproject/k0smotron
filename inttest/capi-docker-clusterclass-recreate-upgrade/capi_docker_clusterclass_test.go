@@ -254,7 +254,7 @@ func (s *CAPIDockerClusterClassSuite) createCluster() {
 	s.Require().NoError(err)
 	s.Require().NotEmpty(machines)
 
-	s.Require().NoError(os.WriteFile(s.haProxyCfgPath, []byte(haProxyConfig), 0644))
+	s.Require().NoError(os.WriteFile(s.haProxyCfgPath, []byte(haProxyConfig), 0o600))
 	out, err := exec.CommandContext(s.ctx, "kubectl", "apply", "-f", s.haProxyCfgPath).CombinedOutput()
 	s.Require().NoError(err, "failed to create ha proxy config: %s", string(out))
 
@@ -275,11 +275,11 @@ func (s *CAPIDockerClusterClassSuite) createCluster() {
 	s.Require().NoError(err)
 	bytes := clusterClassYaml.Bytes()
 
-	s.Require().NoError(os.WriteFile(s.clusterClassYamlsPath, bytes, 0644))
+	s.Require().NoError(os.WriteFile(s.clusterClassYamlsPath, bytes, 0o600))
 	out, err = exec.CommandContext(s.ctx, "kubectl", "apply", "-f", s.clusterClassYamlsPath).CombinedOutput()
 	s.Require().NoError(err, "failed to update cluster objects: %s", string(out))
 
-	s.Require().NoError(os.WriteFile(s.clusterYamlsPath, []byte(clusterYaml), 0644))
+	s.Require().NoError(os.WriteFile(s.clusterYamlsPath, []byte(clusterYaml), 0o600))
 	out, err = exec.CommandContext(s.ctx, "kubectl", "apply", "-f", s.clusterYamlsPath).CombinedOutput()
 	s.Require().NoError(err, "failed to apply cluster objects: %s", string(out))
 }

@@ -18,7 +18,7 @@ package infrastructure
 import (
 	"bytes"
 	"context"
-	"crypto/md5"
+	"crypto/md5" //nolint:gosec // Not a security use, see the call site.
 	"fmt"
 	"path/filepath"
 
@@ -248,5 +248,5 @@ func (p *JobProvisioner) Cleanup(_ context.Context, _ RemoteMachineMode) error {
 }
 
 func genFileName(filePath string) string {
-	return fmt.Sprintf("%s-%x", filepath.Base(filePath), md5.Sum([]byte(filePath)))
+	return fmt.Sprintf("%s-%x", filepath.Base(filePath), md5.Sum([]byte(filePath))) //nolint:gosec // Not a security use, only a stable file name.
 }

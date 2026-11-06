@@ -272,9 +272,9 @@ func (s *RemoteMachineTemplateUpdateSuite) createCluster() {
 	s.Require().NoError(err)
 	bytes := clusterYaml.Bytes()
 
-	s.Require().NoError(os.WriteFile(s.clusterYamlsPath, bytes, 0644))
+	s.Require().NoError(os.WriteFile(s.clusterYamlsPath, bytes, 0o600))
 	out, err := exec.CommandContext(s.Context(), "kubectl", "apply", "-f", s.clusterYamlsPath).CombinedOutput()
-	s.Require().NoError(os.WriteFile(s.updatedClusterYamlsPath, []byte(updatedClusterYaml), 0644))
+	s.Require().NoError(os.WriteFile(s.updatedClusterYamlsPath, []byte(updatedClusterYaml), 0o600))
 	s.Require().NoError(err, "failed to update cluster objects: %s", string(out))
 }
 

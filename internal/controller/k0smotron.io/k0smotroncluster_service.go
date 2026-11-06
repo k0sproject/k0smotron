@@ -42,28 +42,28 @@ func generateService(kmc *km.Cluster) v1.Service {
 		name = kmc.GetNodePortServiceName()
 		ports = append(ports,
 			v1.ServicePort{
-				Port:       int32(kmc.Spec.Service.APIPort),
+				Port:       servicePort(kmc.Spec.Service.APIPort),
 				TargetPort: intstr.FromInt(kmc.Spec.Service.APIPort),
 				Name:       "api",
-				NodePort:   int32(kmc.Spec.Service.APIPort),
+				NodePort:   servicePort(kmc.Spec.Service.APIPort),
 			},
 			v1.ServicePort{
-				Port:       int32(kmc.Spec.Service.KonnectivityPort),
+				Port:       servicePort(kmc.Spec.Service.KonnectivityPort),
 				TargetPort: intstr.FromInt(kmc.Spec.Service.KonnectivityPort),
 				Name:       "konnectivity",
-				NodePort:   int32(kmc.Spec.Service.KonnectivityPort),
+				NodePort:   servicePort(kmc.Spec.Service.KonnectivityPort),
 			})
 	case v1.ServiceTypeLoadBalancer:
 		name = kmc.GetLoadBalancerServiceName()
 		// LB svc does not define the nodeport so it can be dynamically assigned
 		ports = append(ports,
 			v1.ServicePort{
-				Port:       int32(kmc.Spec.Service.APIPort),
+				Port:       servicePort(kmc.Spec.Service.APIPort),
 				TargetPort: intstr.FromInt(kmc.Spec.Service.APIPort),
 				Name:       "api",
 			},
 			v1.ServicePort{
-				Port:       int32(kmc.Spec.Service.KonnectivityPort),
+				Port:       servicePort(kmc.Spec.Service.KonnectivityPort),
 				TargetPort: intstr.FromInt(kmc.Spec.Service.KonnectivityPort),
 				Name:       "konnectivity",
 			})
@@ -77,12 +77,12 @@ func generateService(kmc *km.Cluster) v1.Service {
 
 		ports = append(ports,
 			v1.ServicePort{
-				Port:       int32(kmc.Spec.Service.APIPort),
+				Port:       servicePort(kmc.Spec.Service.APIPort),
 				TargetPort: intstr.FromInt(kmc.Spec.Service.APIPort),
 				Name:       "api",
 			},
 			v1.ServicePort{
-				Port:       int32(kmc.Spec.Service.KonnectivityPort),
+				Port:       servicePort(kmc.Spec.Service.KonnectivityPort),
 				TargetPort: intstr.FromInt(kmc.Spec.Service.KonnectivityPort),
 				Name:       "konnectivity",
 			})
@@ -249,4 +249,9 @@ data:
 `, kmc.Spec.ExternalAddress, fmt.Sprintf("%d", kmc.Spec.Service.APIPort)),
 		},
 	}
+}
+
+// servicePort converts a port from the Cluster service spec.
+func servicePort(port int) int32 {
+	return int32(port) //nolint:gosec // The webhook rejects ports outside 1-65535.
 }

@@ -277,9 +277,9 @@ func (s *KubeadmRemoteMachineSuite) installCNI(ctx context.Context) {
 		manifestURL = "https://raw.githubusercontent.com/projectcalico/calico/v3.28.2/manifests/calico.yaml"
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, manifestURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, manifestURL, nil) //nolint:gosec // The test configuration names the manifest.
 	s.Require().NoError(err)
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := http.DefaultClient.Do(req) //nolint:gosec // See above.
 	s.Require().NoError(err)
 	defer func() { _ = resp.Body.Close() }()
 	s.Require().Equal(http.StatusOK, resp.StatusCode, "failed to download Calico manifest from %s", manifestURL)
@@ -326,7 +326,7 @@ func (s *KubeadmRemoteMachineSuite) createCluster(workerIP string) {
 
 	tmpDir := s.T().TempDir()
 	clusterYamlPath := tmpDir + "/cluster.yaml"
-	s.Require().NoError(os.WriteFile(clusterYamlPath, clusterYamlBuf.Bytes(), 0644))
+	s.Require().NoError(os.WriteFile(clusterYamlPath, clusterYamlBuf.Bytes(), 0o600))
 	out, err := exec.CommandContext(s.ctx, "kubectl", "apply", "-f", clusterYamlPath).CombinedOutput()
 	s.Require().NoError(err, "failed to apply cluster objects: %s", string(out))
 }
