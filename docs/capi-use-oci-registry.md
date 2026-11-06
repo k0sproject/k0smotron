@@ -9,8 +9,12 @@ For this setup, you need to use the control plane and bootstrap providers for k0
 
 (See the [tutorial](https://cluster-api-aws.sigs.k8s.io/quick-start) on how to use AWS in CAPI for more details). Once you have a valid cluster to deploy the providers, run:
 
-```cmd
-clusterctl init --control-plane k0sproject-k0smotron --bootstrap k0sproject-k0smotron --infrastructure aws
+```bash
+clusterctl init \
+  --core cluster-api:{{{ extra.capi_versions.core }}} \
+  --control-plane k0sproject-k0smotron:{{{ extra.k0smotron_version }}} \
+  --bootstrap k0sproject-k0smotron:{{{ extra.k0smotron_version }}} \
+  --infrastructure aws:{{{ extra.capi_versions.aws }}}
 ```
 
 ## Uploading the k0s Binary to an OCI Registry

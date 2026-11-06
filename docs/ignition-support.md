@@ -31,7 +31,11 @@ export AWS_B64ENCODED_CREDENTIALS=$(clusterawsadm bootstrap credentials encode-a
 export EXP_BOOTSTRAP_FORMAT_IGNITION=true # Used by the AWS provider
 
 # Initialize the management cluster.
-clusterctl init --infrastructure aws --control-plane k0sproject-k0smotron --bootstrap k0sproject-k0smotron
+clusterctl init \
+  --core cluster-api:{{{ extra.capi_versions.core }}} \
+  --infrastructure aws:{{{ extra.capi_versions.aws }}} \
+  --control-plane k0sproject-k0smotron:{{{ extra.k0smotron_version }}} \
+  --bootstrap k0sproject-k0smotron:{{{ extra.k0smotron_version }}}
 ```
 
 !!! warning "Set `EXP_BOOTSTRAP_FORMAT_IGNITION` environment variable"
