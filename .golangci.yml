@@ -20,6 +20,7 @@ linters:
     - errorlint
     - testifylint
     - noctx
+    - nilerr
   settings:
     forbidigo:
       analyze-types: false
@@ -82,6 +83,10 @@ linters:
       - linters: [revive]
         text: "var-naming: avoid meaningless package names"
         path: "(internal/controller/util/|inttest/util/)"
+      # Integration test polls return (false, nil) on an error to retry until
+      # the poll times out, which is the wait.Poll contract.
+      - linters: [nilerr]
+        path: "^inttest/"
     paths:
       # Ignore issues in generated files.
       - zz_generated.*\.go$

@@ -94,11 +94,11 @@ func (c *ClusterValidator) ValidateClusterSpecUpdate(oldKCS, kcs *ClusterSpec) (
 func validateEtcdVersionUpgrade(oldImage, newImage string) (admission.Warnings, error) {
 	oldV, err := imageVersion(oldImage)
 	if err != nil {
-		return admission.Warnings{fmt.Sprintf("could not determine etcd version from image %q, skipping etcd upgrade path validation", oldImage)}, nil
+		return admission.Warnings{fmt.Sprintf("could not determine etcd version from image %q (%v), skipping etcd upgrade path validation", oldImage, err)}, nil
 	}
 	newV, err := imageVersion(newImage)
 	if err != nil {
-		return admission.Warnings{fmt.Sprintf("could not determine etcd version from image %q, skipping etcd upgrade path validation", newImage)}, nil
+		return admission.Warnings{fmt.Sprintf("could not determine etcd version from image %q (%v), skipping etcd upgrade path validation", newImage, err)}, nil
 	}
 
 	if newV.LessThanOrEqual(oldV) {

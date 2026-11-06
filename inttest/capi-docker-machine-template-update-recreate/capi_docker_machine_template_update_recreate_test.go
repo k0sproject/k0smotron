@@ -185,7 +185,7 @@ func (s *CAPIDevMachineTemplateUpdateRecreate) TestCAPIControlPlaneDockerDownSca
 
 			v, _, err := unstructured.NestedString(item.Object, "spec", "version")
 			if err != nil {
-				return false, nil
+				return false, err
 			}
 			if v != "v1.31.2+k0s.0" {
 				return false, nil

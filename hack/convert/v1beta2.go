@@ -136,7 +136,7 @@ func processStream(r io.Reader, w io.Writer) error {
 func convertDocument(raw []byte) ([]byte, error) {
 	var u unstructured.Unstructured
 	if err := sigsyaml.Unmarshal(raw, &u.Object); err != nil {
-		return raw, nil // not a Kubernetes object; pass through unchanged
+		return raw, nil //nolint:nilerr // not a Kubernetes object; pass through unchanged
 	}
 
 	apiVersion := u.GetAPIVersion()
@@ -167,7 +167,7 @@ func convert(group, kind string, raw []byte) ([]byte, error) {
 	srcObj, err := scheme.New(srcGVK)
 	if err != nil {
 		// Kind not registered — not a k0smotron resource, pass through.
-		return raw, nil
+		return raw, nil //nolint:nilerr // See above.
 	}
 
 	src, ok := srcObj.(conversion.Convertible)

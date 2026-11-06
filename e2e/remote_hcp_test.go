@@ -269,7 +269,7 @@ func getEncodedHostingClusterKubeconfig() (string, error) {
 	// in order to use the internal IP of the cluster.
 	kubeconfig, err := cluster.NewProvider().KubeConfig(hostingClusterName, true)
 	if err != nil {
-		return "", nil
+		return "", err
 	}
 
 	return base64.StdEncoding.EncodeToString([]byte(kubeconfig)), nil

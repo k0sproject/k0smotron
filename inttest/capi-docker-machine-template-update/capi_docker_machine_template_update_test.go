@@ -194,7 +194,7 @@ func (s *CAPIControlPlaneDockerDownScalingSuite) TestCAPIControlPlaneDockerDownS
 
 		state, _, err := unstructured.NestedString(existingPlan.Object, "status", "state")
 		if err != nil {
-			return false, nil
+			return false, err
 		}
 
 		return state == "Completed", nil

@@ -164,7 +164,7 @@ func (s *CAPIDevMachineChangeArgs) TestCAPIControlPlaneDockerDownScaling() {
 		for _, item := range obj.Items {
 			args, _, err := unstructured.NestedStringSlice(item.Object, "spec", "args")
 			if err != nil {
-				return false, nil
+				return false, err
 			}
 			if !slices.Contains(args, "--debug") {
 				return false, nil
