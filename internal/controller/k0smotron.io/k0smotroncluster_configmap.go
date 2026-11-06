@@ -45,7 +45,7 @@ const kineDataSourceURLPlaceholder = "__K0SMOTRON_KINE_DATASOURCE_URL_PLACEHOLDE
 // We use plain map[string]interface{} for the following reasons:
 //   - we want to support multiple versions of k0s config
 //   - some of the fields in the k0s config struct are not pointers, e.g. spec.api.address in string, so it will be
-//     marshalled as "address": "", which is not correct value for the k0s config
+//     marshaled as "address": "", which is not correct value for the k0s config
 //   - we can't use the k0s config default values, because some of them are calculated based on the cluster state (e.g. spec.api.address)
 func (scope *kmcScope) generateConfig(kmc *km.Cluster, sans []string) (v1.ConfigMap, map[string]any, error) {
 	k0smotronValues := map[string]any{"spec": nil}

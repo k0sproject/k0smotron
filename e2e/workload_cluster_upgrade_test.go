@@ -311,7 +311,7 @@ func controlPlaneMachineNamesByUID(machines *clusterv1.MachineList) map[string]s
 
 // checkStandaloneInPlace verifies that the standalone in-place update path is used: an autopilot
 // Plan must appear in the workload cluster and no control plane Machine may carry the CAPI in-place
-// update annotations while the upgrade runs. It returns when the given context is cancelled, which
+// update annotations while the upgrade runs. It returns when the given context is canceled, which
 // happens once the upgrade is done.
 func checkStandaloneInPlace(ctx context.Context, input util.UpgradeControlPlaneAndWaitForUpgradeInput) error {
 	workloadClientSet := input.ClusterProxy.GetWorkloadCluster(ctx, input.Cluster.Namespace, input.Cluster.Name).GetClientSet()
@@ -377,7 +377,7 @@ func controlPlaneMachineWithInPlaceUpdateAnnotations(ctx context.Context, input 
 
 // checkCAPIInPlace verifies that the runtime extension in-place update path is used: at least one
 // control plane Machine must carry the CAPI in-place update annotations while the upgrade runs. It
-// returns when the annotations have been seen or when the given context is cancelled, which happens
+// returns when the annotations have been seen or when the given context is canceled, which happens
 // once the upgrade is done.
 func checkCAPIInPlace(ctx context.Context, input util.UpgradeControlPlaneAndWaitForUpgradeInput) error {
 	err := wait.PollUntilContextCancel(ctx, time.Second, true, func(fctx context.Context) (bool, error) {
@@ -404,7 +404,7 @@ func hasInPlaceUpdateAnnotations(annotations map[string]string) bool {
 }
 
 // checkRecreateDeleteFirstMachineCount makes sure the RecreateDeleteFirst strategy never exceeds the
-// desired number of control plane machines. It returns when the given context is cancelled, which
+// desired number of control plane machines. It returns when the given context is canceled, which
 // happens once the upgrade is done.
 func checkRecreateDeleteFirstMachineCount(ctx context.Context, input util.UpgradeControlPlaneAndWaitForUpgradeInput) error {
 	desiredReplicas := int(input.ControlPlane.Spec.Replicas)

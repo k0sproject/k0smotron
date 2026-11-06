@@ -1125,7 +1125,7 @@ func (f *fakeRoundTripperWithAutopilotPost) run(req *http.Request) (*http.Respon
 }
 
 // buildTestController creates a K0sController wired to testEnv with a custom workload-cluster
-// round-tripper function. Pass nil to use the default fakeRoundTripper behaviour.
+// round-tripper function. Pass nil to use the default fakeRoundTripper behavior.
 func buildTestController(t *testing.T, roundTripFunc func(*http.Request) (*http.Response, error)) *K0sController {
 	t.Helper()
 	if roundTripFunc == nil {

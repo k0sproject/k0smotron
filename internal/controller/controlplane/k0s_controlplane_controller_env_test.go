@@ -1491,7 +1491,7 @@ func TestSetupWithManagerWatchesTheClusterCache(t *testing.T) {
 	})
 }
 
-// TestHostedSetupWithManagerWatchesTheClusterCache covers the hosted flavour getting
+// TestHostedSetupWithManagerWatchesTheClusterCache covers the hosted flavor getting
 // the same wake up, since nothing else notices it going away either.
 func TestHostedSetupWithManagerWatchesTheClusterCache(t *testing.T) {
 	mgr, err := ctrl.NewManager(testEnv.GetConfig(), ctrl.Options{
@@ -1517,7 +1517,7 @@ func TestHostedSetupWithManagerWatchesTheClusterCache(t *testing.T) {
 		[]ctrl.Request{{NamespacedName: client.ObjectKey{Namespace: "ns", Name: "cp"}}},
 		cache.mapFuncs[0](ctx, cluster))
 
-	// A cluster running the other flavour must not be enqueued here.
+	// A cluster running the other flavor must not be enqueued here.
 	cluster.Spec.ControlPlaneRef.Kind = "K0sControlPlane"
 	require.Nil(t, cache.mapFuncs[0](ctx, cluster))
 }

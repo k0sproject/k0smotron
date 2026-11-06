@@ -97,7 +97,7 @@ func TestSetCertificatesConditions_doesNotAffectAvailableSummary(t *testing.T) {
 		Spec:       km.ClusterSpec{CertificateRefs: []km.CertificateRef{{Type: "ca", Name: "kmc-ca"}}},
 	}
 
-	// A healthy control plane with an expired certificate must still summarise
+	// A healthy control plane with an expired certificate must still summarize
 	// as Available: certificate conditions are informational, not gating.
 	conditions.Set(kmc, metav1.Condition{
 		Type: km.ClusterControlPlaneFunctionalCondition, Status: metav1.ConditionTrue, Reason: "Functional"})

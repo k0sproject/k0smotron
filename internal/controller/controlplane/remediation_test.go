@@ -331,7 +331,7 @@ func TestReconcileUnhealthyMachinesClearsAStaleMarker(t *testing.T) {
 func TestRemediationDataRoundTrip(t *testing.T) {
 	stamp := metav1.NewTime(time.Unix(1700000000, 0).UTC())
 
-	marshalled := remediationData{Machine: "cp-0", Timestamp: stamp, RetryCount: 2}.marshal()
+	marshaled := remediationData{Machine: "cp-0", Timestamp: stamp, RetryCount: 2}.marshal()
 
 	tests := []struct {
 		name   string
@@ -380,7 +380,7 @@ func TestRemediationDataRoundTrip(t *testing.T) {
 		},
 		{
 			name:   "written by this version",
-			value:  map[string]string{cpv1beta2.RemediationForAnnotation: marshalled},
+			value:  map[string]string{cpv1beta2.RemediationForAnnotation: marshaled},
 			want:   remediationData{Machine: "cp-0", Timestamp: stamp, RetryCount: 2},
 			wantOK: true,
 		},
@@ -789,7 +789,7 @@ func TestReconcileUnhealthyMachinesLimitsRetries(t *testing.T) {
 			reason: deleting, wantRetry: 0},
 		{name: "the retry period is checked before the single replica guard", single: true, retries: 1, age: time.Minute, period: new(int32(600)),
 			reason: deferred, message: "RetryPeriodSeconds"},
-		{name: "an uninitialized control plane still honours the retry period", single: true, uninitialized: true, retries: 1, age: time.Minute, period: new(int32(600)),
+		{name: "an uninitialized control plane still honors the retry period", single: true, uninitialized: true, retries: 1, age: time.Minute, period: new(int32(600)),
 			reason: deferred, message: "RetryPeriodSeconds"},
 		{name: "a stale marker is cleared even when the retry period refuses", staleMarker: true, retries: 1, age: time.Minute, period: new(int32(600)),
 			reason: deferred, message: "RetryPeriodSeconds"},

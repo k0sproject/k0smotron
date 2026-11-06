@@ -723,7 +723,7 @@ func (s stubClusterCache) GetClient(_ context.Context, _ client.ObjectKey) (clie
 	return nil, errors.New("a probe has to read through GetUncachedClient")
 }
 
-// GetUncachedClient is what the hosted flavour reaches for, unlike the K0s one.
+// GetUncachedClient is what the hosted flavor reaches for, unlike the K0s one.
 func (s stubClusterCache) GetUncachedClient(_ context.Context, _ client.ObjectKey) (client.Client, error) {
 	if s.workloadClient == nil && s.err == nil {
 		// A pair the real cache never hands out, and the caller has no nil guard.
@@ -828,7 +828,7 @@ func TestComputeAvailabilityTunneled(t *testing.T) {
 			}
 			writeKubeconfig(t, c, "test-"+suffix+"-kubeconfig", srv.URL)
 
-			// A cache that reports nothing but failures must not colour the verdict,
+			// A cache that reports nothing but failures must not color the verdict,
 			// and must not be reached for a rest config either.
 			c.ClusterCache = stubClusterCache{failures: 5, err: errors.New("the cache must not be asked")}
 
@@ -914,7 +914,7 @@ func TestAvailabilityRequeueAfter(t *testing.T) {
 }
 
 // ageAvailableCondition backdates the condition and the in memory anchor, since the
-// anchor is what the decision reads and ageing only the condition proves nothing.
+// anchor is what the decision reads and aging only the condition proves nothing.
 func ageAvailableCondition(t *testing.T, failures *sync.Map, kcp availabilityReporter) {
 	t.Helper()
 
@@ -1303,7 +1303,7 @@ func TestAvailabilityFailuresAreConsecutive(t *testing.T) {
 	require.False(t, ok, "a good read has to forget them, or they are not in a row")
 }
 
-// TestHostedComputeAvailability covers the hosted flavour reporting the same way as
+// TestHostedComputeAvailability covers the hosted flavor reporting the same way as
 // the K0s one, since CAPI mirrors both onto the same Cluster condition.
 func TestHostedComputeAvailability(t *testing.T) {
 	scheme := runtime.NewScheme()
@@ -1315,7 +1315,7 @@ func TestHostedComputeAvailability(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default", UID: "hosted-uid"},
 		}
 		if everUp {
-			// The bring up guard reads this latch, as the other flavour does.
+			// The bring up guard reads this latch, as the other flavor does.
 			kcp.Status.Initialization.ControlPlaneInitialized = new(true)
 			conditions.Set(kcp, metav1.Condition{
 				Type:   string(cpv1beta2.ControlPlaneAvailableCondition),
@@ -1336,7 +1336,7 @@ func TestHostedComputeAvailability(t *testing.T) {
 		got := conditions.Get(kcp, string(cpv1beta2.ControlPlaneAvailableCondition))
 		require.NotNil(t, got)
 		require.Equal(t, metav1.ConditionUnknown, got.Status,
-			"the hosted flavour used to report False on the very first failure")
+			"the hosted flavor used to report False on the very first failure")
 		require.Equal(t, cpv1beta2.ControlPlaneConnectionDownReason, got.Reason)
 	})
 
@@ -1357,7 +1357,7 @@ func TestHostedComputeAvailability(t *testing.T) {
 			"the cause has to reach the message users read")
 	})
 
-	t.Run("a failing read reports the same reasons as the other flavour", func(t *testing.T) {
+	t.Run("a failing read reports the same reasons as the other flavor", func(t *testing.T) {
 		c, cluster, kcp := newScope(true)
 		// A client that hands out no namespace, so the ping is what fails.
 		c.ClusterCache = stubClusterCache{workloadClient: fake.NewClientBuilder().WithScheme(scheme).Build()}
@@ -1365,7 +1365,7 @@ func TestHostedComputeAvailability(t *testing.T) {
 		c.computeAvailability(context.Background(), cluster, kcp)
 		got := conditions.Get(kcp, string(cpv1beta2.ControlPlaneAvailableCondition))
 		require.Equal(t, cpv1beta2.ControlPlaneConnectionDownReason, got.Reason,
-			"both flavours have to report the same reason for the same event")
+			"both flavors have to report the same reason for the same event")
 
 		ageAvailableCondition(t, &c.availabilityFailures, kcp)
 		c.computeAvailability(context.Background(), cluster, kcp)
@@ -1404,7 +1404,7 @@ func TestHostedComputeAvailability(t *testing.T) {
 		require.False(t, ok, "a good read has to forget them, or an old outage condemns a later one")
 	})
 
-	t.Run("each flavour counts its own failures", func(t *testing.T) {
+	t.Run("each flavor counts its own failures", func(t *testing.T) {
 		hosted, cluster, kcp := newScope(true)
 		hosted.ClusterCache = stubClusterCache{err: errors.New("boom")}
 		hosted.computeAvailability(context.Background(), cluster, kcp)
@@ -1580,7 +1580,7 @@ func TestAvailabilityCountsPerObject(t *testing.T) {
 		"inheriting the count means one failed read reports an outage on a new object")
 }
 
-// TestHostedAvailabilityDuringBringUp covers the guard the K0s flavour has, since the
+// TestHostedAvailabilityDuringBringUp covers the guard the K0s flavor has, since the
 // hosted condition starts out Unknown and would report an outage on a new cluster.
 func TestHostedAvailabilityDuringBringUp(t *testing.T) {
 	scheme := runtime.NewScheme()

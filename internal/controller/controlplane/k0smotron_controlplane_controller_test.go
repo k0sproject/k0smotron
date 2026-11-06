@@ -478,7 +478,7 @@ func Test_patchInfrastructureStatus(t *testing.T) {
 	}
 }
 
-// TestSetHostedScalingConditions covers the hosted flavour reporting scaling and
+// TestSetHostedScalingConditions covers the hosted flavor reporting scaling and
 // rollout separately, which it did not report at all before.
 func TestSetHostedScalingConditions(t *testing.T) {
 	get := func(kcp *cpv1beta2.K0smotronControlPlane, condType string) *v1.Condition {
