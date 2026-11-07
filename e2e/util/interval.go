@@ -30,11 +30,14 @@ const (
 	defaultTimeoutDuration = time.Minute * 10
 )
 
+// Interval is how long an e2e wait polls for, and how often.
 type Interval struct {
 	timeout time.Duration
 	tick    time.Duration
 }
 
+// GetInterval reads the spec/key interval from the e2e config, falling back to the
+// default/key one and then to the built-in default.
 func GetInterval(c *clusterctl.E2EConfig, spec string, key string) Interval {
 
 	specKey := fmt.Sprintf("%s/%s", spec, key)

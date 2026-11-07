@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -329,6 +330,9 @@ func (c *K0sController) reconcileKubeconfig(ctx context.Context, controlplane *c
 			}
 
 			workloadClusterKubeconfigSecret, err = c.createKubeconfigSecret(ctx, kc, controlplane.cluster, secret.Name(controlplane.cluster.Name, secret.Kubeconfig), controlplane.kcp.Spec.KubeconfigSecretMetadata)
+			if err != nil {
+				return err
+			}
 		} else {
 			return err
 		}
@@ -351,7 +355,7 @@ func (c *K0sController) reconcileKubeconfig(ctx context.Context, controlplane *c
 					}
 
 					for cn := range kc.Clusters {
-						kc.Clusters[cn].ProxyURL = fmt.Sprintf("http://%s:%d", controlplane.kcp.Spec.K0sConfigSpec.Tunneling.ServerAddress, controlplane.kcp.Spec.K0sConfigSpec.Tunneling.TunnelingNodePort)
+						kc.Clusters[cn].ProxyURL = "http://" + util.JoinHostPort(controlplane.kcp.Spec.K0sConfigSpec.Tunneling.ServerAddress, strconv.Itoa(int(controlplane.kcp.Spec.K0sConfigSpec.Tunneling.TunnelingNodePort)))
 					}
 
 					proxiedKubeconfig, err = c.createKubeconfigSecret(ctx, kc, controlplane.cluster, secretName, controlplane.kcp.Spec.KubeconfigSecretMetadata)
@@ -371,7 +375,7 @@ func (c *K0sController) reconcileKubeconfig(ctx context.Context, controlplane *c
 			err := c.SecretCachingClient.Get(ctx, client.ObjectKey{Namespace: controlplane.cluster.Namespace, Name: secretName}, tunneledKubeconfig)
 			if err != nil {
 				if apierrors.IsNotFound(err) {
-					kc, err := c.generateKubeconfig(ctx, clusterKey, fmt.Sprintf("https://%s:%d", controlplane.kcp.Spec.K0sConfigSpec.Tunneling.ServerAddress, controlplane.kcp.Spec.K0sConfigSpec.Tunneling.TunnelingNodePort))
+					kc, err := c.generateKubeconfig(ctx, clusterKey, "https://"+util.JoinHostPort(controlplane.kcp.Spec.K0sConfigSpec.Tunneling.ServerAddress, strconv.Itoa(int(controlplane.kcp.Spec.K0sConfigSpec.Tunneling.TunnelingNodePort))))
 					if err != nil {
 						return err
 					}
@@ -516,14 +520,14 @@ func (c *K0sController) reconcileConfig(ctx context.Context, controlplane *contr
 	if controlplane.kcp.Spec.K0sConfigSpec.K0s != nil {
 		nllbEnabled, found, err := unstructured.NestedBool(controlplane.kcp.Spec.K0sConfigSpec.K0s.Object, "spec", "network", "nodeLocalLoadBalancing", "enabled")
 		if err != nil {
-			return fmt.Errorf("error getting nodeLocalLoadBalancing: %v", err)
+			return fmt.Errorf("error getting nodeLocalLoadBalancing: %w", err)
 		}
 		// Set the external address if NLLB is not enabled
 		// Otherwise, just add the external address to the SANs to allow the clients to connect using LB address
 		if !(found && nllbEnabled) {
 			err = unstructured.SetNestedField(controlplane.kcp.Spec.K0sConfigSpec.K0s.Object, controlplane.cluster.Spec.ControlPlaneEndpoint.Host, "spec", "api", "externalAddress")
 			if err != nil {
-				return fmt.Errorf("error setting control plane endpoint: %v", err)
+				return fmt.Errorf("error setting control plane endpoint: %w", err)
 			}
 		} else if controlplane.cluster.Spec.ControlPlaneEndpoint.Host != "" {
 			sans := []string{controlplane.cluster.Spec.ControlPlaneEndpoint.Host}
@@ -533,19 +537,19 @@ func (c *K0sController) reconcileConfig(ctx context.Context, controlplane *contr
 			}
 			err = unstructured.SetNestedStringSlice(controlplane.kcp.Spec.K0sConfigSpec.K0s.Object, sans, "spec", "api", "sans")
 			if err != nil {
-				return fmt.Errorf("error setting sans: %v", err)
+				return fmt.Errorf("error setting sans: %w", err)
 			}
 		}
 
 		if controlplane.kcp.Spec.K0sConfigSpec.Tunneling.ServerAddress != "" {
 			sans, _, err := unstructured.NestedStringSlice(controlplane.kcp.Spec.K0sConfigSpec.K0s.Object, "spec", "api", "sans")
 			if err != nil {
-				return fmt.Errorf("error getting sans from config: %v", err)
+				return fmt.Errorf("error getting sans from config: %w", err)
 			}
 			sans = util.AddToExistingSans(sans, []string{controlplane.kcp.Spec.K0sConfigSpec.Tunneling.ServerAddress})
 			err = unstructured.SetNestedStringSlice(controlplane.kcp.Spec.K0sConfigSpec.K0s.Object, sans, "spec", "api", "sans")
 			if err != nil {
-				return fmt.Errorf("error setting sans to the config: %v", err)
+				return fmt.Errorf("error setting sans to the config: %w", err)
 			}
 		}
 
@@ -592,6 +596,7 @@ func (c *K0sController) reconcileTunneling(ctx context.Context, controlplane *co
 
 	var frpsConfig string
 	if controlplane.kcp.Spec.K0sConfigSpec.Tunneling.Mode == "proxy" {
+		//nolint:dupword // frps config, "authentication_method = token" is followed by "token = ...".
 		frpsConfig = `
 [common]
 bind_port = 7000
@@ -600,6 +605,7 @@ authentication_method = token
 token = ` + frpToken + `
 `
 	} else {
+		//nolint:dupword // frps config, "authentication_method = token" is followed by "token = ...".
 		frpsConfig = `
 [common]
 bind_port = 7000

@@ -64,7 +64,7 @@ func (c *K0sController) reconcileInplaceK0sVersionUpdate(ctx context.Context, sc
 		return ctrl.Result{}, err
 	}
 	if letInterruptedToComplete {
-		return ctrl.Result{RequeueAfter: 10 * time.Second, Requeue: true}, nil
+		return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 	}
 
 	if !conditions.IsTrue(scope.kcp, cpv1beta2.ControlPlaneAvailableCondition) {
@@ -99,7 +99,7 @@ func (c *K0sController) reconcileInplaceK0sVersionUpdate(ctx context.Context, sc
 
 				// Requeue until the autopilot plan is completed, to avoid scaling up or down the control plane
 				// while the update is still in progress.
-				return ctrl.Result{RequeueAfter: 10 * time.Second, Requeue: true}, nil
+				return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 			}
 			// Update is not required, so we can proceed with the scaling operations.
 			return ctrl.Result{}, nil
@@ -121,7 +121,7 @@ func (c *K0sController) reconcileInplaceK0sVersionUpdate(ctx context.Context, sc
 		// Requeue until the autopilot plan is completed, to avoid scaling up or down the control plane
 		// while the update is still in progress.
 		logger.Info("Autopilot plan is still in progress, requeuing")
-		return ctrl.Result{RequeueAfter: 10 * time.Second, Requeue: true}, nil
+		return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 	}
 
 	// The plan is completed, so the background updateMachineVersions loop, if still running, no
@@ -153,7 +153,7 @@ func (c *K0sController) reconcileInplaceK0sVersionUpdate(ctx context.Context, sc
 
 		// Requeue until the autopilot plan is completed, to avoid scaling up or down the control plane
 		// while the update is still in progress.
-		return ctrl.Result{RequeueAfter: 10 * time.Second, Requeue: true}, nil
+		return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 	}
 
 	// Re-initialize the control plane scope to get the updated state after updating the machines. Machines
@@ -283,7 +283,8 @@ func (c *K0sController) startUpdateMachineVersions(ctx context.Context, clientse
 func (c *K0sController) stopUpdateMachineVersions(kcp *cpv1beta2.K0sControlPlane) {
 	key := client.ObjectKeyFromObject(kcp)
 	if v, ok := c.autopilotUpdateCancels.LoadAndDelete(key); ok {
-		v.(*cancelHandle).cancel()
+		handle, _ := v.(*cancelHandle) // The map only holds cancel handles.
+		handle.cancel()
 	}
 }
 

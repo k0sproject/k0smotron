@@ -70,7 +70,7 @@ func (s *UpgradeSuite) TestK0smotronUpgrade() {
 	s.Require().NoError(err)
 
 	err = s.WaitForNodeReady(s.WorkerNode(0), kc)
-	s.NoError(err)
+	s.Require().NoError(err)
 
 	s.T().Log("deploying stable k0smotron operator")
 	s.Require().NoError(util.InstallStableK0smotronOperator(s.Context(), kc, rc))
@@ -110,8 +110,8 @@ func (s *UpgradeSuite) TestK0smotronUpgrade() {
 	kmcKC, err := util.GetKMCClientSet(s.Context(), kc, "kmc-test", "kmc-test", localPort)
 	s.Require().NoError(err)
 
-	err = wait.PollUntilContextCancel(s.Context(), 100*time.Millisecond, true, func(_ context.Context) (done bool, err error) {
-		_, err = kmcKC.CoreV1().Namespaces().Get(s.Context(), "test-ns-cm", metav1.GetOptions{})
+	err = wait.PollUntilContextCancel(s.Context(), 100*time.Millisecond, true, func(ctx context.Context) (done bool, err error) {
+		_, err = kmcKC.CoreV1().Namespaces().Get(ctx, "test-ns-cm", metav1.GetOptions{})
 		if err != nil {
 			return false, nil
 		}
@@ -136,7 +136,7 @@ func (s *UpgradeSuite) TestK0smotronUpgrade() {
 	// Check controlplane and etcd pods are running as expected
 	nEtcdReplicas, err := kc.AppsV1().StatefulSets("kmc-test").GetScale(s.Context(), "kmc-kmc-test-etcd", metav1.GetOptions{})
 	s.Require().NoError(err)
-	for i := 0; i < int(nEtcdReplicas.Spec.Replicas); i++ {
+	for i := range nEtcdReplicas.Spec.Replicas {
 		pod, err := kc.CoreV1().Pods("kmc-test").Get(s.Context(), fmt.Sprintf("kmc-kmc-test-etcd-%d", i), metav1.GetOptions{})
 		s.Require().NoError(err)
 		s.Require().Equal(corev1.PodRunning, pod.Status.Phase)
@@ -144,7 +144,7 @@ func (s *UpgradeSuite) TestK0smotronUpgrade() {
 
 	nControlPlaneReplicas, err := kc.AppsV1().StatefulSets("kmc-test").GetScale(s.Context(), "kmc-kmc-test", metav1.GetOptions{})
 	s.Require().NoError(err)
-	for i := 0; i < int(nControlPlaneReplicas.Spec.Replicas); i++ {
+	for i := range nControlPlaneReplicas.Spec.Replicas {
 		pod, err := kc.CoreV1().Pods("kmc-test").Get(s.Context(), fmt.Sprintf("kmc-kmc-test-%d", i), metav1.GetOptions{})
 		s.Require().NoError(err)
 		s.Require().Equal(corev1.PodRunning, pod.Status.Phase)
@@ -155,8 +155,8 @@ func (s *UpgradeSuite) TestK0smotronUpgrade() {
 func (s *UpgradeSuite) checkStatePersists(ctx context.Context, mountedPath string, kc *kubernetes.Clientset, rc *rest.Config) {
 	successfulOutput := "File exists"
 	output := ""
-	cmd := fmt.Sprintf("test -f %s/manifests/mystack/manifest.yaml && echo \"%s\" || echo \"File does not exist\"", mountedPath, successfulOutput)
-	err := wait.PollUntilContextCancel(s.Context(), time.Second, true, func(_ context.Context) (done bool, err error) {
+	cmd := fmt.Sprintf("test -f %s/manifests/mystack/manifest.yaml && echo \"%s\" || echo \"File does not exist\"", mountedPath, successfulOutput) //nolint:gocritic // Shell quoting, which %q (Go quoting) does not match.
+	err := wait.PollUntilContextCancel(ctx, time.Second, true, func(_ context.Context) (done bool, err error) {
 		output, err = exec.PodExecCmdOutput(ctx, kc, rc, "kmc-kmc-test-0", "kmc-test", cmd)
 		if err != nil {
 			return false, nil
@@ -171,7 +171,7 @@ func (s *UpgradeSuite) checkStatePersists(ctx context.Context, mountedPath strin
 func (s *UpgradeSuite) forceControllerRecreation(ctx context.Context, controllerName string, kc *kubernetes.Clientset) {
 	err := kc.CoreV1().Pods("kmc-test").Delete(ctx, controllerName, metav1.DeleteOptions{})
 	s.Require().NoError(err)
-	s.Require().NoError(common.WaitForPod(s.Context(), kc, controllerName, "kmc-test"))
+	s.Require().NoError(common.WaitForPod(ctx, kc, controllerName, "kmc-test"))
 }
 
 func (s *UpgradeSuite) addState(ctx context.Context, mountedPath string, kc *kubernetes.Clientset, rc *rest.Config) {

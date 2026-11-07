@@ -96,7 +96,7 @@ func (p *ProviderIDController) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	if node == nil {
 		log.Info("waiting for node to be available for machine " + machine.Name)
-		return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 10}, nil
+		return ctrl.Result{RequeueAfter: time.Second * 10}, nil
 	}
 
 	if node.Spec.ProviderID == "" {
@@ -105,7 +105,7 @@ func (p *ProviderIDController) Reconcile(ctx context.Context, req ctrl.Request) 
 		err = retry.OnError(retry.DefaultBackoff, func(_ error) bool {
 			return true
 		}, func() error {
-			_, upErr := childClient.CoreV1().Nodes().Update(context.Background(), node, metav1.UpdateOptions{})
+			_, upErr := childClient.CoreV1().Nodes().Update(ctx, node, metav1.UpdateOptions{})
 			return upErr
 		})
 
@@ -204,7 +204,8 @@ func resourceBelongsToK0sWorkerNode() predicate.Funcs {
 }
 
 func processIfResourceBelongsToK0sWorkerNode(logger logr.Logger, obj client.Object) bool {
-	machine := obj.(*clusterv1.Machine)
+	// The controller only watches Machines.
+	machine, _ := obj.(*clusterv1.Machine)
 
 	// Skip non-k0smotron managed machines
 	if machine.Spec.Bootstrap.ConfigRef.Kind != "K0sControllerConfig" && machine.Spec.Bootstrap.ConfigRef.Kind != "K0sWorkerConfig" &&

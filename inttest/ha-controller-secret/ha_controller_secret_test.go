@@ -99,7 +99,7 @@ func TestHAControllerSecretSuite(t *testing.T) {
 	suite.Run(t, &s)
 }
 
-func (s *HAControllerSecretSuite) prepareCerts(kc *kubernetes.Clientset) {
+func (s *HAControllerSecretSuite) prepareCerts(ctx context.Context, kc *kubernetes.Clientset) {
 	certificates := secret.NewCertificatesForInitialControlPlane(&bootstrapv1.ClusterConfiguration{})
 	err := certificates.Generate()
 	s.Require().NoError(err, "failed to generate certificates")
@@ -107,7 +107,7 @@ func (s *HAControllerSecretSuite) prepareCerts(kc *kubernetes.Clientset) {
 	for _, certificate := range certificates {
 		certificate.Generated = false
 		certSecret := certificate.AsSecret(client.ObjectKey{Namespace: "kmc-test", Name: "kmc-test"}, metav1.OwnerReference{})
-		if _, err := kc.CoreV1().Secrets("kmc-test").Create(s.Context(), certSecret, metav1.CreateOptions{}); err != nil {
+		if _, err := kc.CoreV1().Secrets("kmc-test").Create(ctx, certSecret, metav1.CreateOptions{}); err != nil {
 			s.Require().NoError(err)
 		}
 	}
@@ -121,7 +121,7 @@ func (s *HAControllerSecretSuite) createK0smotronClusterWithSecretRef(ctx contex
 	}, metav1.CreateOptions{})
 	s.Require().NoError(err)
 
-	s.prepareCerts(kc)
+	s.prepareCerts(ctx, kc)
 
 	// create K0smotron namespace
 	_, err = kc.CoreV1().Secrets("kmc-test").Create(ctx, &corev1.Secret{
@@ -180,7 +180,7 @@ func (s *HAControllerSecretSuite) getPod(ctx context.Context, kc *kubernetes.Cli
 		ctx,
 		metav1.ListOptions{FieldSelector: "status.phase=Running"})
 	s.Require().NoError(err, "failed to list kmc-test pods")
-	s.Require().Equal(3, len(pods.Items), "expected 1 kmc-test pod, got %d", len(pods.Items))
+	s.Require().Len(pods.Items, 3, "expected 1 kmc-test pod, got %d", len(pods.Items))
 
 	return pods.Items[0]
 }

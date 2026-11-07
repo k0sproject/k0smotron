@@ -18,6 +18,7 @@ package watch
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"time"
@@ -136,7 +137,8 @@ func itemsFromList[L metav1.ListInterface, I any]() (func(L) []I, error) {
 	return func(l L) []I {
 		// The compatibility of the types has been checked above.
 		// This will not panic at runtime.
-		return reflect.ValueOf(l).Elem().FieldByIndex(index).Interface().([]I)
+		items, _ := reflect.TypeAssert[[]I](reflect.ValueOf(l).Elem().FieldByIndex(index))
+		return items
 	}, nil
 }
 
@@ -219,7 +221,7 @@ func (w *Watcher[T]) list(ctx context.Context, condition Condition[T]) (*startWa
 			return nil, conditionError{err}
 		}
 		if done {
-			return nil, nil // terminate successfully
+			return nil, nil //nolint:nilnil // terminate successfully
 		}
 	}
 
@@ -269,7 +271,7 @@ func (w *Watcher[T]) watch(ctx context.Context, resourceVersion string, conditio
 		}
 	}
 
-	return nil, nil // terminate successfully
+	return nil, nil //nolint:nilnil // terminate successfully
 }
 
 func (w *Watcher[T]) processWatchEvent(event *watch.Event, condition Condition[T]) (*startWatch, error) {
@@ -286,7 +288,7 @@ func (w *Watcher[T]) processWatchEvent(event *watch.Event, condition Condition[T
 			if done, err := condition(item); err != nil {
 				return nil, conditionError{err}
 			} else if done {
-				return nil, nil // terminate successfully
+				return nil, nil //nolint:nilnil // terminate successfully
 			}
 		}
 
@@ -316,9 +318,9 @@ func retry(ctx context.Context, errorCallback ErrorCallback, runWatch func(conte
 			return nil
 		}
 
-		if err, ok := err.(conditionError); ok {
+		if condErr, ok := errors.AsType[conditionError](err); ok {
 			// The user-specified condition returned an error.
-			return err.error
+			return condErr.error
 		}
 
 		if ctx.Err() != nil {
@@ -390,6 +392,7 @@ func IsRetryable(err error) (time.Duration, error) {
 			metav1.StatusReasonTimeout,
 			metav1.StatusReasonServiceUnavailable:
 			return time.Duration(delaySecs) * time.Second, nil
+		default:
 		}
 	}
 

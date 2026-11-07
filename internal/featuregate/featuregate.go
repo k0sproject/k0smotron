@@ -85,7 +85,7 @@ func Configure(flag string, envVar string) error {
 // and returns a map of feature names to their enabled state.
 func parseFeatureGateFlags(flag string) (map[string]bool, error) {
 	if flag == "" {
-		return nil, nil
+		return nil, nil //nolint:nilnil // No flags, a nil map reads as empty.
 	}
 
 	featureMap := make(map[string]bool)

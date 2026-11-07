@@ -21,6 +21,7 @@ package util
 import (
 	"context"
 	"fmt"
+	"maps"
 	"reflect"
 	"time"
 
@@ -30,6 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+// WaitForMachinesInput is the input for WaitForMachines.
 type WaitForMachinesInput struct {
 	Lister                   framework.Lister
 	Namespace                string
@@ -68,9 +70,7 @@ func WaitForMachines(ctx context.Context, input WaitForMachinesInput) ([]string,
 
 		// Compute new machines (all - old - to be deleted)
 		newMachines = make(map[string]string)
-		for k, v := range allMachines {
-			newMachines[k] = v
-		}
+		maps.Copy(newMachines, allMachines)
 		for k := range input.ExpectedOldMachines {
 			delete(newMachines, k)
 		}
@@ -107,7 +107,6 @@ func WaitForMachines(ctx context.Context, input WaitForMachinesInput) ([]string,
 
 	// Ensures the desired set of machines is stable (no further machines are created or deleted).
 	fmt.Printf("Checking the list of machines is stable\n")
-	allMachinesNow := make(map[string]string)
 
 	now := time.Now()
 	timeForConsideredStable := 30 * time.Second
@@ -118,7 +117,7 @@ func WaitForMachines(ctx context.Context, input WaitForMachinesInput) ([]string,
 			return nil, nil, err
 		}
 
-		allMachinesNow = make(map[string]string)
+		allMachinesNow := make(map[string]string)
 		for i := range machineList.Items {
 			allMachinesNow[string(machineList.Items[i].GetUID())] = machineList.Items[i].Name
 		}
@@ -140,6 +139,7 @@ func WaitForMachines(ctx context.Context, input WaitForMachinesInput) ([]string,
 	return allMachinesNames, newMachinesNames, nil
 }
 
+// WaitForWorkersMachineInput is the input for WaitForWorkerMachine.
 type WaitForWorkersMachineInput struct {
 	Lister                   framework.Lister
 	ExpectedWorkers          int
@@ -148,7 +148,7 @@ type WaitForWorkersMachineInput struct {
 	WaitForMachinesIntervals Interval
 }
 
-// WaitForMachine waits for worker machine to join the cluster. Checks machine.spec has the proper providerId set.
+// WaitForWorkerMachine waits for worker machine to join the cluster. Checks machine.spec has the proper providerId set.
 func WaitForWorkerMachine(ctx context.Context, input WaitForWorkersMachineInput) error {
 	inClustersNamespaceListOption := client.InNamespace(input.Namespace)
 	matchClusterGetOption := client.MatchingLabels{
@@ -167,7 +167,7 @@ func WaitForWorkerMachine(ctx context.Context, input WaitForWorkersMachineInput)
 		currentWorkerMachines := 0
 		for _, m := range machineList.Items {
 			isWorker := true
-			for k, _ := range m.GetLabels() {
+			for k := range m.GetLabels() {
 				if k == clusterv1.MachineControlPlaneLabel {
 					isWorker = false
 					break
@@ -175,8 +175,8 @@ func WaitForWorkerMachine(ctx context.Context, input WaitForWorkersMachineInput)
 			}
 
 			if isWorker {
-				mProviderId := m.Spec.ProviderID
-				if mProviderId == "" {
+				mProviderID := m.Spec.ProviderID
+				if mProviderID == "" {
 					continue
 				}
 

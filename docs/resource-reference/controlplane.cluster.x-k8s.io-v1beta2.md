@@ -2818,7 +2818,7 @@ ClusterSpec defines the desired state of K0smotronCluster
         <td>
           ControlPlaneFlags allows to configure additional flags for k0s
 control plane and to override existing ones. The default flags are
-kept unless they are overriden explicitly. Flags with arguments must
+kept unless they are overridden explicitly. Flags with arguments must
 be specified as a single string, e.g. --some-flag=argument<br/>
         </td>
         <td>false</td>
@@ -13286,7 +13286,7 @@ ClusterSpec defines the desired state of K0smotronCluster
         <td>
           ControlPlaneFlags allows to configure additional flags for k0s
 control plane and to override existing ones. The default flags are
-kept unless they are overriden explicitly. Flags with arguments must
+kept unless they are overridden explicitly. Flags with arguments must
 be specified as a single string, e.g. --some-flag=argument<br/>
         </td>
         <td>false</td>

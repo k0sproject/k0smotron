@@ -33,24 +33,29 @@ import (
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+// GetK0smotronControlPlaneByClusterInput is the input for getK0smotronControlPlaneByCluster.
 type GetK0smotronControlPlaneByClusterInput struct {
 	Lister      capiframework.Lister
 	ClusterName string
 	Namespace   string
 }
 
+// WaitForOneK0smotronControlPlaneMachineToExistInput describes a K0smotronControlPlane machine to wait for.
 type WaitForOneK0smotronControlPlaneMachineToExistInput struct {
 	Lister       capiframework.Lister
 	Cluster      *clusterv1.Cluster
 	ControlPlane *cpv1beta2.K0smotronControlPlane
 }
 
+// DiscoveryAndWaitForHCPReadyInput is the input for DiscoveryAndWaitForHCPToBeReady.
 type DiscoveryAndWaitForHCPReadyInput struct {
 	Lister  capiframework.Lister
 	Cluster *clusterv1.Cluster
 	Getter  capiframework.Getter
 }
 
+// DiscoveryAndWaitForHCPToBeReady finds the cluster's K0smotronControlPlane and waits
+// for it to be ready.
 func DiscoveryAndWaitForHCPToBeReady(ctx context.Context, input DiscoveryAndWaitForHCPReadyInput, interval Interval) (*cpv1beta2.K0smotronControlPlane, error) {
 	var controlPlane *cpv1beta2.K0smotronControlPlane
 	err := wait.PollUntilContextTimeout(ctx, time.Second, time.Minute, true, func(ctx context.Context) (done bool, err error) {
@@ -78,6 +83,8 @@ func DiscoveryAndWaitForHCPToBeReady(ctx context.Context, input DiscoveryAndWait
 	return controlPlane, nil
 }
 
+// WaitForHCPToBeReady waits until every replica of the K0smotronControlPlane is ready
+// and available, and its status reports the desired version.
 func WaitForHCPToBeReady(ctx context.Context, getter capiframework.Getter, cp *cpv1beta2.K0smotronControlPlane, interval Interval) error {
 	controlplaneObjectKey := crclient.ObjectKey{
 		Name:      cp.Name,
@@ -106,7 +113,7 @@ func WaitForHCPToBeReady(ctx context.Context, getter capiframework.Getter, cp *c
 		return true, nil
 	})
 	if err != nil {
-		return fmt.Errorf("%s\n", capiframework.PrettyPrint(controlplane))
+		return fmt.Errorf("K0smotronControlPlane did not become ready: %w: %s", err, capiframework.PrettyPrint(controlplane))
 	}
 
 	return nil
@@ -129,5 +136,5 @@ func getK0smotronControlPlaneByCluster(ctx context.Context, input GetK0smotronCo
 		return &controlPlaneList.Items[0], nil
 	}
 
-	return nil, nil
+	return nil, nil //nolint:nilnil // None yet, callers poll until it appears.
 }

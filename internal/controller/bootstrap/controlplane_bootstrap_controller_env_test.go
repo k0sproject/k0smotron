@@ -201,7 +201,7 @@ func TestReconcileControllerConfigPausedCluster(t *testing.T) {
 
 	machineForControllerConfig := &clusterv1.Machine{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-%d", "machine-for-controlelr", 0),
+			Name:      fmt.Sprintf("%s-%d", "machine-for-controllers", 0),
 			Namespace: ns.Name,
 			Labels: map[string]string{
 				clusterv1.ClusterNameLabel:             cluster.Name,
@@ -437,7 +437,7 @@ func TestReconcileControllerBootstrapDataAlreadyCreated(t *testing.T) {
 		"a config whose data secret exists is ready, whatever conditions it was missing")
 
 	before := hub.Generation
-	hub.Spec.Version = "v1.31.0+k0s.0"
+	hub.Spec.Version = "v1.31.0+k0s.0" //nolint:staticcheck // Covers objects that still set the deprecated field.
 	require.NoError(t, testEnv.Update(ctx, hub))
 	require.NoError(t, testEnv.GetAPIReader().Get(ctx, key, hub))
 	require.Greater(t, hub.Generation, before, "the edit has to move the generation")
@@ -523,7 +523,7 @@ func TestReconcileControllerConfigControlPlaneIsZero(t *testing.T) {
 		// Cluster.Spec.ControlPlaneEndpoint is not set by infra provider
 		result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: util.ObjectKey(k0sControllerConfig)})
 		assert.NoError(c, err)
-		assert.Equal(c, ctrl.Result{Requeue: true, RequeueAfter: time.Second * 30}, result)
+		assert.Equal(c, ctrl.Result{RequeueAfter: time.Second * 30}, result)
 
 		updatedK0sControllerConfig := &bootstrapv1.K0sControllerConfig{}
 		assert.NoError(c, testEnv.Get(ctx, client.ObjectKeyFromObject(k0sControllerConfig), updatedK0sControllerConfig))
@@ -725,7 +725,7 @@ func TestGenControlPlaneJoinFilesLeavesNoTokenWhenTheJoinHostIsUnknown(t *testin
 		Config: &bootstrapv2.K0sControllerConfig{
 			ObjectMeta: metav1.ObjectMeta{Name: "joining-controller", Namespace: ns.Name},
 			Spec: bootstrapv2.K0sControllerConfigSpec{
-				Version: "v1.30.0+k0s.0",
+				Version: "v1.30.0+k0s.0", //nolint:staticcheck // Covers objects that still set the deprecated field.
 				K0sConfigSpec: &bootstrapv2.K0sConfigSpec{
 					K0s: &unstructured.Unstructured{Object: map[string]any{}},
 				},
@@ -869,7 +869,7 @@ func TestReconcileDeletesTheJoinTokenOfBootstrapDataItCouldNotGenerate(t *testin
 			}},
 		},
 		Spec: bootstrapv2.K0sControllerConfigSpec{
-			Version: "v1.30.0+k0s.0",
+			Version: "v1.30.0+k0s.0", //nolint:staticcheck // Covers objects that still set the deprecated field.
 			K0sConfigSpec: &bootstrapv2.K0sConfigSpec{
 				Files: []bootstrapv2.File{{
 					File:        provisioner.File{Path: "/etc/missing"},
@@ -970,7 +970,7 @@ func TestReconcileInitializesAnInitializedClusterOnlyOnExternalStorage(t *testin
 					}},
 				},
 				Spec: bootstrapv2.K0sControllerConfigSpec{
-					Version:       machine.Spec.Version,
+					Version:       machine.Spec.Version, //nolint:staticcheck // Covers objects that still set the deprecated field.
 					K0sConfigSpec: &bootstrapv2.K0sConfigSpec{K0s: &unstructured.Unstructured{Object: map[string]any{"apiVersion": "k0s.k0sproject.io/v1beta1", "kind": "ClusterConfig", "spec": map[string]any{"storage": tc.storage}}}},
 				},
 			}
@@ -1071,7 +1071,7 @@ func TestReconcileControllerRendersAdditionalIgnitionConfigFromASecret(t *testin
 			}},
 		},
 		Spec: bootstrapv2.K0sControllerConfigSpec{
-			Version: machine.Spec.Version,
+			Version: machine.Spec.Version, //nolint:staticcheck // Covers objects that still set the deprecated field.
 			K0sConfigSpec: &bootstrapv2.K0sConfigSpec{Provisioner: bootstrapv2.ProvisionerSpec{
 				Type: provisioner.IgnitionProvisioningFormat,
 				Ignition: &bootstrapv2.IgnitionSpec{

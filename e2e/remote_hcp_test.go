@@ -31,6 +31,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/cluster-api/test/framework"
 	capiframework "sigs.k8s.io/cluster-api/test/framework"
@@ -58,12 +59,16 @@ var (
 func TestRemoteHostedControlPlanes(t *testing.T) {
 	deployHostingCluster()
 	// TODO: dump logs from controlplanes pods before deleting the cluster.
-	defer deleteHostingcluster()
+	defer func() {
+		if err := deleteHostingcluster(); err != nil {
+			t.Errorf("deleting the hosting cluster: %v", err)
+		}
+	}()
 
 	setupAndRun(t, remoteHCPSpec)
 }
 
-func remoteHCPSpec(t *testing.T) {
+func remoteHCPSpec(t *testing.T) { //nolint:thelper // Test body run by setupAndRun, t.Helper would move its failures to the caller.
 	testName := "remote-hcp"
 
 	encodedHostingClusterKubeconfig, err := getEncodedHostingClusterKubeconfig()
@@ -172,7 +177,7 @@ func remoteHCPSpec(t *testing.T) {
 					break
 				}
 			}
-			require.True(t, found, fmt.Sprintf("%s should be controlled by %s", obj.GetName(), ownerName))
+			require.True(t, found, "%s should be controlled by %s", obj.GetName(), ownerName)
 		}
 
 		assertOwnedByRoot(apiserverEtcdClientSecret)
@@ -255,15 +260,8 @@ func deployHostingCluster() {
 }
 
 func deleteHostingcluster() error {
-	clusterProvider := cluster.NewProvider()
-
-	// kubeconfig is used to remove the cluster from the host so internal=false in order to use the host IP.
-	kubeconfig, err := clusterProvider.KubeConfig(hostingClusterName, false)
-	if err != nil {
-		return err
-	}
-
-	return clusterProvider.Delete(hostingClusterName, kubeconfig)
+	// Delete takes the path of the kubeconfig the cluster was written to, so it can drop the cluster's entry.
+	return cluster.NewProvider().Delete(hostingClusterName, hostingClusterProxy.GetKubeconfigPath())
 }
 
 func getEncodedHostingClusterKubeconfig() (string, error) {
@@ -271,7 +269,7 @@ func getEncodedHostingClusterKubeconfig() (string, error) {
 	// in order to use the internal IP of the cluster.
 	kubeconfig, err := cluster.NewProvider().KubeConfig(hostingClusterName, true)
 	if err != nil {
-		return "", nil
+		return "", err
 	}
 
 	return base64.StdEncoding.EncodeToString([]byte(kubeconfig)), nil
@@ -279,8 +277,8 @@ func getEncodedHostingClusterKubeconfig() (string, error) {
 
 func getHostingClusterDefaultScheme() *runtime.Scheme {
 	s := runtime.NewScheme()
-	corev1.AddToScheme(s)
-	appsv1.AddToScheme(s)
-	rbacv1.AddToScheme(s)
+	utilruntime.Must(corev1.AddToScheme(s))
+	utilruntime.Must(appsv1.AddToScheme(s))
+	utilruntime.Must(rbacv1.AddToScheme(s))
 	return s
 }

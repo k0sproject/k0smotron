@@ -37,7 +37,7 @@ func TestAdmissionWebhookK0sVersionNotCompatible(t *testing.T) {
 	setupAndRun(t, admissionWebhookK0sVersionNotCompatibleSpec)
 }
 
-func admissionWebhookRecreateStrategyInSingleModeSpec(t *testing.T) {
+func admissionWebhookRecreateStrategyInSingleModeSpec(t *testing.T) { //nolint:thelper // Test body run by setupAndRun, t.Helper would move its failures to the caller.
 	testName := "admission-webhook-recreate-single-mode"
 
 	// Setup a Namespace where to host objects for this spec and create a watcher for the namespace events.
@@ -70,7 +70,7 @@ func admissionWebhookRecreateStrategyInSingleModeSpec(t *testing.T) {
 	require.Contains(t, err.Error(), "UpdateStrategy Recreate strategy is not allowed when the cluster is running in single mode")
 }
 
-func admissionWebhookK0sVersionNotCompatibleSpec(t *testing.T) {
+func admissionWebhookK0sVersionNotCompatibleSpec(t *testing.T) { //nolint:thelper // Test body run by setupAndRun, t.Helper would move its failures to the caller.
 	testName := "admission-webhook-k0s-not-compatible"
 
 	// Setup a Namespace where to host objects for this spec and create a watcher for the namespace events.

@@ -133,16 +133,16 @@ func (s *RemoteMachineTemplateSuite) TestCAPIRemoteMachine() {
 			return
 		}
 		s.T().Log("Deleting cluster objects")
-		s.Require().NoError(util.DeleteCluster("remote-test-cluster"))
+		s.Require().NoError(util.DeleteCluster(context.WithoutCancel(s.Context()), "remote-test-cluster"))
 	}()
 
 	s.createCluster()
 
 	s.T().Log("cluster objects applied, waiting for cluster to be ready")
 	var localPort int
-	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(ctx, 1*time.Second, func(_ context.Context) (bool, error) {
-		localPort, _ = getLBPort("TestRemoteMachineSuite-k0smotron0")
+	//nolint:staticcheck // Deprecated, but PollUntilContextCancel returns a different error on timeout.
+	err = wait.PollImmediateUntilWithContext(ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+		localPort, _ = getLBPort(ctx, "TestRemoteMachineSuite-k0smotron0")
 		return localPort > 0, nil
 	})
 	s.Require().NoError(err)
@@ -152,9 +152,9 @@ func (s *RemoteMachineTemplateSuite) TestCAPIRemoteMachine() {
 	s.Require().NoError(err)
 
 	s.T().Log("verify the RemoteMachine is at expected state")
-	expectedProviderID := fmt.Sprintf("remote-machine://%s:22", s.getWorkerIP())
+	expectedProviderID := fmt.Sprintf("remote-machine://%s:22", s.getWorkerIP()) //nolint:nosprintfhostport // Matches the providerID format the controller writes.
 	controlPlaneMachineName := ""
-	// nolint:staticcheck
+	//nolint:staticcheck // Deprecated, but PollUntilContextCancel returns a different error on timeout.
 	err = wait.PollImmediateUntilWithContext(ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
 		machines, err := util.GetControlPlaneMachinesByKcpName(ctx, "remote-test", "default", s.client)
 		if err != nil {
@@ -171,7 +171,7 @@ func (s *RemoteMachineTemplateSuite) TestCAPIRemoteMachine() {
 			return false, nil
 		}
 
-		rm, err := s.getRemoteMachine(controlPlaneMachineName, "default")
+		rm, err := s.getRemoteMachine(ctx, controlPlaneMachineName, "default")
 		if err != nil {
 			s.T().Log(err)
 			return false, nil
@@ -203,9 +203,9 @@ func (s *RemoteMachineTemplateSuite) TestCAPIRemoteMachine() {
 
 }
 
-func (s *RemoteMachineTemplateSuite) getRemoteMachine(name string, namespace string) (*infra.RemoteMachine, error) {
+func (s *RemoteMachineTemplateSuite) getRemoteMachine(ctx context.Context, name string, namespace string) (*infra.RemoteMachine, error) {
 	apiPath := fmt.Sprintf("/apis/infrastructure.cluster.x-k8s.io/v1beta2/namespaces/%s/remotemachines/%s", namespace, name)
-	result, err := s.client.RESTClient().Get().AbsPath(apiPath).DoRaw(s.Context())
+	result, err := s.client.RESTClient().Get().AbsPath(apiPath).DoRaw(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -254,13 +254,13 @@ func (s *RemoteMachineTemplateSuite) createCluster() {
 	s.Require().NoError(err)
 	bytes := clusterYamlBuf.Bytes()
 
-	s.Require().NoError(os.WriteFile(s.clusterYamlsPath, bytes, 0644))
-	out, err := exec.Command("kubectl", "apply", "-f", s.clusterYamlsPath).CombinedOutput()
+	s.Require().NoError(os.WriteFile(s.clusterYamlsPath, bytes, 0o600))
+	out, err := exec.CommandContext(s.Context(), "kubectl", "apply", "-f", s.clusterYamlsPath).CombinedOutput()
 	s.Require().NoError(err, "failed to update cluster objects: %s", string(out))
 }
 
-func getLBPort(name string) (int, error) {
-	b, err := exec.Command("docker", "inspect", name, "--format", "{{json .NetworkSettings.Ports}}").Output()
+func getLBPort(ctx context.Context, name string) (int, error) {
+	b, err := exec.CommandContext(ctx, "docker", "inspect", name, "--format", "{{json .NetworkSettings.Ports}}").Output()
 	if err != nil {
 		return 0, fmt.Errorf("failed to get inspect info from container %s: %w", name, err)
 	}

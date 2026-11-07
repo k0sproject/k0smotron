@@ -380,14 +380,40 @@ hack/lint/.golangci-lint.stamp: hack/lint/Dockerfile Makefile.variables
 	  .
 	touch -- '$@'
 
+# Build tag sets to lint with. Each set needs its own run: some files are
+# excluded by a tag (//go:build !envtest), so the sets cannot be combined.
+GO_LINT_BUILD_TAGS ?= hack hack,envtest hack,e2e hack,extension
+# Set to stop at the first tag set with findings instead of reporting all of them (CI does).
+GO_LINT_FAIL_FAST ?=
+# Host caches the lint container reuses, so unchanged packages are neither rebuilt nor
+# reanalysed. The Go ones are the host's own, which CI's setup-go restores and saves.
+GO_LINT_GOCACHE ?= $(shell go env GOCACHE)
+GO_LINT_GOMODCACHE ?= $(shell go env GOMODCACHE)
+GO_LINT_CACHE ?= $(HOME)/.cache/golangci-lint
+
 .PHONY: lint
 lint: GOLANGCI_LINT_FLAGS ?= --verbose --max-issues-per-linter=0 --max-same-issues=0
 lint: hack/lint/.golangci-lint.stamp
+	mkdir -p -- '$(GO_LINT_GOCACHE)' '$(GO_LINT_GOMODCACHE)' '$(GO_LINT_CACHE)'
 	docker run \
 	  --rm \
+	  --user "$$(id -u):$$(id -g)" \
+	  -e HOME=/tmp \
+	  -e GOCACHE=/cache/go-build \
+	  -e GOMODCACHE=/cache/go-mod \
+	  -e GOLANGCI_LINT_CACHE=/cache/golangci-lint \
+	  -v "$(GO_LINT_GOCACHE):/cache/go-build" \
+	  -v "$(GO_LINT_GOMODCACHE):/cache/go-mod" \
+	  -v "$(GO_LINT_CACHE):/cache/golangci-lint" \
 	  -v "$(CURDIR):/go/src/github.com/k0sproject/k0smotron:ro" \
 	  -w /go/src/github.com/k0sproject/k0smotron \
-	  k0smotron.golangci-lint golangci-lint run --config .golangci.yml $(GOLANGCI_LINT_FLAGS) $(GO_LINT_DIRS)
+	  k0smotron.golangci-lint sh -c '\
+	    rc=0; \
+	    for tags in $(GO_LINT_BUILD_TAGS); do \
+	      echo "golangci-lint: build tags $$tags"; \
+	      golangci-lint run --config .golangci.yml --build-tags "$$tags" $(GOLANGCI_LINT_FLAGS) $(GO_LINT_DIRS) || { rc=1; [ -z "$(GO_LINT_FAIL_FAST)" ] || break; }; \
+	    done; \
+	    exit $$rc'
 
 # KinD helpers
 .PHONY: kind-cluster

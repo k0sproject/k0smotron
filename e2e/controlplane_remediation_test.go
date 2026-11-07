@@ -53,14 +53,14 @@ func TestControlplaneRemediation(t *testing.T) {
 }
 
 // Verifies that K0sControlPlane controller properly remediates the Machines.
-func controlplaneRemediationSpec(t *testing.T) {
+func controlplaneRemediationSpec(t *testing.T) { //nolint:thelper // Test body run by setupAndRun, t.Helper would move its failures to the caller.
 	testName := "kcp-remediation"
 
 	// Setup a Namespace where to host objects for this spec and create a watcher for the namespace events.
 	namespace, _ := util.SetupSpecNamespace(ctx, testName, bootstrapClusterProxy, artifactFolder)
 
 	// creates the mhc-test ConfigMap that will be used to control machines bootstrap during the remediation tests.
-	createConfigMapForMachinesBootstrapSignal(ctx, bootstrapClusterProxy.GetClient(), namespace.Name)
+	require.NoError(t, createConfigMapForMachinesBootstrapSignal(ctx, bootstrapClusterProxy.GetClient(), namespace.Name))
 
 	clusterName := fmt.Sprintf("%s-%s", testName, capiutil.RandomString(6))
 
@@ -493,6 +493,8 @@ type sendSignalToBootstrappingMachineInput struct {
 
 // sendSignalToBootstrappingMachine sends a signal to a machine stuck during bootstrap.
 func sendSignalToBootstrappingMachine(ctx context.Context, t *testing.T, input sendSignalToBootstrappingMachineInput) {
+	t.Helper()
+
 	fmt.Printf("Sending bootstrap signal %s to Machine %s\n", input.Signal, input.Machine)
 	cm := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{

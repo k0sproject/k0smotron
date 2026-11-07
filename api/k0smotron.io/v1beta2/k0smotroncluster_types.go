@@ -17,7 +17,7 @@ limitations under the License.
 package v1beta2
 
 import (
-	"crypto/md5"
+	"crypto/md5" //nolint:gosec // Not a security use, see the call site.
 	"fmt"
 	"strings"
 
@@ -204,7 +204,7 @@ type ClusterSpec struct {
 	Mounts []Mount `json:"mounts,omitempty"`
 	// ControlPlaneFlags allows to configure additional flags for k0s
 	// control plane and to override existing ones. The default flags are
-	// kept unless they are overriden explicitly. Flags with arguments must
+	// kept unless they are overridden explicitly. Flags with arguments must
 	// be specified as a single string, e.g. --some-flag=argument
 	//+kubebuilder:validation:Optional
 	ControlPlaneFlags []string `json:"controlPlaneFlags,omitempty"`
@@ -881,7 +881,7 @@ func (kmc *Cluster) getObjectName(pattern string) string {
 
 func shortName(name string) string {
 	if len(name) > kubeNameLengthLimit {
-		return fmt.Sprintf("%s-%s", name[:kubeNameLengthLimit-6], fmt.Sprintf("%x", md5.Sum([]byte(name)))[:5])
+		return fmt.Sprintf("%s-%s", name[:kubeNameLengthLimit-6], fmt.Sprintf("%x", md5.Sum([]byte(name)))[:5]) //nolint:gosec // Not a security use, and a new hash would rename existing objects.
 	}
 	return name
 }

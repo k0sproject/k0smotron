@@ -19,7 +19,6 @@ package pvc
 import (
 	"context"
 	"fmt"
-	"strings"
 	"testing"
 	"time"
 
@@ -53,7 +52,7 @@ func (s *PVCSuite) TestK0sGetsUp() {
 	s.Require().NoError(err)
 
 	err = s.WaitForNodeReady(s.WorkerNode(0), kc)
-	s.NoError(err)
+	s.Require().NoError(err)
 
 	// create folder for k0smotron persistent volume
 	ssh, err := s.SSH(s.Context(), s.ControllerNode(0))
@@ -104,8 +103,8 @@ func (s *PVCSuite) TestK0sGetsUp() {
 	s.T().Log("updating k0smotron cluster")
 	s.updateK0smotronCluster(s.Context(), rc)
 
-	err = wait.PollUntilContextCancel(s.Context(), time.Second, true, func(_ context.Context) (done bool, err error) {
-		sts, err := kc.AppsV1().StatefulSets("kmc-test").Get(s.Context(), "kmc-kmc-test", metav1.GetOptions{})
+	err = wait.PollUntilContextCancel(s.Context(), time.Second, true, func(ctx context.Context) (done bool, err error) {
+		sts, err := kc.AppsV1().StatefulSets("kmc-test").Get(ctx, "kmc-kmc-test", metav1.GetOptions{})
 		if err != nil {
 			return false, nil
 		}
@@ -114,8 +113,8 @@ func (s *PVCSuite) TestK0sGetsUp() {
 	})
 	s.Require().NoError(err)
 
-	err = wait.PollUntilContextCancel(s.Context(), time.Second, true, func(_ context.Context) (done bool, err error) {
-		sts, err := kc.AppsV1().StatefulSets("kmc-test").Get(s.Context(), "kmc-kmc-test-etcd", metav1.GetOptions{})
+	err = wait.PollUntilContextCancel(s.Context(), time.Second, true, func(ctx context.Context) (done bool, err error) {
+		sts, err := kc.AppsV1().StatefulSets("kmc-test").Get(ctx, "kmc-kmc-test-etcd", metav1.GetOptions{})
 		if err != nil {
 			return false, nil
 		}
@@ -130,7 +129,7 @@ func (s *PVCSuite) TestK0sGetsUp() {
 
 	out, err := ssh.ExecWithOutput(s.Context(), fmt.Sprintf("%s kc exec -n kmc-test kmc-kmc-test-0 -- k0s kc get configmap test-config -oyaml -n default", s.K0sFullPath))
 	s.Require().NoError(err)
-	s.Require().True(strings.Contains(out, "foo: bar"))
+	s.Require().Contains(out, "foo: bar")
 }
 
 func TestPVCSuite(t *testing.T) {

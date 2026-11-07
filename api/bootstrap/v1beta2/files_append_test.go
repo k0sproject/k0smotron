@@ -178,7 +178,7 @@ func TestAppliesAppend(t *testing.T) {
 		{provisioner.IgnitionProvisioningFormat, false},
 	} {
 		t.Run(string(tc.format), func(t *testing.T) {
-			require.Equal(t, tc.want, ProvisionerSpec{Type: tc.format}.appliesAppend())
+			require.Equal(t, tc.want, (&ProvisionerSpec{Type: tc.format}).appliesAppend())
 		})
 	}
 }

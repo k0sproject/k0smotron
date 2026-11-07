@@ -103,8 +103,8 @@ func newEnvironment(setupSecretCachingClient setupSecretCachingClientFn) *Enviro
 	_, filename, _, _ := goruntime.Caller(0)
 	root := path.Join(path.Dir(filename), "..", "..", "..")
 
-	capiCoreCrdsPath := ""
-	if capiCoreCrdsPath = getFilePathToCAPICoreCRDs(); capiCoreCrdsPath == "" {
+	capiCoreCrdsPath := getFilePathToCAPICoreCRDs()
+	if capiCoreCrdsPath == "" {
 		panic(fmt.Errorf("failed to retrieve cluster-api core crds path"))
 	}
 
@@ -180,7 +180,7 @@ func newEnvironment(setupSecretCachingClient setupSecretCachingClientFn) *Enviro
 		config := kubeconfig.FromEnvTestConfig(env.Config, &clusterv1.Cluster{
 			ObjectMeta: metav1.ObjectMeta{Name: "test"},
 		})
-		if err := os.WriteFile(kubeconfigPath, config, 0o600); err != nil {
+		if err := os.WriteFile(kubeconfigPath, config, 0o600); err != nil { //nolint:gosec // The test runner picks this path on purpose.
 			panic(errors.Wrapf(err, "failed to write the test env kubeconfig"))
 		}
 	}
@@ -310,7 +310,7 @@ func (e *Environment) CleanupAndWait(ctx context.Context, objs ...client.Object)
 			continue
 		}
 
-		oCopy := o.DeepCopyObject().(client.Object)
+		oCopy, _ := o.DeepCopyObject().(client.Object)
 		key := client.ObjectKeyFromObject(o)
 		err := wait.ExponentialBackoff(
 			cacheSyncBackoff,

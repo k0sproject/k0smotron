@@ -88,9 +88,9 @@ func (s *ConfigUpdateSuite) TestK0sGetsUp() {
 	s.T().Log("updating k0smotron cluster")
 	s.updateK0smotronCluster(s.Context(), rc)
 
-	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(s.Context(), 1*time.Second, func(_ context.Context) (bool, error) {
-		cm, err := kmcKC.CoreV1().ConfigMaps("kube-system").Get(s.Context(), "kube-router-cfg", metav1.GetOptions{})
+	//nolint:staticcheck // Deprecated, but PollUntilContextCancel returns a different error on timeout.
+	err = wait.PollImmediateUntilWithContext(s.Context(), 1*time.Second, func(ctx context.Context) (bool, error) {
+		cm, err := kmcKC.CoreV1().ConfigMaps("kube-system").Get(ctx, "kube-router-cfg", metav1.GetOptions{})
 		if err != nil {
 			return false, nil
 		}
@@ -122,7 +122,7 @@ func (s *ConfigUpdateSuite) checkClusterStatus(ctx context.Context, rc *rest.Con
 	crdRestClient, err := rest.UnversionedRESTClientFor(&crdConfig)
 	s.Require().NoError(err)
 
-	// nolint:staticcheck
+	//nolint:staticcheck // Deprecated, but PollUntilContextCancel returns a different error on timeout.
 	err = wait.PollImmediateUntilWithContext(ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
 		var kmc km.Cluster
 		err = crdRestClient.

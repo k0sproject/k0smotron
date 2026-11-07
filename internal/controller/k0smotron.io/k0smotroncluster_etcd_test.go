@@ -19,7 +19,6 @@ limitations under the License.
 package k0smotronio
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -62,6 +61,8 @@ func TestEtcd_resourceRequirements(t *testing.T) {
 			name:    "Default - No resources specified",
 			cluster: &km.Cluster{}, // No Resources specified
 			want: func(t *testing.T, resources corev1.ResourceRequirements) {
+				t.Helper()
+
 				assert.Empty(t, resources.Requests)
 				assert.Empty(t, resources.Limits)
 			},
@@ -81,6 +82,8 @@ func TestEtcd_resourceRequirements(t *testing.T) {
 				},
 			},
 			want: func(t *testing.T, resources corev1.ResourceRequirements) {
+				t.Helper()
+
 				assert.Equal(t, resource.MustParse("100m"), *resources.Requests.Cpu())
 				assert.Equal(t, resource.MustParse("128Mi"), *resources.Requests.Memory())
 				assert.Empty(t, resources.Limits)
@@ -105,6 +108,8 @@ func TestEtcd_resourceRequirements(t *testing.T) {
 				},
 			},
 			want: func(t *testing.T, resources corev1.ResourceRequirements) {
+				t.Helper()
+
 				assert.Equal(t, resource.MustParse("100m"), *resources.Requests.Cpu())
 				assert.Equal(t, resource.MustParse("128Mi"), *resources.Requests.Memory())
 				assert.Equal(t, resource.MustParse("200m"), *resources.Limits.Cpu())
@@ -160,7 +165,7 @@ func TestEtcd_generateEtcdStatefulSet(t *testing.T) {
 		t.Run("", func(t *testing.T) {
 			sts := generateEtcdStatefulSet(tc.cluster, nil, 1, "")
 			for _, w := range tc.want {
-				assert.True(t, strings.Contains(sts.Spec.Template.Spec.Containers[0].Args[1], w))
+				assert.Contains(t, sts.Spec.Template.Spec.Containers[0].Args[1], w)
 			}
 		})
 	}

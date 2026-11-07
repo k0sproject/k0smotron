@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-//nolint:revive
 package util
 
 import (
@@ -27,7 +26,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"time"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -108,7 +106,7 @@ func InstallStableK0smotronOperator(ctx context.Context, kc *kubernetes.Clientse
 		return err
 	}
 
-	installFileName, err := downloadStableStandaloneInstall()
+	installFileName, err := downloadStableStandaloneInstall(ctx)
 	if err != nil {
 		return err
 	}
@@ -143,7 +141,7 @@ func InstallLocalPathStorage(ctx context.Context, kc *kubernetes.Clientset, rc *
 
 // CreateFromYAML reads the YAML manifest from the given file and creates the resources in the cluster.
 func CreateFromYAML(ctx context.Context, kc *kubernetes.Clientset, rc *rest.Config, filename string) error {
-	data, err := os.ReadFile(filename)
+	data, err := os.ReadFile(filename) //nolint:gosec // The test configuration names the manifest.
 	if err != nil {
 		return err
 	}
@@ -163,7 +161,7 @@ func CreateFromYAML(ctx context.Context, kc *kubernetes.Clientset, rc *rest.Conf
 
 // ApplyFromYAML reads the YAML manifest from the given file and applies the resources in the cluster.
 func ApplyFromYAML(ctx context.Context, kc *kubernetes.Clientset, rc *rest.Config, filename string) error {
-	data, err := os.ReadFile(filename)
+	data, err := os.ReadFile(filename) //nolint:gosec // The test configuration names the manifest.
 	if err != nil {
 		return err
 	}
@@ -189,7 +187,7 @@ func ParseManifests(data []byte) ([]*unstructured.Unstructured, error) {
 	var resource map[string]any
 	for {
 		err := decoder.Decode(&resource)
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			return resources, nil
 		} else if err != nil {
 			return nil, err
@@ -301,7 +299,7 @@ func applyResources(ctx context.Context, resources []*unstructured.Unstructured,
 func GetJoinToken(kc *kubernetes.Clientset, rc *rest.Config, name string, namespace string) (string, error) {
 	output, err := kexec.PodExecCmdOutput(context.TODO(), kc, rc, name, namespace, "k0s token create --role=worker")
 	if err != nil {
-		return "", fmt.Errorf("failed to get join token: %s", err)
+		return "", fmt.Errorf("failed to get join token: %w", err)
 	}
 
 	return output, nil
@@ -320,7 +318,7 @@ func GetKMCClientSet(ctx context.Context, kc *kubernetes.Clientset, name string,
 		return nil, err
 	}
 
-	kmcCfg, err := clientcmd.RESTConfigFromKubeConfig([]byte(kubeConf.Data["value"]))
+	kmcCfg, err := clientcmd.RESTConfigFromKubeConfig(kubeConf.Data["value"])
 	if err != nil {
 		return nil, err
 	}
@@ -352,7 +350,7 @@ func GetNodeAddress(ctx context.Context, kc *kubernetes.Clientset, node string) 
 func WaitForSecret(ctx context.Context, kc *kubernetes.Clientset, name string, namespace string) error {
 	// Use apimachinery wait directly as the k0s common polls bit too much and sometimes it results into client side throttling
 	// Since it's marked deprecated in a wrong way, there's no replacement for it yet, we'll disable the linter for now
-	// nolint:staticcheck
+	//nolint:staticcheck // Deprecated, but PollUntilContextCancel returns a different error on timeout.
 	return wait.PollImmediateUntilWithContext(ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
 		secret, err := kc.CoreV1().Secrets(namespace).Get(ctx, name, metav1.GetOptions{})
 
@@ -586,8 +584,8 @@ func WaitForRolloutCompleted(ctx context.Context, kc *kubernetes.Clientset, name
 
 // DeleteCluster deletes the cluster with the given name and namespace by executing the
 // `kubectl delete cluster` command.
-func DeleteCluster(clusterName string) error {
-	out, err := exec.Command("kubectl", "delete", "cluster", clusterName).CombinedOutput()
+func DeleteCluster(ctx context.Context, clusterName string) error {
+	out, err := exec.CommandContext(ctx, "kubectl", "delete", "cluster", clusterName).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to delete cluster objects: %s", string(out))
 	}
@@ -617,24 +615,30 @@ func GetControlPlaneMachinesByKcpName(ctx context.Context, kcpName string, names
 	return result, nil
 }
 
-func downloadStableStandaloneInstall() (string, error) {
+func downloadStableStandaloneInstall(ctx context.Context) (string, error) {
 	url := "https://docs.k0smotron.io/stable/install-standalone.yaml"
 
-	response, err := http.Get(url)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return "", fmt.Errorf("failed to download k0smotron install file: %v", err)
+		return "", fmt.Errorf("failed to download k0smotron install file: %w", err)
 	}
-	defer response.Body.Close()
-
-	installFile, err := os.Create(filepath.Join(os.TempDir(), "install.yaml"))
+	response, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("failed to create k0smotron install file: %v", err)
+		return "", fmt.Errorf("failed to download k0smotron install file: %w", err)
 	}
-	defer installFile.Close()
+	defer func() { _ = response.Body.Close() }()
 
+	installFile, err := os.CreateTemp("", "install-*.yaml")
+	if err != nil {
+		return "", fmt.Errorf("failed to create k0smotron install file: %w", err)
+	}
 	_, err = io.Copy(installFile, response.Body)
 	if err != nil {
-		return "", fmt.Errorf("failed to save k0smotron install file: %v", err)
+		_ = installFile.Close()
+		return "", fmt.Errorf("failed to save k0smotron install file: %w", err)
+	}
+	if err := installFile.Close(); err != nil {
+		return "", fmt.Errorf("failed to save k0smotron install file: %w", err)
 	}
 	return installFile.Name(), nil
 }

@@ -74,7 +74,8 @@ func TestBuildPlanStaticDiscovery(t *testing.T) {
 	assert.False(t, found)
 
 	commands, _, _ := unstructured.NestedSlice(plan.Object, "spec", "commands")
-	platforms, _, _ := unstructured.NestedMap(commands[0].(map[string]any), "k0supdate", "platforms")
+	command, _ := commands[0].(map[string]any)
+	platforms, _, _ := unstructured.NestedMap(command, "k0supdate", "platforms")
 	amd64URL, _, _ := unstructured.NestedString(platforms, "linux-amd64", "url")
 	assert.Equal(t, "https://get.k0sproject.io/v1.35.4+k0s.0/k0s-v1.35.4+k0s.0-amd64", amd64URL)
 	arm64URL, _, _ := unstructured.NestedString(platforms, "linux-arm64", "url")
@@ -115,7 +116,8 @@ func TestBuildPlanCustomDownloadURL(t *testing.T) {
 	})
 
 	commands, _, _ := unstructured.NestedSlice(plan.Object, "spec", "commands")
-	platforms, _, _ := unstructured.NestedMap(commands[0].(map[string]any), "k0supdate", "platforms")
+	command, _ := commands[0].(map[string]any)
+	platforms, _, _ := unstructured.NestedMap(command, "k0supdate", "platforms")
 	for _, platform := range []string{"linux-amd64", "linux-arm64", "linux-arm"} {
 		url, _, _ := unstructured.NestedString(platforms, platform, "url")
 		assert.Equal(t, "https://mirror.example.com/k0s", url, platform)
@@ -185,7 +187,7 @@ func TestGetPlanTargetNodesAndSelector(t *testing.T) {
 
 	noCommands := &unstructured.Unstructured{Object: map[string]any{"spec": map[string]any{}}}
 	_, err = GetPlanTargetNodes(noCommands)
-	assert.Error(t, err)
+	require.Error(t, err)
 	_, err = GetPlanTargetSelector(noCommands, WorkersTarget)
 	assert.Error(t, err)
 }

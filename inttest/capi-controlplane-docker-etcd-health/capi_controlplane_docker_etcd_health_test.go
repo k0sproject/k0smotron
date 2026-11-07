@@ -74,9 +74,9 @@ func (s *CAPIControlPlaneDockerEtcdHealthSuite) SetupSuite() {
 
 	tmpDir := s.T().TempDir()
 	s.clusterYamlsPath = tmpDir + "/cluster.yaml"
-	s.Require().NoError(os.WriteFile(s.clusterYamlsPath, []byte(dockerClusterYaml), 0644))
+	s.Require().NoError(os.WriteFile(s.clusterYamlsPath, []byte(dockerClusterYaml), 0o600))
 	s.scaleDownPath = tmpDir + "/scaledown.yaml"
-	s.Require().NoError(os.WriteFile(s.scaleDownPath, []byte(controlPlaneScaleDown), 0644))
+	s.Require().NoError(os.WriteFile(s.scaleDownPath, []byte(controlPlaneScaleDown), 0o600))
 
 	s.ctx, _ = util.NewSuiteContext(s.T())
 }
@@ -89,7 +89,7 @@ func (s *CAPIControlPlaneDockerEtcdHealthSuite) TestCAPIControlPlaneDockerEtcdHe
 			return
 		}
 		s.T().Log("Deleting cluster objects")
-		s.Require().NoError(util.DeleteCluster(clusterName))
+		s.Require().NoError(util.DeleteCluster(context.WithoutCancel(s.ctx), clusterName))
 	}()
 
 	s.kmcKC = s.workloadClient()
@@ -128,7 +128,7 @@ func (s *CAPIControlPlaneDockerEtcdHealthSuite) TestCAPIControlPlaneDockerEtcdHe
 	// k0s clears spec.leave and rejoins the member when k0scontroller restarts, so the node
 	// is stopped once the member is out and cannot come back.
 	s.T().Logf("stopping %s so its member cannot rejoin", broken)
-	out, err := exec.Command("docker", "stop", broken).CombinedOutput()
+	out, err := exec.CommandContext(s.ctx, "docker", "stop", broken).CombinedOutput()
 	s.Require().NoError(err, "failed to stop %s: %s", broken, string(out))
 
 	s.T().Log("the other members should still report healthy")
@@ -247,8 +247,8 @@ func (s *CAPIControlPlaneDockerEtcdHealthSuite) machineNames() []string {
 
 func (s *CAPIControlPlaneDockerEtcdHealthSuite) workloadClient() *kubernetes.Clientset {
 	var localPort int
-	s.Require().NoError(wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(_ context.Context) (bool, error) {
-		localPort, _ = getLBPort(clusterName + "-lb")
+	s.Require().NoError(wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
+		localPort, _ = getLBPort(ctx, clusterName+"-lb")
 
 		return localPort > 0, nil
 	}))
@@ -267,12 +267,12 @@ func (s *CAPIControlPlaneDockerEtcdHealthSuite) workloadClient() *kubernetes.Cli
 }
 
 func (s *CAPIControlPlaneDockerEtcdHealthSuite) apply(path string) {
-	out, err := exec.Command("kubectl", "apply", "-f", path).CombinedOutput()
+	out, err := exec.CommandContext(s.ctx, "kubectl", "apply", "-f", path).CombinedOutput()
 	s.Require().NoError(err, "failed to apply %s: %s", path, string(out))
 }
 
-func getLBPort(name string) (int, error) {
-	b, err := exec.Command("docker", "inspect", name, "--format", "{{json .NetworkSettings.Ports}}").Output()
+func getLBPort(ctx context.Context, name string) (int, error) {
+	b, err := exec.CommandContext(ctx, "docker", "inspect", name, "--format", "{{json .NetworkSettings.Ports}}").Output()
 	if err != nil {
 		return 0, fmt.Errorf("failed to get inspect info from container %s: %w", name, err)
 	}

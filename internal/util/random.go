@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-//nolint:revive
 package util
 
 import "crypto/rand"
@@ -31,7 +30,7 @@ func RandomString(length int) string {
 	}
 
 	for i, b := range bytes {
-		bytes[i] = letters[b%byte(len(letters))]
+		bytes[i] = letters[int(b)%len(letters)]
 	}
 	return string(bytes)
 }

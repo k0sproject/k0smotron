@@ -38,6 +38,8 @@ import (
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+// WaitForControlPlaneToBeReady waits until every replica of the K0sControlPlane is
+// ready, up to date and available, and its status reports the desired version.
 func WaitForControlPlaneToBeReady(ctx context.Context, client crclient.Client, cp *cpv1beta1.K0sControlPlane, interval Interval) error {
 	fmt.Println("Waiting for the control plane to be ready")
 
@@ -68,7 +70,7 @@ func WaitForControlPlaneToBeReady(ctx context.Context, client crclient.Client, c
 		return true, nil
 	})
 	if err != nil {
-		return fmt.Errorf("%s\n", capiframework.PrettyPrint(controlplane))
+		return fmt.Errorf("K0sControlPlane did not become ready: %w: %s", err, capiframework.PrettyPrint(controlplane))
 	}
 
 	return nil
@@ -85,7 +87,7 @@ type UpgradeControlPlaneAndWaitForUpgradeInput struct {
 	WaitForControlPlaneReadyInterval Interval
 
 	// DuringUpgradeCheck is an optional strategy-specific check that runs in the background while
-	// the upgrade is in progress. Its context is cancelled once the upgrade is done, so the check
+	// the upgrade is in progress. Its context is canceled once the upgrade is done, so the check
 	// is expected to keep running until then and to return its verdict when the context ends.
 	DuringUpgradeCheck func(ctx context.Context, input UpgradeControlPlaneAndWaitForUpgradeInput) error
 
@@ -94,7 +96,7 @@ type UpgradeControlPlaneAndWaitForUpgradeInput struct {
 	PostUpgradeCheck func(ctx context.Context, input UpgradeControlPlaneAndWaitForUpgradeInput) error
 }
 
-// UpgradeControlPlaneAndWaitForUpgrade upgrades a K0sControlPlane and waits for it to be upgraded.
+// UpgradeControlPlaneAndWaitForReadyUpgrade upgrades a K0sControlPlane and waits for it to be upgraded.
 func UpgradeControlPlaneAndWaitForReadyUpgrade(ctx context.Context, input UpgradeControlPlaneAndWaitForUpgradeInput) (resErr error) {
 	mgmtClient := input.ClusterProxy.GetClient()
 
@@ -151,6 +153,8 @@ func UpgradeControlPlaneAndWaitForReadyUpgrade(ctx context.Context, input Upgrad
 	return nil
 }
 
+// DiscoveryAndWaitForControlPlaneInitialized finds the cluster's K0sControlPlane and
+// waits for its first machine to be provisioned.
 func DiscoveryAndWaitForControlPlaneInitialized(ctx context.Context, input capiframework.DiscoveryAndWaitForControlPlaneInitializedInput, interval Interval) (*cpv1beta1.K0sControlPlane, error) {
 	var controlPlane *cpv1beta1.K0sControlPlane
 	err := wait.PollUntilContextTimeout(ctx, time.Second, 10*time.Minute, true, func(ctx context.Context) (done bool, err error) {
@@ -182,6 +186,7 @@ func DiscoveryAndWaitForControlPlaneInitialized(ctx context.Context, input capif
 	return controlPlane, nil
 }
 
+// GetK0sControlPlaneByClusterInput is the input for getK0sControlPlaneByCluster.
 type GetK0sControlPlaneByClusterInput struct {
 	Lister      capiframework.Lister
 	ClusterName string
@@ -205,7 +210,7 @@ func getK0sControlPlaneByCluster(ctx context.Context, input GetK0sControlPlaneBy
 		return &controlPlaneList.Items[0], nil
 	}
 
-	return nil, nil
+	return nil, nil //nolint:nilnil // None yet, callers poll until it appears.
 }
 
 // byClusterOptions returns a set of ListOptions that allows to identify all the objects belonging to a Cluster.
@@ -218,6 +223,7 @@ func byClusterOptions(name, namespace string) []crclient.ListOption {
 	}
 }
 
+// WaitForOneK0sControlPlaneMachineToExistInput is the input for WaitForOneK0sControlPlaneMachineToExist.
 type WaitForOneK0sControlPlaneMachineToExistInput struct {
 	Lister       capiframework.Lister
 	Cluster      *clusterv1.Cluster
@@ -255,6 +261,7 @@ func WaitForOneK0sControlPlaneMachineToExist(ctx context.Context, input WaitForO
 	return nil
 }
 
+// WaitForKubeProxyUpgradeInput is the input for WaitForKubeProxyUpgrade.
 type WaitForKubeProxyUpgradeInput struct {
 	Getter            capiframework.Getter
 	KubernetesVersion string
@@ -265,7 +272,7 @@ func WaitForKubeProxyUpgrade(ctx context.Context, input WaitForKubeProxyUpgradeI
 	fmt.Println("Ensuring kube-proxy has the correct image")
 
 	// this desired version is sticky to the k0s naming on the kube-proxy image
-	versionPrefix := strings.Split(input.KubernetesVersion, "+")[0]
+	versionPrefix, _, _ := strings.Cut(input.KubernetesVersion, "+")
 	wantKubeProxyImage := fmt.Sprintf("quay.io/k0sproject/kube-proxy:%s", versionPrefix)
 
 	return wait.PollUntilContextTimeout(ctx, interval.tick, interval.timeout, true, func(ctx context.Context) (done bool, err error) {
@@ -285,6 +292,8 @@ func WaitForKubeProxyUpgrade(ctx context.Context, input WaitForKubeProxyUpgradeI
 
 // K0smotronControlPlane helper functions
 
+// WaitForK0smotronControlPlaneToBeReady waits until the K0smotronControlPlane reports
+// its control plane as initialized.
 func WaitForK0smotronControlPlaneToBeReady(ctx context.Context, client crclient.Client, clusterName, namespace string, interval Interval) error {
 	fmt.Println("Waiting for the K0smotronControlPlane to be ready")
 
@@ -304,12 +313,18 @@ func WaitForK0smotronControlPlaneToBeReady(ctx context.Context, client crclient.
 
 		// Check if the control plane is ready
 		status, found, err := unstructured.NestedMap(kcp.Object, "status")
-		if err != nil || !found {
+		if err != nil {
+			return false, err
+		}
+		if !found {
 			return false, nil
 		}
 
 		ready, found, err := unstructured.NestedBool(status, "initialization", "controlPlaneInitialized")
-		if err != nil || !found {
+		if err != nil {
+			return false, err
+		}
+		if !found {
 			return false, nil
 		}
 
@@ -322,7 +337,9 @@ func WaitForK0smotronControlPlaneToBeReady(ctx context.Context, client crclient.
 	return nil
 }
 
-func DiscoveryAndWaitForK0smotronControlPlaneInitialized(ctx context.Context, input capiframework.DiscoveryAndWaitForControlPlaneInitializedInput, interval Interval) error {
+// DiscoveryAndWaitForK0smotronControlPlaneInitialized waits until the cluster's
+// K0smotronControlPlane exists.
+func DiscoveryAndWaitForK0smotronControlPlaneInitialized(ctx context.Context, input capiframework.DiscoveryAndWaitForControlPlaneInitializedInput, _ Interval) error {
 	err := wait.PollUntilContextTimeout(ctx, time.Second, time.Minute, true, func(ctx context.Context) (done bool, err error) {
 		exists, err := k0smotronControlPlaneExists(ctx, K0smotronControlPlaneExistsInput{
 			Lister:      input.Lister,
@@ -343,6 +360,7 @@ func DiscoveryAndWaitForK0smotronControlPlaneInitialized(ctx context.Context, in
 	return nil
 }
 
+// K0smotronControlPlaneExistsInput is the input for k0smotronControlPlaneExists.
 type K0smotronControlPlaneExistsInput struct {
 	Lister      capiframework.Lister
 	ClusterName string

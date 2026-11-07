@@ -83,8 +83,6 @@ const (
 	AnnotationValueManagedByK0smotron = "k0smotron"
 )
 
-var currentSpec kapi.ClusterSpec
-
 // K0smotronController is the controller for K0smotronControlPlane objects.
 type K0smotronController struct {
 	client.Client
@@ -156,12 +154,12 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 	kcpPatchHelper, err := patch.NewHelper(kcp, c.Client)
 	if err != nil {
 		log.Error(err, "Failed to configure K0smotronControlPlane patch helper")
-		return ctrl.Result{Requeue: true}, nil
+		return util.RequeueWithBackoff(), nil
 	}
 	clusterPatchHelper, err := patch.NewHelper(cluster, c.Client)
 	if err != nil {
 		log.Error(err, "Failed to configure Cluster patch helper")
-		return ctrl.Result{Requeue: true}, nil
+		return util.RequeueWithBackoff(), nil
 	}
 
 	log = log.WithValues("cluster", cluster.Name)
@@ -203,7 +201,7 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 			serr = c.computeStatus(ctx, cluster, kcp, kmcScope)
 			if serr != nil {
 				if errors.Is(serr, util.ErrNotReady) {
-					res = ctrl.Result{RequeueAfter: 10 * time.Second, Requeue: true}
+					res = ctrl.Result{RequeueAfter: 10 * time.Second}
 				} else {
 					log.Error(serr, "Failed to update K0smotronControlPlane status")
 					// Recorded without returning, since the availability computed above is
@@ -408,13 +406,12 @@ func (c *K0smotronController) reconcile(ctx context.Context, cluster *clusterv1.
 	var foundCluster kapi.Cluster
 	err = c.Client.Get(ctx, types.NamespacedName{Name: desiredK0smotronCluster.Name, Namespace: desiredK0smotronCluster.Namespace}, &foundCluster)
 	if err != nil && apierrors.IsNotFound(err) {
-		currentSpec = *kcp.Spec.DeepCopy()
 		if err := c.Client.Create(ctx, &desiredK0smotronCluster); err != nil {
 			return ctrl.Result{}, err
 		}
 
 		logger.Info("Requeuing because k0smotron Cluster has just been created")
-		return ctrl.Result{RequeueAfter: 5 * time.Second, Requeue: true}, nil
+		return ctrl.Result{RequeueAfter: 5 * time.Second}, nil
 	}
 
 	if kcp.Spec.ExternalAddress == "" {
@@ -669,7 +666,7 @@ func (c *K0smotronController) computeStatus(ctx context.Context, cluster *cluste
 
 	// Held back until every counter below is known, so an error on the way there
 	// cannot persist one of them against stale values for the rest.
-	replicas := int32(len(contolPlanePods.Items))
+	replicas := int32(len(contolPlanePods.Items)) //nolint:gosec // A pod count cannot reach MaxInt32.
 
 	var upToDateReplicas, readyReplicas, unavailableReplicas, availableReplicas int
 
@@ -820,7 +817,7 @@ func (c *K0smotronController) computeAvailability(ctx context.Context, cluster *
 	logger := log.FromContext(ctx).WithValues("cluster", cluster.Name)
 
 	// Assumed unavailable up front for the same reasons as in the K0sControlPlane
-	// flavour, including the read below being what latches initialization.
+	// flavor, including the read below being what latches initialization.
 	everReached := initialized(kcp.Status.Initialization.ControlPlaneInitialized)
 	if !everReached {
 		conditions.Set(kcp, metav1.Condition{
@@ -1023,7 +1020,7 @@ func (c *K0smotronController) reconcileDelete(ctx context.Context, key types.Nam
 
 	if !kmc.GetDeletionTimestamp().IsZero() {
 		// Requeue the reconciliation to wait for the complete deletion of the k0smotron Cluster meaning all dependent resources are deleted.
-		return ctrl.Result{Requeue: true, RequeueAfter: 5 * time.Second}, nil
+		return ctrl.Result{RequeueAfter: 5 * time.Second}, nil
 	}
 
 	if err := c.Client.Delete(ctx, kmc); err != nil {
@@ -1080,7 +1077,7 @@ func (c *K0smotronController) getKmcScope(ctx context.Context, kcp *cpv1beta2.K0
 func generateClusterSpecHashWithoutExternalAddress(spec kapi.ClusterSpec) string {
 	normalizedSpec := spec.DeepCopy()
 	normalizedSpec.ExternalAddress = ""
-	data, _ := json.Marshal(normalizedSpec)
+	data, _ := json.Marshal(normalizedSpec) //nolint:errchkjson // ClusterSpec has no field whose MarshalJSON can fail, Quantity included.
 	hasher := fnv.New32a()
 	_, _ = hasher.Write(data)
 	return rand.SafeEncodeString(fmt.Sprint(hasher.Sum32()))

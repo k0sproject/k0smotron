@@ -75,7 +75,7 @@ func (s *CAPIDockerSuite) SetupSuite() {
 
 	tmpDir := s.T().TempDir()
 	s.clusterYamlsPath = tmpDir + "/cluster.yaml"
-	s.Require().NoError(os.WriteFile(s.clusterYamlsPath, []byte(dockerClusterYaml), 0644))
+	s.Require().NoError(os.WriteFile(s.clusterYamlsPath, []byte(dockerClusterYaml), 0o600))
 
 	s.ctx, _ = util.NewSuiteContext(s.T())
 }
@@ -131,17 +131,17 @@ func (s *CAPIDockerSuite) TestCAPIDocker() {
 	s.Require().Equal("bar", fooLabel)
 
 	s.T().Log("verifying pod cidrs")
-	k0sConfig, err := exec.Command("kubectl", "exec", "kmc-docker-test-0", "--", "cat", "/etc/k0s/k0s.yaml").Output()
+	k0sConfig, err := exec.CommandContext(s.ctx, "kubectl", "exec", "kmc-docker-test-0", "--", "cat", "/etc/k0s/k0s.yaml").Output()
 	s.Require().NoError(err)
-	s.Require().True(strings.Contains(string(k0sConfig), "192.168.0.0/16"))
+	s.Require().Contains(string(k0sConfig), "192.168.0.0/16")
 	s.T().Log("verifying cloud-init extras")
-	preStartFile, err := getDockerNodeFile("docker-test-0", "/tmp/pre-start")
+	preStartFile, err := getDockerNodeFile(s.ctx, "docker-test-0", "/tmp/pre-start")
 	s.Require().NoError(err)
 	s.Require().Equal("pre-start", preStartFile)
-	postStartFile, err := getDockerNodeFile("docker-test-0", "/tmp/post-start")
+	postStartFile, err := getDockerNodeFile(s.ctx, "docker-test-0", "/tmp/post-start")
 	s.Require().NoError(err)
 	s.Require().Equal("post-start", postStartFile)
-	extraFile, err := getDockerNodeFile("docker-test-0", "/tmp/test-file")
+	extraFile, err := getDockerNodeFile(s.ctx, "docker-test-0", "/tmp/test-file")
 	s.Require().NoError(err)
 	s.Require().Equal("test-file", extraFile)
 
@@ -163,18 +163,18 @@ func (s *CAPIDockerSuite) prepareCerts() {
 
 func (s *CAPIDockerSuite) applyClusterObjects() {
 	// Exec via kubectl
-	out, err := exec.Command("kubectl", "apply", "-f", s.clusterYamlsPath).CombinedOutput()
+	out, err := exec.CommandContext(s.ctx, "kubectl", "apply", "-f", s.clusterYamlsPath).CombinedOutput()
 	s.Require().NoError(err, "failed to apply cluster objects: %s", string(out))
 }
 
 func (s *CAPIDockerSuite) deleteCluster() {
 	// Exec via kubectl
-	_, _ = exec.Command("kubectl", "delete", "secret", "docker-test-ca", "docker-test-etcd", "docker-test-proxy", "docker-test-sa").CombinedOutput()
+	_, _ = exec.CommandContext(context.WithoutCancel(s.ctx), "kubectl", "delete", "secret", "docker-test-ca", "docker-test-etcd", "docker-test-proxy", "docker-test-sa").CombinedOutput()
 
-	out, err := exec.Command("kubectl", "delete", "-f", s.clusterYamlsPath).CombinedOutput()
+	out, err := exec.CommandContext(context.WithoutCancel(s.ctx), "kubectl", "delete", "-f", s.clusterYamlsPath).CombinedOutput()
 	s.Require().NoError(err, "failed to delete cluster objects: %s", string(out))
 
-	_, _ = exec.Command("kubectl", "delete", "pvc", "etcd-data-kmc-docker-test-etcd-0", "kmc-docker-test-kmc-docker-test-0").CombinedOutput()
+	_, _ = exec.CommandContext(context.WithoutCancel(s.ctx), "kubectl", "delete", "pvc", "etcd-data-kmc-docker-test-etcd-0", "kmc-docker-test-kmc-docker-test-0").CombinedOutput()
 }
 
 func (s *CAPIDockerSuite) checkControlPlaneStatus(ctx context.Context, rc *rest.Config) {
@@ -220,13 +220,13 @@ func (s *CAPIDockerSuite) checkClusterIDAnnotation(ctx context.Context) {
 	s.Require().NoError(err)
 }
 
-func getDockerNodeFile(nodeName string, path string) (string, error) {
-	output, err := exec.Command("docker", "exec", nodeName, "cat", path).Output()
+func getDockerNodeFile(ctx context.Context, nodeName string, path string) (string, error) {
+	output, err := exec.CommandContext(ctx, "docker", "exec", nodeName, "cat", path).Output()
 	if err != nil {
 		return "", fmt.Errorf("failed to get file %s from node %s: %w", path, nodeName, err)
 	}
 
-	return string(string(output)), nil
+	return string(output), nil
 }
 
 var dockerClusterYaml = `

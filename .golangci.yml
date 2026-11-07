@@ -12,6 +12,48 @@ linters:
     - goheader
     - revive
     - modernize
+    - asasalint
+    - bidichk
+    - bodyclose
+    - durationcheck
+    - gocheckcompilerdirectives
+    - nilnesserr
+    - reassign
+    - govet
+    - recvcheck
+    - errchkjson
+    - exhaustive
+    - errcheck
+    - errorlint
+    - testifylint
+    - noctx
+    - nilerr
+    - contextcheck
+    - gosec
+    - staticcheck
+    - loggercheck
+    - asciicheck
+    - gochecksumtype
+    - ineffassign
+    - wastedassign
+    - unused
+    - unparam
+    - gocritic
+    - forcetypeassert
+    - usetesting
+    - usestdlibvars
+    - exptostd
+    - errname
+    - copyloopvar
+    - canonicalheader
+    - misspell
+    - mirror
+    - intrange
+    - dupword
+    - thelper
+    - nilnil
+    - unconvert
+    - nosprintfhostport
   settings:
     forbidigo:
       analyze-types: false
@@ -35,6 +77,31 @@ linters:
               desc: clientcmd is only allowed in specific files
             - pkg: k8s.io/client-go/tools/clientcmd/api/latest
               desc: clientcmd is only allowed in specific files
+    exhaustive:
+      default-signifies-exhaustive: true
+    gosec:
+      severity: medium
+      confidence: medium
+    gocritic:
+      # Bug-finding (diagnostic) checks only.
+      enabled-tags:
+        - diagnostic
+      disabled-tags:
+        - style
+        - performance
+    misspell:
+      locale: US
+    govet:
+      enable-all: true
+      disable:
+        - shadow
+        - fieldalignment
+    staticcheck:
+      # The SA checks without their performance group (SA6). Stylecheck (ST),
+      # quickfix (QF) and simplification (S1) checks are left out.
+      checks:
+        - SA*
+        - -SA6*
     revive:
       rules:
         # The following rules are recommended https://github.com/mgechev/revive#recommended-configuration
@@ -61,15 +128,41 @@ linters:
         - name: unused-parameter
         - name: unreachable-code
         - name: redefines-builtin-id
-    modernize:
-      disable:
-        - fmtappendf
+        - name: constant-logical-expr
+        - name: datarace
+        - name: forbidden-call-in-wg-go
+        - name: identical-branches
+        - name: time-equal
+        - name: unconditional-recursion
+        - name: defer
+        - name: modifies-value-receiver
+        - name: deep-exit
+        - name: unchecked-type-assertion
+          arguments:
+            - acceptIgnoredAssertionResult: true
   exclusions:
     generated: strict
     rules:
       - linters: [revive]
         text: "var-naming: avoid meaningless package names"
         path: "(internal/controller/util/|inttest/util/)"
+      # The OrDie setup helpers in main.go exit on failure by design, and the e2e
+      # setup can only parse its flags once go test has registered its own.
+      - linters: [revive]
+        text: "deep-exit:"
+        path: "^(cmd/main|e2e/setup)\\.go$"
+      # Integration test polls return (false, nil) on an error to retry until
+      # the poll times out, which is the wait.Poll contract.
+      - linters: [nilerr]
+        path: "^inttest/"
+      # Tests drive kubectl, docker and sh with arguments they build themselves.
+      # These deprecations need their own migration: typed server-side apply,
+      # the events.k8s.io recorder, and exported API constants.
+      - linters: [staticcheck]
+        text: "SA1019: (sigs.k8s.io/controller-runtime/pkg/client.Apply|\\(sigs.k8s.io/controller-runtime/pkg/manager.Manager\\).GetEventRecorderFor|sigs.k8s.io/cluster-api/api/core/v1beta2.ConditionType) is deprecated"
+      - linters: [gosec]
+        text: "G204:"
+        path: "(^inttest/|_test\\.go$)"
     paths:
       # Ignore issues in generated files.
       - zz_generated.*\.go$

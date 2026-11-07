@@ -45,7 +45,7 @@ const kineDataSourceURLPlaceholder = "__K0SMOTRON_KINE_DATASOURCE_URL_PLACEHOLDE
 // We use plain map[string]interface{} for the following reasons:
 //   - we want to support multiple versions of k0s config
 //   - some of the fields in the k0s config struct are not pointers, e.g. spec.api.address in string, so it will be
-//     marshalled as "address": "", which is not correct value for the k0s config
+//     marshaled as "address": "", which is not correct value for the k0s config
 //   - we can't use the k0s config default values, because some of them are calculated based on the cluster state (e.g. spec.api.address)
 func (scope *kmcScope) generateConfig(kmc *km.Cluster, sans []string) (v1.ConfigMap, map[string]any, error) {
 	k0smotronValues := map[string]any{"spec": nil}
@@ -69,7 +69,7 @@ func (scope *kmcScope) generateConfig(kmc *km.Cluster, sans []string) (v1.Config
 
 			enabled, found, err := unstructured.NestedBool(unstructuredConfig, "spec", "network", "nodeLocalLoadBalancing", "enabled")
 			if err != nil {
-				return v1.ConfigMap{}, nil, fmt.Errorf("error getting nodeLocalLoadBalancing: %v", err)
+				return v1.ConfigMap{}, nil, fmt.Errorf("error getting nodeLocalLoadBalancing: %w", err)
 			}
 			nllbEnabled = found && enabled
 		default:
@@ -81,7 +81,7 @@ func (scope *kmcScope) generateConfig(kmc *km.Cluster, sans []string) (v1.Config
 	if !nllbEnabled && kmc.Spec.Ingress == nil {
 		err := unstructured.SetNestedField(k0smotronValues, kmc.Spec.ExternalAddress, "spec", "api", "externalAddress")
 		if err != nil {
-			return v1.ConfigMap{}, nil, fmt.Errorf("error setting externalAddress: %v", err)
+			return v1.ConfigMap{}, nil, fmt.Errorf("error setting externalAddress: %w", err)
 		}
 	}
 
@@ -127,7 +127,7 @@ func (scope *kmcScope) reconcileK0sConfig(ctx context.Context, kmc *km.Cluster, 
 		kmc.Spec.Storage.Kine.DataSourceURL = kineDataSourceURLPlaceholder
 	}
 
-	sans, err := genSANs(kmc, scope.client)
+	sans, err := genSANs(ctx, kmc, scope.client)
 	if err != nil {
 		return fmt.Errorf("failed to generate SANs: %w", err)
 	}
@@ -180,7 +180,7 @@ func reconcileDynamicConfig(ctx context.Context, kmc *km.Cluster, k0sConfig map[
 	return util.ReconcileDynamicConfig(ctx, chCS, u)
 }
 
-func genSANs(kmc *km.Cluster, c client.Client) ([]string, error) {
+func genSANs(ctx context.Context, kmc *km.Cluster, c client.Client) ([]string, error) {
 	var sans []string
 	if kmc.Spec.ExternalAddress != "" {
 		sans = append(sans, kmc.Spec.ExternalAddress)
@@ -193,7 +193,7 @@ func genSANs(kmc *km.Cluster, c client.Client) ([]string, error) {
 	sans = append(sans, fmt.Sprintf("%s.svc", svcNamespacedName))
 
 	kmcService := &v1.Service{}
-	err := c.Get(context.Background(), client.ObjectKey{Name: svcName, Namespace: kmc.Namespace}, kmcService)
+	err := c.Get(ctx, client.ObjectKey{Name: svcName, Namespace: kmc.Namespace}, kmcService)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get service %s: %w", svcName, err)
 	}
@@ -253,7 +253,7 @@ func getV1Beta1Spec(kmc *km.Cluster, sans []string) map[string]any {
 			"type": "etcd",
 			"etcd": map[string]any{
 				"externalCluster": map[string]any{
-					"endpoints":      []any{fmt.Sprintf("https://%s:2379", kmc.GetEtcdServiceName())},
+					"endpoints":      []any{"https://" + kcontrollerutil.JoinHostPort(kmc.GetEtcdServiceName(), "2379")},
 					"etcdPrefix":     kmc.GetName(),
 					"caFile":         "/var/lib/k0s/pki/etcd-ca.crt",
 					"clientCertFile": "/var/lib/k0s/pki/apiserver-etcd-client.crt",
@@ -264,8 +264,9 @@ func getV1Beta1Spec(kmc *km.Cluster, sans []string) map[string]any {
 	}
 
 	if kmc.Spec.Ingress != nil {
-		v1beta1Spec["api"].(map[string]any)["externalAddress"] = net.JoinHostPort(kmc.Spec.Ingress.APIHost, strconv.FormatInt(kmc.Spec.Ingress.Port, 10))
-		v1beta1Spec["api"].(map[string]any)["extraArgs"] = map[string]any{
+		api, _ := v1beta1Spec["api"].(map[string]any) // Built above as a map.
+		api["externalAddress"] = net.JoinHostPort(kmc.Spec.Ingress.APIHost, strconv.FormatInt(kmc.Spec.Ingress.Port, 10))
+		api["extraArgs"] = map[string]any{
 			"endpoint-reconciler-type": "none",
 		}
 		konnectivity := map[string]any{

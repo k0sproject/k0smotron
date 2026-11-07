@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"maps"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -270,7 +271,7 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 			Reason:  bootstrapv2.WaitingForControlPlaneInitializationReason,
 			Message: "Control plane is not ready yet",
 		})
-		return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 5}, nil
+		return ctrl.Result{RequeueAfter: time.Second * 5}, nil
 	}
 
 	defer func() {
@@ -326,7 +327,7 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.
 	// make the controller refresh a token the machine never received.
 	metav1.SetMetaDataAnnotation(&scope.Config.ObjectMeta, bootstrapTokenIDAnnotation, scope.bootstrapTokenID)
 
-	log.Info("Reconciled succesfully")
+	log.Info("Reconciled successfully")
 
 	return ctrl.Result{RequeueAfter: tokenCheckRefreshInterval(r.TokenTTL)}, nil
 }
@@ -637,9 +638,9 @@ func (r *Controller) getK0sToken(ctx context.Context, scope *Scope) (string, err
 	}
 
 	var joinToken string
-	joinURL := fmt.Sprintf("https://%s:%d", scope.Cluster.Spec.ControlPlaneEndpoint.Host, scope.Cluster.Spec.ControlPlaneEndpoint.Port)
+	joinURL := "https://" + util.JoinHostPort(scope.Cluster.Spec.ControlPlaneEndpoint.Host, strconv.Itoa(int(scope.Cluster.Spec.ControlPlaneEndpoint.Port)))
 	if scope.ingressSpec != nil {
-		joinURL = fmt.Sprintf("https://%s:%d", scope.ingressSpec.APIHost, scope.ingressSpec.Port)
+		joinURL = "https://" + util.JoinHostPort(scope.ingressSpec.APIHost, strconv.FormatInt(scope.ingressSpec.Port, 10))
 	}
 
 	joinToken, err = kutil.CreateK0sJoinToken(ca.KeyPair.Cert, token, joinURL, "kubelet-bootstrap")
@@ -881,7 +882,7 @@ func (r *Controller) clusterToWorkerBootstrapMapFunc(ctx context.Context, o clie
 // K0sWorkerConfig.Spec.Version takes precedence if set; otherwise the owner's Kubernetes
 // version is used.
 func resolveK0sWorkerVersion(config *bootstrapv2.K0sWorkerConfig, configOwner *bsutil.ConfigOwner) string {
-	version := config.Spec.Version
+	version := config.Spec.Version //nolint:staticcheck // Still honored when set, see above.
 	if version == "" {
 		version = configOwner.KubernetesVersion()
 	}
@@ -916,7 +917,8 @@ func (r *Controller) SetupWithManager(ctx context.Context, mgr ctrl.Manager, opt
 		Watches(
 			&clusterv1.MachinePool{},
 			handler.EnqueueRequestsFromMapFunc(func(_ context.Context, o client.Object) []ctrl.Request {
-				ref := o.(*clusterv1.MachinePool).Spec.Template.Spec.Bootstrap.ConfigRef
+				machinePool, _ := o.(*clusterv1.MachinePool) // This watch only sees MachinePools.
+				ref := machinePool.Spec.Template.Spec.Bootstrap.ConfigRef
 				if !ref.IsDefined() || ref.GroupKind() != bootstrapv2.GroupVersion.WithKind("K0sWorkerConfig").GroupKind() {
 					return nil
 				}

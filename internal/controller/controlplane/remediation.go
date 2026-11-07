@@ -239,7 +239,7 @@ type remediationData struct {
 // A string, a time and an int32 cannot fail to marshal, so the error is dropped rather than
 // carried through callers that could do nothing useful with it.
 func (r remediationData) marshal() string {
-	value, _ := json.Marshal(r)
+	value, _ := json.Marshal(r) //nolint:errchkjson // See above, metav1.Time marshaling cannot fail.
 
 	return string(value)
 }
@@ -262,7 +262,7 @@ func remediationDataFrom(objAnnotations map[string]string, key string) (remediat
 	if data.Machine == "" || len(data.Machine) > maxReportedMachineName {
 		return remediationData{}, false
 	}
-	if data.Timestamp.IsZero() || data.RetryCount < 0 || data.RetryCount >= math.MaxInt32 {
+	if data.Timestamp.IsZero() || data.RetryCount < 0 || data.RetryCount == math.MaxInt32 {
 		return remediationData{}, false
 	}
 

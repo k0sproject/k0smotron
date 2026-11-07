@@ -34,8 +34,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	bootstrapapi "k8s.io/cluster-bootstrap/token/api"
 	kubeadmbootstrapv1 "sigs.k8s.io/cluster-api/api/bootstrap/kubeadm/v1beta2"
@@ -423,7 +421,7 @@ func TestReconcileBootstrapDataAlreadyCreated(t *testing.T) {
 		"a config whose data secret exists is ready, whatever conditions it was missing")
 
 	before := k0sWorkerConfig.Generation
-	k0sWorkerConfig.Spec.Version = "v1.31.0+k0s.0"
+	k0sWorkerConfig.Spec.Version = "v1.31.0+k0s.0" //nolint:staticcheck // Covers objects that still set the deprecated field.
 	require.NoError(t, testEnv.Update(ctx, k0sWorkerConfig))
 	require.NoError(t, testEnv.GetAPIReader().Get(ctx, util.ObjectKey(k0sWorkerConfig), k0sWorkerConfig))
 	require.Greater(t, k0sWorkerConfig.Generation, before, "the edit has to move the generation")
@@ -441,7 +439,7 @@ func TestReconcileControlPlaneNotReady(t *testing.T) {
 	ns, err := testEnv.CreateNamespace(ctx, "test-reconcile-workerconfig-control-plane-not-ready")
 	require.NoError(t, err)
 
-	cluster, kcp, _ := createClusterWithControlPlane(ns.GetName())
+	cluster, kcp := createClusterWithControlPlane(ns.GetName())
 	require.NoError(t, testEnv.Create(ctx, cluster))
 	require.NoError(t, testEnv.Create(ctx, kcp))
 
@@ -500,7 +498,7 @@ func TestReconcileControlPlaneNotReady(t *testing.T) {
 		// Cluster.Spec.ControlPlaneEndpoint is not initialize by infra provider
 		result, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: util.ObjectKey(k0sWorkerConfig)})
 		assert.NoError(c, err)
-		assert.Equal(c, ctrl.Result{Requeue: true, RequeueAfter: time.Second * 5}, result)
+		assert.Equal(c, ctrl.Result{RequeueAfter: time.Second * 5}, result)
 
 		updatedK0sWorkerConfig := &bootstrapv1.K0sWorkerConfig{}
 		assert.NoError(c, testEnv.Get(ctx, client.ObjectKeyFromObject(k0sWorkerConfig), updatedK0sWorkerConfig))
@@ -516,7 +514,7 @@ func TestReconcileControlPlaneNotReady(t *testing.T) {
 
 		result, err = r.Reconcile(ctx, ctrl.Request{NamespacedName: util.ObjectKey(k0sWorkerConfig)})
 		assert.NoError(c, err)
-		assert.Equal(c, ctrl.Result{Requeue: true, RequeueAfter: time.Second * 5}, result)
+		assert.Equal(c, ctrl.Result{RequeueAfter: time.Second * 5}, result)
 
 		updatedK0sWorkerConfig = &bootstrapv1.K0sWorkerConfig{}
 		assert.NoError(c, testEnv.Get(ctx, client.ObjectKeyFromObject(k0sWorkerConfig), updatedK0sWorkerConfig))
@@ -529,7 +527,7 @@ func TestReconcileWorkerConfigVersionFallsBackToMachineVersion(t *testing.T) {
 	ns, err := testEnv.CreateNamespace(ctx, "test-reconcile-workerconfig-version-fallback")
 	require.NoError(t, err)
 
-	cluster, kcp, _ := createClusterWithControlPlane(ns.GetName())
+	cluster, kcp := createClusterWithControlPlane(ns.GetName())
 	require.NoError(t, testEnv.Create(ctx, cluster))
 	require.NoError(t, testEnv.Create(ctx, kcp))
 
@@ -631,7 +629,7 @@ func TestReconcileGenerateBootstrapData(t *testing.T) {
 	ns, err := testEnv.CreateNamespace(ctx, "test-reconcile-workerconfig-generate-bootstrap-data")
 	require.NoError(t, err)
 
-	cluster, kcp, _ := createClusterWithControlPlane(ns.GetName())
+	cluster, kcp := createClusterWithControlPlane(ns.GetName())
 	require.NoError(t, testEnv.Create(ctx, cluster))
 	require.NoError(t, testEnv.Create(ctx, kcp))
 
@@ -744,7 +742,7 @@ func TestReconcileGenerateBootstrapData(t *testing.T) {
 	}, 20*time.Second, 100*time.Millisecond)
 }
 
-func createClusterWithControlPlane(namespace string) (*clusterv1.Cluster, *cpv1beta2.K0sControlPlane, *unstructured.Unstructured) {
+func createClusterWithControlPlane(namespace string) (*clusterv1.Cluster, *cpv1beta2.K0sControlPlane) {
 	kcpName := fmt.Sprintf("kcp-foo-%s", util.RandomString(6))
 
 	cluster := newCluster(namespace)
@@ -795,28 +793,7 @@ func createClusterWithControlPlane(namespace string) (*clusterv1.Cluster, *cpv1b
 		},
 	}
 
-	genericMachineTemplate := &unstructured.Unstructured{
-		Object: map[string]interface{}{
-			"kind":       "GenericInfrastructureMachineTemplate",
-			"apiVersion": "infrastructure.cluster.x-k8s.io/v1beta1",
-			"metadata": map[string]interface{}{
-				"name":      "infra-foo",
-				"namespace": namespace,
-				"annotations": map[string]interface{}{
-					clusterv1.TemplateClonedFromNameAnnotation:      kcp.Spec.MachineTemplate.Spec.InfrastructureRef.Name,
-					clusterv1.TemplateClonedFromGroupKindAnnotation: schema.GroupKind{Group: kcp.Spec.MachineTemplate.Spec.InfrastructureRef.APIGroup, Kind: kcp.Spec.MachineTemplate.Spec.InfrastructureRef.Kind}.String(),
-				},
-			},
-			"spec": map[string]interface{}{
-				"template": map[string]interface{}{
-					"spec": map[string]interface{}{
-						"hello": "world",
-					},
-				},
-			},
-		},
-	}
-	return cluster, kcp, genericMachineTemplate
+	return cluster, kcp
 }
 
 // pausedObject is both an object to re-read and a condition holder to inspect.
@@ -832,7 +809,7 @@ func requireCached(t *testing.T, objs ...client.Object) {
 
 	require.Eventually(t, func() bool {
 		for _, obj := range objs {
-			into := obj.DeepCopyObject().(client.Object)
+			into, _ := obj.DeepCopyObject().(client.Object)
 			if err := testEnv.Get(ctx, client.ObjectKeyFromObject(obj), into); err != nil {
 				return false
 			}
@@ -876,7 +853,7 @@ func TestWorkerConfigRejectsConflictingUserDataRef(t *testing.T) {
 		return &bootstrapv1.K0sWorkerConfig{
 			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns.Name},
 			Spec: bootstrapv1.K0sWorkerConfigSpec{
-				Version:     "v1.30.0+k0s.0",
+				Version:     "v1.30.0+k0s.0", //nolint:staticcheck // Covers objects that still set the deprecated field.
 				Provisioner: bootstrapv1.ProvisionerSpec{CustomUserDataRef: ref},
 			},
 		}
@@ -901,7 +878,7 @@ func TestReconcileDeletesTheTokenOfBootstrapDataItCouldNotGenerate(t *testing.T)
 	ns, err := testEnv.CreateNamespace(t.Context(), "test-worker-token-of-failed-generation")
 	require.NoError(t, err)
 
-	cluster, kcp, _ := createClusterWithControlPlane(ns.GetName())
+	cluster, kcp := createClusterWithControlPlane(ns.GetName())
 	require.NoError(t, testEnv.Create(t.Context(), cluster))
 	require.NoError(t, testEnv.Create(t.Context(), kcp))
 	conditions.Set(cluster, metav1.Condition{
@@ -991,7 +968,7 @@ func TestReconcileRotatesTheTokenOfAJoinedMachinePool(t *testing.T) {
 	ns, err := testEnv.CreateNamespace(t.Context(), "test-worker-machinepool-token-rotation")
 	require.NoError(t, err)
 
-	cluster, kcp, _ := createClusterWithControlPlane(ns.GetName())
+	cluster, kcp := createClusterWithControlPlane(ns.GetName())
 	require.NoError(t, testEnv.Create(t.Context(), cluster))
 	require.NoError(t, testEnv.Create(t.Context(), kcp))
 	conditions.Set(cluster, metav1.Condition{
@@ -1184,7 +1161,7 @@ func TestReconcileRendersAdditionalIgnitionConfigFromASecret(t *testing.T) {
 	ns, err := testEnv.CreateNamespace(t.Context(), "test-worker-additional-ignition-from")
 	require.NoError(t, err)
 
-	cluster, kcp, _ := createClusterWithControlPlane(ns.GetName())
+	cluster, kcp := createClusterWithControlPlane(ns.GetName())
 	require.NoError(t, testEnv.Create(t.Context(), cluster))
 	require.NoError(t, testEnv.Create(t.Context(), kcp))
 	conditions.Set(cluster, metav1.Condition{

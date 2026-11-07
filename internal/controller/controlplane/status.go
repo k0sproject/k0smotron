@@ -344,7 +344,7 @@ func setLastRemediation(controlplane *controlplane) {
 	controlplane.kcp.Status.LastRemediation = cpv1beta2.LastRemediationStatus{
 		Machine:    last.Machine,
 		Time:       last.Timestamp,
-		RetryCount: new(int32(last.RetryCount)),
+		RetryCount: new(last.RetryCount),
 	}
 }
 
@@ -368,10 +368,10 @@ func computeReplicas(controlplane *controlplane) error {
 
 	// One collection feeds all four, so a machine that is deleting but still ready
 	// cannot be counted by one of them and left out of the total.
-	controlplane.kcp.Status.Replicas = new(int32(len(allReplicas)))
-	controlplane.kcp.Status.ReadyReplicas = new(int32(readyReplicas))
-	controlplane.kcp.Status.UpToDateReplicas = new(int32(upToDateReplicas))
-	controlplane.kcp.Status.AvailableReplicas = new(int32(availableReplicas))
+	controlplane.kcp.Status.Replicas = new(int32(len(allReplicas))) //nolint:gosec // A machine count cannot reach MaxInt32.
+	controlplane.kcp.Status.ReadyReplicas = new(readyReplicas)
+	controlplane.kcp.Status.UpToDateReplicas = new(upToDateReplicas)
+	controlplane.kcp.Status.AvailableReplicas = new(availableReplicas)
 
 	// Find the lowest version
 	lowestMachineVersion, err := minVersion(controlplane.activeMachines)
@@ -505,7 +505,7 @@ func versionMatches(machine *clusterv1.Machine, ver string) bool {
 }
 
 // initialized reports whether the control plane has ever been reachable. Takes the
-// latch itself, since the two flavours carry it on different status structs.
+// latch itself, since the two flavors carry it on different status structs.
 func initialized(latch *bool) bool {
 	return ptr.Deref(latch, false)
 }
@@ -588,7 +588,7 @@ func availabilityCondition(existing *metav1.Condition, now, failingSince time.Ti
 	}
 }
 
-// availabilityReporter is what both control plane flavours have in common, so the
+// availabilityReporter is what both control plane flavors have in common, so the
 // grace period is applied the same way to each.
 type availabilityReporter interface {
 	client.Object
@@ -610,7 +610,8 @@ func setUnavailableAfterGracePeriod(failures *sync.Map, cp availabilityReporter,
 
 	switch previous, ok := failures.Load(key); {
 	case ok:
-		state = availabilityFailures{since: previous.(availabilityFailures).since, seen: previous.(availabilityFailures).seen + 1}
+		prev, _ := previous.(availabilityFailures) // The map only holds availabilityFailures.
+		state = availabilityFailures{since: prev.since, seen: prev.seen + 1}
 	case existing != nil && existing.Status == metav1.ConditionUnknown &&
 		existing.Reason == cpv1beta2.ControlPlaneConnectionDownReason &&
 		existing.LastTransitionTime.Time.After(created):

@@ -151,8 +151,14 @@ func TestPermissions(t *testing.T) {
 	}
 
 	perm, err := f.PermissionsAsInt()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, int64(420), perm)
+
+	// Both parse as octal, neither is a file mode.
+	for _, bad := range []string{"-1", "10000"} {
+		_, err := File{Permissions: bad}.PermissionsAsInt()
+		require.Error(t, err, "permissions %q", bad)
+	}
 }
 
 // withCloudInitVars sets the gate for one test and puts it back afterwards.

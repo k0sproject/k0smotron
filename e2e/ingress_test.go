@@ -60,7 +60,7 @@ func TestIngressCalico(t *testing.T) {
 }
 
 func ingressSupportSpec(flavor string) func(t *testing.T) {
-	return func(t *testing.T) {
+	return func(t *testing.T) { //nolint:thelper // Test body run by setupAndRun, t.Helper would move its failures to the caller.
 		testName := flavor
 
 		// Setup a Namespace where to host objects for this spec and create a watcher for the namespace events.
@@ -189,7 +189,7 @@ func ingressSupportSpec(flavor string) func(t *testing.T) {
 				stdout bytes.Buffer
 				stderr bytes.Buffer
 			)
-			cmd := exec.Command("docker", "exec", m.Name, "curl", "https://10.128.0.1/healthz", "--cacert", "/etc/haproxy/certs/ca.crt")
+			cmd := exec.CommandContext(ctx, "docker", "exec", m.Name, "curl", "https://10.128.0.1/healthz", "--cacert", "/etc/haproxy/certs/ca.crt")
 			cmd.Stdout = &stdout
 			cmd.Stderr = &stderr
 			err = cmd.Run()
@@ -201,6 +201,8 @@ func ingressSupportSpec(flavor string) func(t *testing.T) {
 }
 
 func detectKindIP(t *testing.T) string {
+	t.Helper()
+
 	// Get the kind cluster IP from the bootstrap cluster
 	var nodes corev1.NodeList
 	require.NoError(t, bootstrapClusterProxy.GetClient().List(ctx, &nodes), "Should list nodes")
@@ -224,7 +226,9 @@ func detectKindIP(t *testing.T) string {
 }
 
 func installHAProxyIngress(t *testing.T, bootstrapClusterProxy capiframework.ClusterProxy) {
-	out, err := exec.Command("kubectl", "--kubeconfig", bootstrapClusterProxy.GetKubeconfigPath(), "apply", "-f", "./data/haproxy-ingress.yaml").CombinedOutput()
+	t.Helper()
+
+	out, err := exec.CommandContext(ctx, "kubectl", "--kubeconfig", bootstrapClusterProxy.GetKubeconfigPath(), "apply", "-f", "./data/haproxy-ingress.yaml").CombinedOutput()
 	t.Log("haproxy ingress installation logs: ", string(out))
 	require.NoError(t, err, "should apply HAProxy yaml")
 }

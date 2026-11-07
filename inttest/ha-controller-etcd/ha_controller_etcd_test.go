@@ -89,8 +89,8 @@ func (s *HAControllerEtcdSuite) TestK0sGetsUp() {
 	s.T().Log("update cluster")
 	s.updateK0smotronCluster(s.Context(), rc)
 
-	err = wait.PollUntilContextCancel(s.Context(), 5*time.Second, true, func(_ context.Context) (bool, error) {
-		sts, err := kc.AppsV1().StatefulSets("kmc-test").Get(s.Context(), "kmc-kmc-test", metav1.GetOptions{})
+	err = wait.PollUntilContextCancel(s.Context(), 5*time.Second, true, func(ctx context.Context) (bool, error) {
+		sts, err := kc.AppsV1().StatefulSets("kmc-test").Get(ctx, "kmc-kmc-test", metav1.GetOptions{})
 		if err != nil {
 			return false, nil
 		}
@@ -177,7 +177,7 @@ func (s *HAControllerEtcdSuite) getPod(ctx context.Context, kc *kubernetes.Clien
 		ctx,
 		metav1.ListOptions{FieldSelector: "status.phase=Running"})
 	s.Require().NoError(err, "failed to list kmc-test pods")
-	s.Require().Equal(6, len(pods.Items), "expected 6 kmc-test pod, got %d", len(pods.Items))
+	s.Require().Len(pods.Items, 6, "expected 6 kmc-test pod, got %d", len(pods.Items))
 
 	return pods.Items[2]
 }

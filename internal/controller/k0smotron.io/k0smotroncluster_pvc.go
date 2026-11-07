@@ -101,7 +101,7 @@ func resizeStatefulSetAndPVC(ctx context.Context, kmc *km.Cluster, desiredStorag
 	}
 
 	var allowExpansion *bool
-	for i := 0; i < int(replicas); i++ {
+	for i := range replicas {
 		var pvc corev1.PersistentVolumeClaim
 
 		name := fmt.Sprintf("%s-%s-%d", vctName, stsName, i)

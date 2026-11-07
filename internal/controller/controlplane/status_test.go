@@ -420,6 +420,8 @@ func Test_versionMatches(t *testing.T) {
 // newWorkloadAPI serves just enough of an apiserver for a real client to reach
 // it. nsStatus decides how a read of the kube system namespace answers.
 func newWorkloadAPI(t *testing.T, nsStatus int) *httptest.Server {
+	t.Helper()
+
 	writeJSON := func(w http.ResponseWriter, code int, body any) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(code)
@@ -467,6 +469,8 @@ func newWorkloadAPI(t *testing.T, nsStatus int) *httptest.Server {
 // newSwitchableWorkloadAPI serves the same thing as newWorkloadAPI, but lets a
 // test turn the namespace read on and off so a recovery can be exercised.
 func newSwitchableWorkloadAPI(t *testing.T) (*httptest.Server, *atomic.Bool) {
+	t.Helper()
+
 	healthy := &atomic.Bool{}
 
 	writeJSON := func(w http.ResponseWriter, code int, body any) {
@@ -516,6 +520,8 @@ func newSwitchableWorkloadAPI(t *testing.T) (*httptest.Server, *atomic.Bool) {
 // availabilityFixture builds a control plane whose workload client is reached
 // through a kubeconfig secret, which is the path taken with no cluster cache.
 func availabilityFixture(t *testing.T, serverURL string, everUp bool) (*K0sController, *controlplane) {
+	t.Helper()
+
 	scheme := runtime.NewScheme()
 	require.NoError(t, corev1.AddToScheme(scheme))
 	require.NoError(t, clusterv1.AddToScheme(scheme))
@@ -582,7 +588,7 @@ func TestComputeAvailabilityPing(t *testing.T) {
 		// One lost read is not enough on purpose, so fail once to open the grace
 		// period, age it out, then fail again.
 		c.computeAvailability(context.Background(), scope, logr.Discard())
-		ageAvailableCondition(t, &c.availabilityFailures, scope.kcp, availabilityGracePeriod+time.Second)
+		ageAvailableCondition(t, &c.availabilityFailures, scope.kcp)
 		c.computeAvailability(context.Background(), scope, logr.Discard())
 
 		got := availableCondition(scope.kcp)
@@ -621,7 +627,7 @@ func TestComputeAvailabilityPing(t *testing.T) {
 		}
 
 		c.computeAvailability(context.Background(), scope, logr.Discard())
-		ageAvailableCondition(t, &c.availabilityFailures, scope.kcp, availabilityGracePeriod+time.Second)
+		ageAvailableCondition(t, &c.availabilityFailures, scope.kcp)
 		c.computeAvailability(context.Background(), scope, logr.Discard())
 
 		got := availableCondition(scope.kcp)
@@ -690,7 +696,7 @@ func TestComputeAvailabilityClientBuild(t *testing.T) {
 			// A row that reports nothing has no condition to age.
 			c.computeAvailability(context.Background(), scope, logr.Discard())
 			if _, counted := c.availabilityFailures.Load(availabilityKey(scope.kcp)); counted {
-				ageAvailableCondition(t, &c.availabilityFailures, scope.kcp, availabilityGracePeriod+time.Second)
+				ageAvailableCondition(t, &c.availabilityFailures, scope.kcp)
 			}
 			c.computeAvailability(context.Background(), scope, logr.Discard())
 
@@ -723,7 +729,7 @@ func (s stubClusterCache) GetClient(_ context.Context, _ client.ObjectKey) (clie
 	return nil, errors.New("a probe has to read through GetUncachedClient")
 }
 
-// GetUncachedClient is what the hosted flavour reaches for, unlike the K0s one.
+// GetUncachedClient is what the hosted flavor reaches for, unlike the K0s one.
 func (s stubClusterCache) GetUncachedClient(_ context.Context, _ client.ObjectKey) (client.Client, error) {
 	if s.workloadClient == nil && s.err == nil {
 		// A pair the real cache never hands out, and the caller has no nil guard.
@@ -828,7 +834,7 @@ func TestComputeAvailabilityTunneled(t *testing.T) {
 			}
 			writeKubeconfig(t, c, "test-"+suffix+"-kubeconfig", srv.URL)
 
-			// A cache that reports nothing but failures must not colour the verdict,
+			// A cache that reports nothing but failures must not color the verdict,
 			// and must not be reached for a rest config either.
 			c.ClusterCache = stubClusterCache{failures: 5, err: errors.New("the cache must not be asked")}
 
@@ -914,21 +920,23 @@ func TestAvailabilityRequeueAfter(t *testing.T) {
 }
 
 // ageAvailableCondition backdates the condition and the in memory anchor, since the
-// anchor is what the decision reads and ageing only the condition proves nothing.
-func ageAvailableCondition(t *testing.T, failures *sync.Map, kcp availabilityReporter, age time.Duration) {
+// anchor is what the decision reads and aging only the condition proves nothing.
+func ageAvailableCondition(t *testing.T, failures *sync.Map, kcp availabilityReporter) {
 	t.Helper()
 
 	got := conditions.Get(kcp, string(cpv1beta2.ControlPlaneAvailableCondition))
 	require.NotNil(t, got, "there is no condition to age")
 
-	backdated := time.Now().Add(-age)
+	// Just past the grace period, so the next check reports the condition.
+	backdated := time.Now().Add(-(availabilityGracePeriod + time.Second))
 	got.LastTransitionTime = metav1.NewTime(backdated)
 	conditions.Set(kcp, *got)
 
 	key := availabilityKey(kcp)
 	previous, ok := failures.Load(key)
 	require.True(t, ok, "no failure has been counted yet, so there is no window to age")
-	failures.Store(key, availabilityFailures{since: backdated, seen: previous.(availabilityFailures).seen})
+	prev, _ := previous.(availabilityFailures)
+	failures.Store(key, availabilityFailures{since: backdated, seen: prev.seen})
 }
 
 // anchorOf mirrors how setUnavailableAfterGracePeriod picks the anchor on a first
@@ -1110,7 +1118,7 @@ func TestComputeAvailabilityReportsAfterTheGracePeriod(t *testing.T) {
 	c, scope := availabilityFixture(t, srv.URL, true)
 
 	c.computeAvailability(context.Background(), scope, logr.Discard())
-	ageAvailableCondition(t, &c.availabilityFailures, scope.kcp, availabilityGracePeriod+time.Second)
+	ageAvailableCondition(t, &c.availabilityFailures, scope.kcp)
 
 	c.computeAvailability(context.Background(), scope, logr.Discard())
 
@@ -1126,7 +1134,7 @@ func TestComputeAvailabilityRecoversOnOneGoodRead(t *testing.T) {
 	c, scope := availabilityFixture(t, srv.URL, true)
 
 	c.computeAvailability(context.Background(), scope, logr.Discard())
-	ageAvailableCondition(t, &c.availabilityFailures, scope.kcp, availabilityGracePeriod+time.Second)
+	ageAvailableCondition(t, &c.availabilityFailures, scope.kcp)
 	c.computeAvailability(context.Background(), scope, logr.Discard())
 	require.Equal(t, metav1.ConditionFalse, availableCondition(scope.kcp).Status)
 
@@ -1283,11 +1291,13 @@ func TestAvailabilityFailuresAreConsecutive(t *testing.T) {
 	c.computeAvailability(context.Background(), scope, logr.Discard())
 	got, ok := c.availabilityFailures.Load(key)
 	require.True(t, ok)
-	require.Equal(t, 1, got.(availabilityFailures).seen, "one failed read is one failure")
+	gotFailures, _ := got.(availabilityFailures)
+	require.Equal(t, 1, gotFailures.seen, "one failed read is one failure")
 
 	c.computeAvailability(context.Background(), scope, logr.Discard())
 	got, _ = c.availabilityFailures.Load(key)
-	require.Equal(t, 2, got.(availabilityFailures).seen, "and they add up while they keep failing")
+	gotFailures, _ = got.(availabilityFailures)
+	require.Equal(t, 2, gotFailures.seen, "and they add up while they keep failing")
 
 	healthy.Store(true)
 	c.computeAvailability(context.Background(), scope, logr.Discard())
@@ -1296,7 +1306,7 @@ func TestAvailabilityFailuresAreConsecutive(t *testing.T) {
 	require.False(t, ok, "a good read has to forget them, or they are not in a row")
 }
 
-// TestHostedComputeAvailability covers the hosted flavour reporting the same way as
+// TestHostedComputeAvailability covers the hosted flavor reporting the same way as
 // the K0s one, since CAPI mirrors both onto the same Cluster condition.
 func TestHostedComputeAvailability(t *testing.T) {
 	scheme := runtime.NewScheme()
@@ -1308,7 +1318,7 @@ func TestHostedComputeAvailability(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default", UID: "hosted-uid"},
 		}
 		if everUp {
-			// The bring up guard reads this latch, as the other flavour does.
+			// The bring up guard reads this latch, as the other flavor does.
 			kcp.Status.Initialization.ControlPlaneInitialized = new(true)
 			conditions.Set(kcp, metav1.Condition{
 				Type:   string(cpv1beta2.ControlPlaneAvailableCondition),
@@ -1329,7 +1339,7 @@ func TestHostedComputeAvailability(t *testing.T) {
 		got := conditions.Get(kcp, string(cpv1beta2.ControlPlaneAvailableCondition))
 		require.NotNil(t, got)
 		require.Equal(t, metav1.ConditionUnknown, got.Status,
-			"the hosted flavour used to report False on the very first failure")
+			"the hosted flavor used to report False on the very first failure")
 		require.Equal(t, cpv1beta2.ControlPlaneConnectionDownReason, got.Reason)
 	})
 
@@ -1338,7 +1348,7 @@ func TestHostedComputeAvailability(t *testing.T) {
 		c.ClusterCache = stubClusterCache{err: errors.New("connection refused")}
 
 		c.computeAvailability(context.Background(), cluster, kcp)
-		ageAvailableCondition(t, &c.availabilityFailures, kcp, availabilityGracePeriod+time.Second)
+		ageAvailableCondition(t, &c.availabilityFailures, kcp)
 		c.computeAvailability(context.Background(), cluster, kcp)
 
 		got := conditions.Get(kcp, string(cpv1beta2.ControlPlaneAvailableCondition))
@@ -1350,7 +1360,7 @@ func TestHostedComputeAvailability(t *testing.T) {
 			"the cause has to reach the message users read")
 	})
 
-	t.Run("a failing read reports the same reasons as the other flavour", func(t *testing.T) {
+	t.Run("a failing read reports the same reasons as the other flavor", func(t *testing.T) {
 		c, cluster, kcp := newScope(true)
 		// A client that hands out no namespace, so the ping is what fails.
 		c.ClusterCache = stubClusterCache{workloadClient: fake.NewClientBuilder().WithScheme(scheme).Build()}
@@ -1358,9 +1368,9 @@ func TestHostedComputeAvailability(t *testing.T) {
 		c.computeAvailability(context.Background(), cluster, kcp)
 		got := conditions.Get(kcp, string(cpv1beta2.ControlPlaneAvailableCondition))
 		require.Equal(t, cpv1beta2.ControlPlaneConnectionDownReason, got.Reason,
-			"both flavours have to report the same reason for the same event")
+			"both flavors have to report the same reason for the same event")
 
-		ageAvailableCondition(t, &c.availabilityFailures, kcp, availabilityGracePeriod+time.Second)
+		ageAvailableCondition(t, &c.availabilityFailures, kcp)
 		c.computeAvailability(context.Background(), cluster, kcp)
 		got = conditions.Get(kcp, string(cpv1beta2.ControlPlaneAvailableCondition))
 		require.Equal(t, metav1.ConditionFalse, got.Status)
@@ -1397,7 +1407,7 @@ func TestHostedComputeAvailability(t *testing.T) {
 		require.False(t, ok, "a good read has to forget them, or an old outage condemns a later one")
 	})
 
-	t.Run("each flavour counts its own failures", func(t *testing.T) {
+	t.Run("each flavor counts its own failures", func(t *testing.T) {
 		hosted, cluster, kcp := newScope(true)
 		hosted.ClusterCache = stubClusterCache{err: errors.New("boom")}
 		hosted.computeAvailability(context.Background(), cluster, kcp)
@@ -1562,7 +1572,7 @@ func TestAvailabilityCountsPerObject(t *testing.T) {
 
 	// Aged, or the inherited anchor is young enough that the grace period holds the
 	// report back on its own and the key scheme is never what decides.
-	ageAvailableCondition(t, failures, dead, availabilityGracePeriod+time.Second)
+	ageAvailableCondition(t, failures, dead)
 
 	// Same namespace and name, new object.
 	fresh := newKCP("second")
@@ -1573,7 +1583,7 @@ func TestAvailabilityCountsPerObject(t *testing.T) {
 		"inheriting the count means one failed read reports an outage on a new object")
 }
 
-// TestHostedAvailabilityDuringBringUp covers the guard the K0s flavour has, since the
+// TestHostedAvailabilityDuringBringUp covers the guard the K0s flavor has, since the
 // hosted condition starts out Unknown and would report an outage on a new cluster.
 func TestHostedAvailabilityDuringBringUp(t *testing.T) {
 	scheme := runtime.NewScheme()
@@ -1722,12 +1732,7 @@ func TestHostedComputeStatusDoesNotHalfWriteTheCounters(t *testing.T) {
 
 // controlPlanePod is one hosted control plane pod, ready or not, as computeStatus
 // counts them.
-func controlPlanePod(name string, ready bool) *corev1.Pod {
-	status := corev1.ConditionFalse
-	if ready {
-		status = corev1.ConditionTrue
-	}
-
+func notReadyControlPlanePod(name string) *corev1.Pod {
 	return &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -1738,7 +1743,7 @@ func controlPlanePod(name string, ready bool) *corev1.Pod {
 			},
 		},
 		Status: corev1.PodStatus{
-			Conditions: []corev1.PodCondition{{Type: corev1.PodReady, Status: status}},
+			Conditions: []corev1.PodCondition{{Type: corev1.PodReady, Status: corev1.ConditionFalse}},
 		},
 	}
 }
@@ -1760,9 +1765,9 @@ func TestHostedComputeStatusCounters(t *testing.T) {
 	cl := fake.NewClientBuilder().WithScheme(hostedStatusScheme(t)).
 		WithObjects(
 			&kapi.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default"}},
-			controlPlanePod("cp-0", false),
-			controlPlanePod("cp-1", false),
-			controlPlanePod("cp-2", false),
+			notReadyControlPlanePod("cp-0"),
+			notReadyControlPlanePod("cp-1"),
+			notReadyControlPlanePod("cp-2"),
 		).Build()
 	c := &K0smotronController{
 		Client:       cl,

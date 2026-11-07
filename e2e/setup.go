@@ -107,12 +107,14 @@ func init() {
 	// On the k0smotron side we avoid using Gomega for assertions but since we want to use the
 	// cluster-api framework as much as possible, the framework assertions require registering
 	// a fail handler beforehand.
-	gomega.RegisterFailHandler(func(message string, callerSkip ...int) {
+	gomega.RegisterFailHandler(func(message string, _ ...int) {
 		panic(message)
 	})
 }
 
 func setupAndRun(t *testing.T, test func(t *testing.T)) {
+	t.Helper()
+
 	ctrl.SetLogger(klog.Background())
 	flag.Parse()
 
@@ -255,7 +257,7 @@ func initScheme() (*runtime.Scheme, error) {
 }
 
 func loadE2EConfig(ctx context.Context, configPath string) (*clusterctl.E2EConfig, error) {
-	configData, err := os.ReadFile(configPath)
+	configData, err := os.ReadFile(configPath) //nolint:gosec // The -config flag names the e2e config on purpose.
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to read the e2e test config file: %w", err)

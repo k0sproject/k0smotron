@@ -54,7 +54,7 @@ func TestWorkloadClusterUpgrade(t *testing.T) {
 //
 // 3. Performing a subsequent control plane version upgrade using the selected (flavor) upgrade strategy.
 //   - Confirms the cluster status is consistent and desired post-update.
-func workloadClusterUpgradeSpec(t *testing.T) {
+func workloadClusterUpgradeSpec(t *testing.T) { //nolint:thelper // Test body run by setupAndRun, t.Helper would move its failures to the caller.
 	testName := "workload-inplace-upgrade"
 
 	require.NotEmpty(t, flavor, "a flavor between InPlace, InPlaceCAPI, Recreate or RecreateDeleteFirst needs to be specified for this test")
@@ -311,7 +311,7 @@ func controlPlaneMachineNamesByUID(machines *clusterv1.MachineList) map[string]s
 
 // checkStandaloneInPlace verifies that the standalone in-place update path is used: an autopilot
 // Plan must appear in the workload cluster and no control plane Machine may carry the CAPI in-place
-// update annotations while the upgrade runs. It returns when the given context is cancelled, which
+// update annotations while the upgrade runs. It returns when the given context is canceled, which
 // happens once the upgrade is done.
 func checkStandaloneInPlace(ctx context.Context, input util.UpgradeControlPlaneAndWaitForUpgradeInput) error {
 	workloadClientSet := input.ClusterProxy.GetWorkloadCluster(ctx, input.Cluster.Namespace, input.Cluster.Name).GetClientSet()
@@ -329,7 +329,7 @@ func checkStandaloneInPlace(ctx context.Context, input util.UpgradeControlPlaneA
 		plan, err := autopilot.GetPlan(fctx, workloadClientSet)
 		if err != nil {
 			// The plan has not been created yet; keep polling.
-			return false, nil
+			return false, nil //nolint:nilerr // See above.
 		}
 		targetVersion, err := autopilot.GetPlanTargetVersion(plan)
 		if err != nil {
@@ -372,12 +372,12 @@ func controlPlaneMachineWithInPlaceUpdateAnnotations(ctx context.Context, input 
 			return &m, nil
 		}
 	}
-	return nil, nil
+	return nil, nil //nolint:nilnil // No such machine, callers check for nil.
 }
 
 // checkCAPIInPlace verifies that the runtime extension in-place update path is used: at least one
 // control plane Machine must carry the CAPI in-place update annotations while the upgrade runs. It
-// returns when the annotations have been seen or when the given context is cancelled, which happens
+// returns when the annotations have been seen or when the given context is canceled, which happens
 // once the upgrade is done.
 func checkCAPIInPlace(ctx context.Context, input util.UpgradeControlPlaneAndWaitForUpgradeInput) error {
 	err := wait.PollUntilContextCancel(ctx, time.Second, true, func(fctx context.Context) (bool, error) {
@@ -404,7 +404,7 @@ func hasInPlaceUpdateAnnotations(annotations map[string]string) bool {
 }
 
 // checkRecreateDeleteFirstMachineCount makes sure the RecreateDeleteFirst strategy never exceeds the
-// desired number of control plane machines. It returns when the given context is cancelled, which
+// desired number of control plane machines. It returns when the given context is canceled, which
 // happens once the upgrade is done.
 func checkRecreateDeleteFirstMachineCount(ctx context.Context, input util.UpgradeControlPlaneAndWaitForUpgradeInput) error {
 	desiredReplicas := int(input.ControlPlane.Spec.Replicas)

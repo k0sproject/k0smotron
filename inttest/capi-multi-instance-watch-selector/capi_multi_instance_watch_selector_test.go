@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"io"
 	"maps"
-	"net"
 	"net/http"
 	"os"
 	"os/exec"
@@ -92,7 +91,7 @@ func (s *CAPIMultiInstanceWatchSelectorSuite) SetupSuite() {
 
 	tmpDir := s.T().TempDir()
 	s.clusterYAMLPath = tmpDir + "/watch-selector-cluster.yaml"
-	s.Require().NoError(os.WriteFile(s.clusterYAMLPath, []byte(clusterYAML), 0o644))
+	s.Require().NoError(os.WriteFile(s.clusterYAMLPath, []byte(clusterYAML), 0o600))
 
 	s.sourceDeployment, err = s.findControlPlaneDeploymentName(s.ctx)
 	s.Require().NoError(err)
@@ -109,7 +108,7 @@ func (s *CAPIMultiInstanceWatchSelectorSuite) TestWatchFilterIsolatesMultipleCAP
 	shadowPodName, err := s.getDeploymentPodName(s.ctx, secondaryDeploymentName, operatorNamespace)
 	s.Require().NoError(err)
 
-	initialCounter, err := s.getK0smotronControlPlaneReconcileCounter(s.ctx, operatorNamespace, shadowPodName)
+	initialCounter, err := s.getK0smotronControlPlaneReconcileCounter(s.ctx, shadowPodName)
 	s.Require().NoError(err)
 
 	s.T().Log("triggering a reconcile on the primary-labeled K0smotronControlPlane")
@@ -117,7 +116,7 @@ func (s *CAPIMultiInstanceWatchSelectorSuite) TestWatchFilterIsolatesMultipleCAP
 
 	var counterAfterUnscopedPatch float64
 	err = wait.PollUntilContextTimeout(s.ctx, 2*time.Second, 30*time.Second, true, func(ctx context.Context) (bool, error) {
-		counterAfterUnscopedPatch, err = s.getK0smotronControlPlaneReconcileCounter(ctx, operatorNamespace, shadowPodName)
+		counterAfterUnscopedPatch, err = s.getK0smotronControlPlaneReconcileCounter(ctx, shadowPodName)
 		if err != nil {
 			return false, err
 		}
@@ -132,14 +131,14 @@ func (s *CAPIMultiInstanceWatchSelectorSuite) TestWatchFilterIsolatesMultipleCAP
 	shadowPodName, err = s.getDeploymentPodName(s.ctx, secondaryDeploymentName, operatorNamespace)
 	s.Require().NoError(err)
 
-	counterBeforeScopedPatch, err := s.getK0smotronControlPlaneReconcileCounter(s.ctx, operatorNamespace, shadowPodName)
+	counterBeforeScopedPatch, err := s.getK0smotronControlPlaneReconcileCounter(s.ctx, shadowPodName)
 	s.Require().NoError(err)
 
 	s.T().Log("triggering the same reconcile after scoping the secondary controller away from the primary-labeled object")
 	s.Require().NoError(s.annotateControlPlane("reconcile-probe", "with-selector"))
 
 	err = wait.PollUntilContextTimeout(s.ctx, 2*time.Second, 20*time.Second, true, func(ctx context.Context) (bool, error) {
-		counterAfterScopedPatch, err := s.getK0smotronControlPlaneReconcileCounter(ctx, operatorNamespace, shadowPodName)
+		counterAfterScopedPatch, err := s.getK0smotronControlPlaneReconcileCounter(ctx, shadowPodName)
 		if err != nil {
 			return false, err
 		}
@@ -148,7 +147,7 @@ func (s *CAPIMultiInstanceWatchSelectorSuite) TestWatchFilterIsolatesMultipleCAP
 		}
 		return false, nil
 	})
-	s.ErrorContains(err, "context deadline exceeded", "the secondary controller should stay idle for primary-labeled resources once scoped")
+	s.Require().ErrorContains(err, "context deadline exceeded", "the secondary controller should stay idle for primary-labeled resources once scoped")
 
 	s.verifyReplicaCountingIsNamespaceScoped()
 }
@@ -284,7 +283,7 @@ func (s *CAPIMultiInstanceWatchSelectorSuite) findControlPlaneDeploymentName(ctx
 }
 
 func (s *CAPIMultiInstanceWatchSelectorSuite) applyClusterObjects() {
-	out, err := exec.Command("kubectl", "apply", "-f", s.clusterYAMLPath).CombinedOutput()
+	out, err := exec.CommandContext(s.ctx, "kubectl", "apply", "-f", s.clusterYAMLPath).CombinedOutput()
 	s.Require().NoError(err, "failed to apply cluster objects: %s", string(out))
 }
 
@@ -297,8 +296,8 @@ func (s *CAPIMultiInstanceWatchSelectorSuite) cleanupResources() {
 		return
 	}
 
-	_, _ = exec.Command("kubectl", "delete", "-f", s.clusterYAMLPath).CombinedOutput()
-	_, _ = exec.Command("kubectl", "delete", "deployment", secondaryDeploymentName, "-n", operatorNamespace).CombinedOutput()
+	_, _ = exec.CommandContext(context.WithoutCancel(s.ctx), "kubectl", "delete", "-f", s.clusterYAMLPath).CombinedOutput()
+	_, _ = exec.CommandContext(context.WithoutCancel(s.ctx), "kubectl", "delete", "deployment", secondaryDeploymentName, "-n", operatorNamespace).CombinedOutput()
 }
 
 func (s *CAPIMultiInstanceWatchSelectorSuite) applySecondaryControllerDeployment(ctx context.Context, watchSelectorArg *string) error {
@@ -403,15 +402,15 @@ func (s *CAPIMultiInstanceWatchSelectorSuite) getDeploymentPodName(ctx context.C
 }
 
 func (s *CAPIMultiInstanceWatchSelectorSuite) annotateControlPlane(key, value string) error {
-	out, err := exec.Command("kubectl", "annotate", "--overwrite", "-n", testResourceNamespace, "k0smotroncontrolplane/"+testControlPlaneName, key+"="+value).CombinedOutput()
+	out, err := exec.CommandContext(s.ctx, "kubectl", "annotate", "--overwrite", "-n", testResourceNamespace, "k0smotroncontrolplane/"+testControlPlaneName, key+"="+value).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("annotate K0smotronControlPlane: %s", string(out))
 	}
 	return nil
 }
 
-func (s *CAPIMultiInstanceWatchSelectorSuite) getK0smotronControlPlaneReconcileCounter(ctx context.Context, namespace, podName string) (float64, error) {
-	fw, err := util.GetPortForwarderWithPorts(s.restConfig, podName, namespace, 0, 8080)
+func (s *CAPIMultiInstanceWatchSelectorSuite) getK0smotronControlPlaneReconcileCounter(ctx context.Context, podName string) (float64, error) {
+	fw, err := util.GetPortForwarderWithPorts(s.restConfig, podName, operatorNamespace, 0, 8080)
 	if err != nil {
 		return 0, fmt.Errorf("get port forwarder: %w", err)
 	}
@@ -426,8 +425,10 @@ func (s *CAPIMultiInstanceWatchSelectorSuite) getK0smotronControlPlaneReconcileC
 	}
 
 	var body io.ReadCloser
+	// The body is read after the poll returns, which cancels the context it hands the
+	// callback, so the request uses this function's context instead.
 	err = wait.PollUntilContextTimeout(ctx, 500*time.Millisecond, 10*time.Second, true, func(_ context.Context) (bool, error) {
-		body, err = fetchMetricsBody(localPort)
+		body, err = fetchMetricsBody(ctx, localPort)
 		if err != nil {
 			return false, nil
 		}
@@ -436,23 +437,13 @@ func (s *CAPIMultiInstanceWatchSelectorSuite) getK0smotronControlPlaneReconcileC
 	if err != nil {
 		return 0, fmt.Errorf("fetch metrics: %w", err)
 	}
-	defer body.Close()
+	defer func() { _ = body.Close() }()
 
 	return parseReconcileCounter(body, controlPlaneMetricLabel)
 }
 
-func getFreeLocalPort() (int, error) {
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		return 0, err
-	}
-	defer listener.Close()
-
-	return listener.Addr().(*net.TCPAddr).Port, nil
-}
-
-func fetchMetricsBody(localPort int) (io.ReadCloser, error) {
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://127.0.0.1:%d/metrics", localPort), nil)
+func fetchMetricsBody(ctx context.Context, localPort int) (io.ReadCloser, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("http://127.0.0.1:%d/metrics", localPort), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -461,7 +452,7 @@ func fetchMetricsBody(localPort int) (io.ReadCloser, error) {
 		return nil, err
 	}
 	if resp.StatusCode != http.StatusOK {
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		return nil, fmt.Errorf("unexpected metrics status code %d", resp.StatusCode)
 	}
 	return resp.Body, nil

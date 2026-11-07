@@ -71,9 +71,9 @@ func (s *CAPIDevMachineTemplateUpdateRecreate) SetupSuite() {
 
 	tmpDir := s.T().TempDir()
 	s.clusterYamlsPath = tmpDir + "/cluster.yaml"
-	s.Require().NoError(os.WriteFile(s.clusterYamlsPath, []byte(dockerClusterYaml), 0644))
+	s.Require().NoError(os.WriteFile(s.clusterYamlsPath, []byte(dockerClusterYaml), 0o600))
 	s.clusterYamlsUpdatePath = tmpDir + "/update.yaml"
-	s.Require().NoError(os.WriteFile(s.clusterYamlsUpdatePath, []byte(controlPlaneUpdate), 0644))
+	s.Require().NoError(os.WriteFile(s.clusterYamlsUpdatePath, []byte(controlPlaneUpdate), 0o600))
 
 	s.ctx, _ = util.NewSuiteContext(s.T())
 }
@@ -91,15 +91,15 @@ func (s *CAPIDevMachineTemplateUpdateRecreate) TestCAPIControlPlaneDockerDownSca
 			return
 		}
 		s.T().Log("Deleting cluster objects")
-		s.Require().NoError(util.DeleteCluster("docker-test"))
+		s.Require().NoError(util.DeleteCluster(context.WithoutCancel(s.ctx), "docker-test"))
 	}()
 	s.T().Log("cluster objects applied, waiting for cluster to be ready")
 
 	var localPort int
-	// nolint:staticcheck
-	err := wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(_ context.Context) (bool, error) {
+	//nolint:staticcheck // Deprecated, but PollUntilContextCancel returns a different error on timeout.
+	err := wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
 		var portErr error
-		localPort, portErr = getLBPort("docker-test-lb")
+		localPort, portErr = getLBPort(ctx, "docker-test-lb")
 		if portErr != nil {
 			s.T().Logf("Waiting for load balancer port: %v", portErr)
 			return false, nil
@@ -112,21 +112,21 @@ func (s *CAPIDevMachineTemplateUpdateRecreate) TestCAPIControlPlaneDockerDownSca
 	kmcKC, err := util.GetKMCClientSet(s.ctx, s.client, "docker-test", "default", localPort)
 	s.Require().NoError(err)
 
-	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(_ context.Context) (bool, error) {
+	//nolint:staticcheck // Deprecated, but PollUntilContextCancel returns a different error on timeout.
+	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
 		b, _ := s.client.RESTClient().
 			Get().
 			AbsPath("/healthz").
-			DoRaw(context.Background())
+			DoRaw(ctx)
 
 		return string(b) == "ok", nil
 	})
 	s.Require().NoError(err)
 
 	var nodeIDs []string
-	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(_ context.Context) (bool, error) {
+	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
 		var err error
-		nodeIDs, err = util.GetControlPlaneNodesIDs("docker-test-")
+		nodeIDs, err = util.GetControlPlaneNodesIDs(ctx, "docker-test-")
 
 		if err != nil {
 			return false, nil
@@ -147,7 +147,7 @@ func (s *CAPIDevMachineTemplateUpdateRecreate) TestCAPIControlPlaneDockerDownSca
 		}
 
 		for _, m := range machines {
-			output, err := exec.Command("docker", "exec", m.GetName(), "k0s", "status").Output()
+			output, err := exec.CommandContext(ctx, "docker", "exec", m.GetName(), "k0s", "status").Output()
 			if err != nil {
 				return false, nil
 			}
@@ -167,12 +167,12 @@ func (s *CAPIDevMachineTemplateUpdateRecreate) TestCAPIControlPlaneDockerDownSca
 	s.T().Log("updating cluster objects")
 	s.updateClusterObjects()
 
-	err = wait.PollUntilContextCancel(s.ctx, 100*time.Millisecond, true, func(_ context.Context) (bool, error) {
+	err = wait.PollUntilContextCancel(s.ctx, 100*time.Millisecond, true, func(ctx context.Context) (bool, error) {
 		var obj unstructured.UnstructuredList
 		err := s.client.RESTClient().
 			Get().
 			AbsPath("/apis/cluster.x-k8s.io/v1beta1/namespaces/default/machines").
-			Do(s.ctx).
+			Do(ctx).
 			Into(&obj)
 		if err != nil {
 			return false, nil
@@ -185,7 +185,7 @@ func (s *CAPIDevMachineTemplateUpdateRecreate) TestCAPIControlPlaneDockerDownSca
 
 			v, _, err := unstructured.NestedString(item.Object, "spec", "version")
 			if err != nil {
-				return false, nil
+				return false, err
 			}
 			if v != "v1.31.2+k0s.0" {
 				return false, nil
@@ -199,18 +199,18 @@ func (s *CAPIDevMachineTemplateUpdateRecreate) TestCAPIControlPlaneDockerDownSca
 
 func (s *CAPIDevMachineTemplateUpdateRecreate) applyClusterObjects() {
 	// Exec via kubectl
-	out, err := exec.Command("kubectl", "apply", "-f", s.clusterYamlsPath).CombinedOutput()
+	out, err := exec.CommandContext(s.ctx, "kubectl", "apply", "-f", s.clusterYamlsPath).CombinedOutput()
 	s.Require().NoError(err, "failed to apply cluster objects: %s", string(out))
 }
 
 func (s *CAPIDevMachineTemplateUpdateRecreate) updateClusterObjects() {
 	// Exec via kubectl
-	out, err := exec.Command("kubectl", "apply", "-f", s.clusterYamlsUpdatePath).CombinedOutput()
+	out, err := exec.CommandContext(s.ctx, "kubectl", "apply", "-f", s.clusterYamlsUpdatePath).CombinedOutput()
 	s.Require().NoError(err, "failed to update cluster objects: %s", string(out))
 }
 
-func getLBPort(name string) (int, error) {
-	b, err := exec.Command("docker", "inspect", name, "--format", "{{json .NetworkSettings.Ports}}").Output()
+func getLBPort(ctx context.Context, name string) (int, error) {
+	b, err := exec.CommandContext(ctx, "docker", "inspect", name, "--format", "{{json .NetworkSettings.Ports}}").Output()
 	if err != nil {
 		return 0, fmt.Errorf("failed to get inspect info from container %s: %w", name, err)
 	}

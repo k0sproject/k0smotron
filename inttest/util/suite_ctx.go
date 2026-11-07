@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-//nolint:revive
 package util
 
 import (
@@ -30,6 +29,8 @@ import (
 
 // NewSuiteContext creates a context for the test suite that is aware of OS signals and test deadlines.
 func NewSuiteContext(t *testing.T) (context.Context, context.CancelCauseFunc) {
+	t.Helper()
+
 	signalCtx, cancel := signalAwareCtx(context.Background())
 
 	// We need to reserve some time to conduct a proper teardown of the suite before the test timeout kicks in.
@@ -45,9 +46,12 @@ func NewSuiteContext(t *testing.T) (context.Context, context.CancelCauseFunc) {
 	reservedTeardownDuration = time.Duration(math.Max(float64(20*time.Second), float64(reservedTeardownDuration)))
 	// Then construct the context accordingly.
 	deadlineCtx, subCancel := context.WithDeadline(signalCtx, deadline.Add(-reservedTeardownDuration))
-	_ = subCancel // Silence linter: the deadlined context is implicitly canceled when canceling the signal context
 
-	return deadlineCtx, cancel
+	// Canceling the signal context first passes the cause on to the deadlined one.
+	return deadlineCtx, func(cause error) {
+		cancel(cause)
+		subCancel()
+	}
 }
 
 func signalAwareCtx(parent context.Context) (context.Context, context.CancelCauseFunc) {

@@ -43,7 +43,7 @@ func (s *HostPathSuite) TestK0sGetsUp() {
 	s.Require().NoError(err)
 
 	err = s.WaitForNodeReady(s.WorkerNode(0), kc)
-	s.NoError(err)
+	s.Require().NoError(err)
 
 	// create folder for k0smotron persistent volume
 	ssh, err := s.SSH(s.Context(), s.WorkerNode(0))
