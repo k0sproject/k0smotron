@@ -21,12 +21,16 @@ import (
 	"crypto/md5"
 	"fmt"
 	"path/filepath"
+	"slices"
+	"time"
 
 	"github.com/go-logr/logr"
 
 	batchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -34,6 +38,9 @@ import (
 	infrastructure "github.com/k0sproject/k0smotron/v2/api/infrastructure/v1beta2"
 	"github.com/k0sproject/k0smotron/v2/internal/provisioner"
 )
+
+// jobPollInterval is how often the provisioning job is checked for completion.
+const jobPollInterval = 5 * time.Second
 
 var patchOpts []client.PatchOption = []client.PatchOption{
 	client.FieldOwner("k0smotron-operator"),
@@ -45,7 +52,7 @@ var patchOpts []client.PatchOption = []client.PatchOption{
 // remote machine and execute the bootstrap commands.
 type JobProvisioner struct {
 	client    client.Client
-	clientSet *kubernetes.Clientset
+	clientSet kubernetes.Interface
 
 	bootstrapData []byte
 	cloudInit     *provisioner.InputProvisionData
@@ -56,7 +63,7 @@ type JobProvisioner struct {
 }
 
 // Provision provisions the remote machine by creating a Kubernetes Job that executes the
-// bootstrap commands on the remote machine.
+// bootstrap commands on the remote machine, and waits for the Job to finish.
 func (p *JobProvisioner) Provision(ctx context.Context) error {
 	// Parse the bootstrap data
 
@@ -110,37 +117,45 @@ func (p *JobProvisioner) Provision(ctx context.Context) error {
 
 	job.Spec.Template.Spec.Containers[0].Args = []string{"/var/lib/bootstrap-data/k0smotron-entrypoint.sh"}
 
-	if err := p.client.Patch(context.Background(), secret, client.Apply, patchOpts...); err != nil {
+	if err := p.client.Patch(ctx, secret, client.Apply, patchOpts...); err != nil {
 		return fmt.Errorf("failed to create a secret: %w", err)
 	}
 
-	if err := p.client.Create(context.Background(), job, &client.CreateOptions{}); err != nil {
+	// The job may already exist if an earlier reconcile was interrupted while
+	// waiting for it, in which case keep waiting for that one.
+	jobs := p.clientSet.BatchV1().Jobs(job.Namespace)
+	if _, err := jobs.Create(ctx, job, metav1.CreateOptions{}); err != nil && !apierrors.IsAlreadyExists(err) {
 		return fmt.Errorf("failed to create job: %w", err)
 	}
 
-	watch, err := p.clientSet.BatchV1().Jobs(job.Namespace).Watch(ctx, metav1.ListOptions{
-		FieldSelector: fmt.Sprintf("metadata.name=%s", job.Name),
-	})
-	if err != nil {
-		return fmt.Errorf("failed to watch job: %w", err)
-	}
+	// The job runs the bootstrap, so the machine is provisioned only once the job has completed.
+	return wait.PollUntilContextCancel(ctx, jobPollInterval, true, func(ctx context.Context) (bool, error) {
+		j, err := jobs.Get(ctx, job.Name, metav1.GetOptions{})
+		if err != nil {
+			return false, fmt.Errorf("failed to get job: %w", err)
+		}
+		// A job left behind by a deleted RemoteMachine with the same name says nothing about this one.
+		owned := slices.ContainsFunc(j.OwnerReferences, func(ref metav1.OwnerReference) bool {
+			return ref.UID == p.remoteMachine.GetUID()
+		})
+		if !owned {
+			return false, fmt.Errorf("job %s/%s is not owned by this RemoteMachine", j.Namespace, j.Name)
+		}
 
-	go func() {
-		for event := range watch.ResultChan() {
-			j, ok := event.Object.(*batchv1.Job)
-			if !ok {
+		for _, c := range j.Status.Conditions {
+			if c.Status != v1.ConditionTrue {
 				continue
 			}
-			for _, c := range j.Status.Conditions {
-				if c.Type == batchv1.JobComplete {
-					// TODO: update machine status
-					break
-				}
+			switch c.Type {
+			case batchv1.JobComplete:
+				return true, nil
+			case batchv1.JobFailed:
+				return false, fmt.Errorf("job %s/%s failed: %s: %s", j.Namespace, j.Name, c.Reason, c.Message)
 			}
 		}
-	}()
 
-	return nil
+		return false, nil
+	})
 }
 
 func (p *JobProvisioner) extractCloudInit(cloudInit *provisioner.InputProvisionData) (volume v1.Volume, volumeMounts []v1.VolumeMount, secretData map[string][]byte, err error) {
