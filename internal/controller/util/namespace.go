@@ -24,12 +24,12 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 // EnsureNamespaceExists ensures that a namespace exists in the remote cluster.
 // It first checks if the namespace exists by calling Get. If the namespace is not found,
-// it creates the namespace. If Get returns Forbidden, it returns an error as we cannot
-// verify the namespace existence or create it.
+// it creates the namespace. If Get returns Forbidden, the namespace is assumed to exist.
 func EnsureNamespaceExists(ctx context.Context, c client.Client, namespace string) error {
 	ns := &corev1.Namespace{}
 	key := client.ObjectKey{Name: namespace}
@@ -59,8 +59,10 @@ func EnsureNamespaceExists(ctx context.Context, c client.Client, namespace strin
 	}
 
 	if apierrors.IsForbidden(err) {
-		// Cannot verify namespace existence due to insufficient permissions
-		return fmt.Errorf("cannot verify or create namespace %s: insufficient permissions to get namespaces: %w", namespace, err)
+		// The identity may be scoped to existing namespaces only. Assume the namespace
+		// exists; if it does not, the next namespaced create fails with a clear error.
+		log.FromContext(ctx).Info("Cannot get namespace in remote cluster, assuming it exists", "namespace", namespace, "reason", err.Error())
+		return nil
 	}
 
 	// Other errors are returned as-is

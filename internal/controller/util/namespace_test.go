@@ -70,13 +70,16 @@ func TestEnsureNamespaceExists(t *testing.T) {
 			wantErr: "failed to create namespace foo",
 		},
 		{
-			name: "get forbidden",
+			name: "get forbidden, assumed to exist",
 			interceptor: interceptor.Funcs{
 				Get: func(_ context.Context, _ client.WithWatch, _ client.ObjectKey, _ client.Object, _ ...client.GetOption) error {
 					return apierrors.NewForbidden(gr, "foo", context.DeadlineExceeded)
 				},
+				Create: func(_ context.Context, _ client.WithWatch, _ client.Object, _ ...client.CreateOption) error {
+					return apierrors.NewForbidden(gr, "foo", context.DeadlineExceeded)
+				},
 			},
-			wantErr: "insufficient permissions",
+			skipGetCheck: true,
 		},
 		{
 			name: "get fails with other error",
