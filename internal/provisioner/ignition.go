@@ -24,9 +24,9 @@ import (
 	"strings"
 	"text/template"
 
-	butaneutil "github.com/coreos/butane/base/util"
-	"github.com/coreos/butane/config"
-	bcommon "github.com/coreos/butane/config/common"
+	butaneutil "github.com/coreos/ignition/v2/butane/base/util"
+	"github.com/coreos/ignition/v2/butane/config"
+	bcommon "github.com/coreos/ignition/v2/butane/config/common"
 	"github.com/coreos/vcontext/report"
 	"gopkg.in/yaml.v3"
 )
