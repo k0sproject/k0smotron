@@ -178,6 +178,7 @@ generate-e2e-templates-main: $(KUSTOMIZE)
 	$(KUSTOMIZE) build $(DOCKER_TEMPLATES)/main/cluster-template-recreate --load-restrictor LoadRestrictionsNone > $(DOCKER_TEMPLATES)/main/cluster-template-recreate.yaml
 	$(KUSTOMIZE) build $(DOCKER_TEMPLATES)/main/cluster-template-recreatedeletefirst --load-restrictor LoadRestrictionsNone > $(DOCKER_TEMPLATES)/main/cluster-template-recreatedeletefirst.yaml
 	$(KUSTOMIZE) build $(DOCKER_TEMPLATES)/main/cluster-template-inplacecapi --load-restrictor LoadRestrictionsNone > $(DOCKER_TEMPLATES)/main/cluster-template-inplacecapi.yaml
+	$(KUSTOMIZE) build $(DOCKER_TEMPLATES)/main/cluster-template-move --load-restrictor LoadRestrictionsNone > $(DOCKER_TEMPLATES)/main/cluster-template-move.yaml
 
 AWS_TEMPLATES := e2e/data/infrastructure-aws
 
