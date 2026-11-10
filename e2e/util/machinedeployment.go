@@ -52,7 +52,14 @@ func DiscoveryAndWaitForMachineDeploymentReady(ctx context.Context, input capifr
 		if err != nil {
 			return false, fmt.Errorf("failed to list machines for MachineDeployment %s: %w", klog.KObj(machineDeployment), err)
 		}
-		for _, m := range mdMachines.Items {
+
+		machines := mdMachines.Items
+
+		if len(machines) != int(*machineDeployment.Spec.Replicas) {
+			return false, nil
+		}
+
+		for _, m := range machines {
 			if m.Status.Phase != string(clusterv1.MachinePhaseRunning) {
 				return false, nil
 			}
