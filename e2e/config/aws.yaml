@@ -179,3 +179,6 @@ intervals:
   windows/wait-cluster: ["10m", "10s"]
   windows/wait-controllers: ["10m", "10s"]
   windows/wait-machines: ["15m", "10s"]
+  clusterctl-move/wait-cluster: ["10m", "10s"]
+  clusterctl-move/wait-control-plane: ["15m", "10s"]
+  clusterctl-move/wait-delete-cluster: ["10m", "10s"]
