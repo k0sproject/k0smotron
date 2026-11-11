@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"maps"
 	"sort"
+	"strconv"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -307,7 +308,7 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 		Reason: infrastructure.RemoteMachineBootstrapExecSucceededReason,
 	})
 
-	rm.Spec.ProviderID = fmt.Sprintf("remote-machine://%s:%d", rm.Spec.Address, rm.Spec.Port) //nolint:nosprintfhostport // Persisted on Machines and Nodes, the format must not change.
+	rm.Spec.ProviderID = "remote-machine://" + util.JoinHostPort(rm.Spec.Address, strconv.Itoa(rm.Spec.Port))
 
 	m := machine.DeepCopy()
 	for l := range rm.Labels {

@@ -26,6 +26,7 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
+	"net"
 	"os"
 	"os/exec"
 	"strconv"
@@ -178,7 +179,7 @@ func (s *RemoteMachineTemplateUpdateSuite) TestCAPIRemoteMachine() {
 			return false, err
 		}
 
-		expectedProviderID := fmt.Sprintf("remote-machine://%s:22", s.getWorkerIP(ctx)) //nolint:nosprintfhostport // Matches the providerID format the controller writes.
+		expectedProviderID := "remote-machine://" + net.JoinHostPort(s.getWorkerIP(ctx), "22")
 		fmt.Println(expectedProviderID, rm.Spec.ProviderID)
 		return rm.Status.Initialization.Provisioned != nil && *rm.Status.Initialization.Provisioned && expectedProviderID == rm.Spec.ProviderID, nil
 	})

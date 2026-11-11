@@ -26,6 +26,7 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
+	"net"
 	"os"
 	"os/exec"
 	"strconv"
@@ -152,7 +153,7 @@ func (s *RemoteMachineTemplateSuite) TestCAPIRemoteMachine() {
 	s.Require().NoError(err)
 
 	s.T().Log("verify the RemoteMachine is at expected state")
-	expectedProviderID := fmt.Sprintf("remote-machine://%s:22", s.getWorkerIP()) //nolint:nosprintfhostport // Matches the providerID format the controller writes.
+	expectedProviderID := "remote-machine://" + net.JoinHostPort(s.getWorkerIP(), "22")
 	controlPlaneMachineName := ""
 	//nolint:staticcheck // Deprecated, but PollUntilContextCancel returns a different error on timeout.
 	err = wait.PollImmediateUntilWithContext(ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
