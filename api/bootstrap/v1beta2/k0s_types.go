@@ -560,15 +560,24 @@ func ProvisionerWarnings(spec ProvisionerSpec, pathPrefix *field.Path) admission
 }
 
 // ValidateProvisioner rejects a provisioner whose own fields disagree, which the
-// schema cannot catch because each reference is optional on its own. The checks
-// mirror the ones a file's contentFrom already gets.
+// schema cannot catch because each reference is optional on its own, or whose
+// ignition config cannot be rendered.
 func ValidateProvisioner(spec ProvisionerSpec, pathPrefix *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 
-	ref := spec.CustomUserDataRef
+	allErrs = append(allErrs, validateCustomUserDataRef(spec.CustomUserDataRef, pathPrefix)...)
+	allErrs = append(allErrs, validateIgnition(spec, pathPrefix)...)
+
+	return allErrs
+}
+
+// validateCustomUserDataRef mirrors the checks a file's contentFrom already gets.
+func validateCustomUserDataRef(ref *ContentSource, pathPrefix *field.Path) field.ErrorList {
 	if ref == nil {
 		return nil
 	}
+
+	var allErrs field.ErrorList
 
 	refPath := pathPrefix.Child("provisioner", "customUserDataRef")
 
@@ -590,6 +599,42 @@ func ValidateProvisioner(spec ProvisionerSpec, pathPrefix *field.Path) field.Err
 	}
 
 	return allErrs
+}
+
+// validateIgnition renders the ignition config the way the bootstrap controllers do,
+// so a variant and version pair Butane has no spec for, or an additional config it
+// refuses, is rejected when applied rather than once a Machine needs its bootstrap
+// data. A config taken from additionalConfigFrom is only known at render time.
+func validateIgnition(spec ProvisionerSpec, pathPrefix *field.Path) field.ErrorList {
+	if spec.Type != provisioner.IgnitionProvisioningFormat {
+		return nil
+	}
+
+	ignPath := pathPrefix.Child("provisioner", "ignition")
+	if spec.Ignition == nil {
+		return field.ErrorList{field.Required(ignPath, ignitionRequiredMsg)}
+	}
+
+	// The base config first, so a bad version is not blamed on the additional config.
+	ign := &provisioner.IgnitionProvisioner{
+		Variant: spec.Ignition.Variant,
+		Version: spec.Ignition.Version,
+	}
+	if _, err := ign.ToProvisionData(&provisioner.InputProvisionData{}); err != nil {
+		return field.ErrorList{field.Invalid(ignPath.Child("version"), spec.Ignition.Version, err.Error())}
+	}
+
+	if spec.Ignition.AdditionalConfig == "" {
+		return nil
+	}
+
+	ign.AdditionalConfig = spec.Ignition.AdditionalConfig
+	if _, err := ign.ToProvisionData(&provisioner.InputProvisionData{}); err != nil {
+		// The config can be long and is already in the object, so leave it out of the message.
+		return field.ErrorList{field.Invalid(ignPath.Child("additionalConfig"), field.OmitValueType{}, err.Error())}
+	}
+
+	return nil
 }
 
 // RatchetErrors drops the errors the old spec already produced, so a rule added after
@@ -653,7 +698,6 @@ func ValidateFileOwners(files []File, spec ProvisionerSpec, pathPrefix *field.Pa
 func (cs *K0sWorkerConfigSpec) Validate(pathPrefix *field.Path) (admission.Warnings, field.ErrorList) {
 	var allErrs field.ErrorList
 
-	// TODO: validate Ignition
 	warnings, versionErrs := cs.validateVersion(pathPrefix)
 	allErrs = append(allErrs, versionErrs...)
 	allErrs = append(allErrs, ValidateFiles(cs.Files, cs.Provisioner, pathPrefix)...)

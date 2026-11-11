@@ -343,6 +343,7 @@ func TestProvisionerWarningsForIgnition(t *testing.T) {
 			Spec: K0sWorkerConfigSpec{
 				Provisioner: ProvisionerSpec{
 					Type:              provisioner.IgnitionProvisioningFormat,
+					Ignition:          &IgnitionSpec{Variant: "fcos", Version: "1.4.0"},
 					CustomUserDataRef: ref,
 				},
 			},
@@ -424,6 +425,7 @@ func TestValidateProvisionerRejectsConflictingUserDataRef(t *testing.T) {
 	t.Run("the conflict is rejected for ignition too", func(t *testing.T) {
 		errs := ValidateProvisioner(ProvisionerSpec{
 			Type:              provisioner.IgnitionProvisioningFormat,
+			Ignition:          &IgnitionSpec{Variant: "fcos", Version: "1.4.0"},
 			CustomUserDataRef: &ContentSource{SecretRef: secretRef, ConfigMapRef: configMapRef},
 		}, field.NewPath("spec"))
 
@@ -501,4 +503,145 @@ func TestValidateProvisionerMatchesTheFileChecks(t *testing.T) {
 			require.Contains(t, errs[0].Field, "spec.provisioner.customUserDataRef")
 		})
 	}
+}
+
+// TestValidateProvisionerChecksIgnition covers the ignition configs the schema admits
+// but Butane cannot render, which otherwise fail every bootstrap reconcile.
+func TestValidateProvisionerChecksIgnition(t *testing.T) {
+	ignition := func(ign *IgnitionSpec) ProvisionerSpec {
+		return ProvisionerSpec{Type: provisioner.IgnitionProvisioningFormat, Ignition: ign}
+	}
+
+	for _, tc := range []struct {
+		name      string
+		spec      ProvisionerSpec
+		wantField string
+		wantErr   string
+	}{
+		{
+			name: "a supported variant and version is accepted",
+			spec: ignition(&IgnitionSpec{Variant: "fcos", Version: "1.4.0"}),
+		},
+		{
+			name: "a matching additional config is accepted",
+			spec: ignition(&IgnitionSpec{
+				Variant:          "flatcar",
+				Version:          "1.1.0",
+				AdditionalConfig: "variant: flatcar\nversion: 1.1.0\n",
+			}),
+		},
+		{
+			name: "an additional config from a source is left to the render",
+			spec: ignition(&IgnitionSpec{
+				Variant:              "fcos",
+				Version:              "1.4.0",
+				AdditionalConfigFrom: &ContentSource{SecretRef: &ContentSourceRef{Name: "extra", Key: "butane"}},
+			}),
+		},
+		{
+			name: "an ignition block is not required by another provisioner",
+			spec: ProvisionerSpec{Type: provisioner.CloudInitProvisioningFormat},
+		},
+		{
+			name:      "a missing ignition block is rejected",
+			spec:      ignition(nil),
+			wantField: "spec.provisioner.ignition",
+			wantErr:   ignitionRequiredMsg,
+		},
+		{
+			name:      "a version Butane has no spec for is rejected",
+			spec:      ignition(&IgnitionSpec{Variant: "flatcar", Version: "1.9.0"}),
+			wantField: "spec.provisioner.ignition.version",
+			wantErr:   "No translator exists for variant flatcar with version 1.9.0",
+		},
+		{
+			name:      "an empty version is rejected",
+			spec:      ignition(&IgnitionSpec{Variant: "fcos"}),
+			wantField: "spec.provisioner.ignition.version",
+			wantErr:   "must be a valid semver",
+		},
+		{
+			name: "an additional config that is not YAML is rejected",
+			spec: ignition(&IgnitionSpec{
+				Variant:          "fcos",
+				Version:          "1.4.0",
+				AdditionalConfig: "storage: [\n",
+			}),
+			wantField: "spec.provisioner.ignition.additionalConfig",
+			wantErr:   "error translating additional config",
+		},
+		{
+			name: "an additional config for another ignition version is rejected",
+			spec: ignition(&IgnitionSpec{
+				Variant:          "fcos",
+				Version:          "1.4.0",
+				AdditionalConfig: "variant: fcos\nversion: 1.5.0\n",
+			}),
+			wantField: "spec.provisioner.ignition.additionalConfig",
+			wantErr:   "mismatched Ignition versions",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			errs := ValidateProvisioner(tc.spec, field.NewPath("spec"))
+
+			if tc.wantErr == "" {
+				require.Empty(t, errs)
+
+				return
+			}
+
+			require.Len(t, errs, 1)
+			require.Equal(t, tc.wantField, errs[0].Field)
+			require.Contains(t, errs[0].Detail, tc.wantErr)
+		})
+	}
+
+	// The config is part of the object already and can run to many lines, so the
+	// message carries only Butane's reason.
+	t.Run("the additional config is left out of the message", func(t *testing.T) {
+		errs := ValidateProvisioner(ignition(&IgnitionSpec{
+			Variant:          "fcos",
+			Version:          "1.4.0",
+			AdditionalConfig: "storage: [\n",
+		}), field.NewPath("spec"))
+
+		require.Len(t, errs, 1)
+		require.NotContains(t, errs[0].Error(), "storage: [")
+	})
+}
+
+// TestWorkerConfigRatchetsIgnitionErrors covers a worker config admitted before the
+// ignition checks existed staying updatable.
+func TestWorkerConfigRatchetsIgnitionErrors(t *testing.T) {
+	cfg := func(version string) *K0sWorkerConfig {
+		return &K0sWorkerConfig{
+			Spec: K0sWorkerConfigSpec{
+				Version: "v1.30.0+k0s.0",
+				Provisioner: ProvisionerSpec{
+					Type:     provisioner.IgnitionProvisioningFormat,
+					Ignition: &IgnitionSpec{Variant: "flatcar", Version: version},
+				},
+			},
+		}
+	}
+
+	v := &K0sWorkerConfigValidator{}
+
+	t.Run("create is rejected", func(t *testing.T) {
+		_, err := v.ValidateCreate(t.Context(), cfg("1.9.0"))
+
+		require.ErrorContains(t, err, "spec.provisioner.ignition.version")
+	})
+
+	t.Run("introducing the version on update is rejected", func(t *testing.T) {
+		_, err := v.ValidateUpdate(t.Context(), cfg("1.1.0"), cfg("1.9.0"))
+
+		require.ErrorContains(t, err, "spec.provisioner.ignition.version")
+	})
+
+	t.Run("an update that inherits the version is allowed", func(t *testing.T) {
+		_, err := v.ValidateUpdate(t.Context(), cfg("1.9.0"), cfg("1.9.0"))
+
+		require.NoError(t, err)
+	})
 }

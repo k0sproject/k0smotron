@@ -215,7 +215,8 @@ func TestValidateK0sControlPlaneWarnsOnIgnoredProvisionerFields(t *testing.T) {
 			Version: "v1.30.0+k0s.0",
 			K0sConfigSpec: bootstrapv1.K0sConfigSpec{
 				Provisioner: bootstrapv1.ProvisionerSpec{
-					Type: provisioner.IgnitionProvisioningFormat,
+					Type:     provisioner.IgnitionProvisioningFormat,
+					Ignition: &bootstrapv1.IgnitionSpec{Variant: "fcos", Version: "1.4.0"},
 					CustomUserDataRef: &bootstrapv1.ContentSource{
 						SecretRef: &bootstrapv1.ContentSourceRef{Name: "extra", Key: "userdata"},
 					},
@@ -241,7 +242,8 @@ func TestValidateK0sControlPlaneWarnsOnUpdate(t *testing.T) {
 				Version: version,
 				K0sConfigSpec: bootstrapv1.K0sConfigSpec{
 					Provisioner: bootstrapv1.ProvisionerSpec{
-						Type: provisioner.IgnitionProvisioningFormat,
+						Type:     provisioner.IgnitionProvisioningFormat,
+						Ignition: &bootstrapv1.IgnitionSpec{Variant: "fcos", Version: "1.4.0"},
 						CustomUserDataRef: &bootstrapv1.ContentSource{
 							SecretRef: &bootstrapv1.ContentSourceRef{Name: "extra", Key: "userdata"},
 						},
@@ -314,6 +316,59 @@ func TestValidateK0sControlPlaneRejectsConflictingUserDataRef(t *testing.T) {
 
 	t.Run("fixing the conflict on update is allowed", func(t *testing.T) {
 		_, err := v.ValidateUpdate(t.Context(), kcp(conflicting), kcp(clean))
+
+		require.NoError(t, err)
+	})
+}
+
+// TestValidateK0sControlPlaneChecksIgnition covers the control plane reaching the
+// ignition checks, since K0sControllerConfig has no webhook of its own.
+func TestValidateK0sControlPlaneChecksIgnition(t *testing.T) {
+	kcp := func(ign *bootstrapv1.IgnitionSpec) *K0sControlPlane {
+		return &K0sControlPlane{
+			Spec: K0sControlPlaneSpec{
+				Version: "v1.30.0+k0s.0",
+				K0sConfigSpec: bootstrapv1.K0sConfigSpec{
+					Provisioner: bootstrapv1.ProvisionerSpec{
+						Type:     provisioner.IgnitionProvisioningFormat,
+						Ignition: ign,
+					},
+				},
+			},
+		}
+	}
+	valid := &bootstrapv1.IgnitionSpec{Variant: "flatcar", Version: "1.1.0"}
+	unsupported := &bootstrapv1.IgnitionSpec{Variant: "flatcar", Version: "1.9.0"}
+
+	v := &K0sControlPlaneValidator{}
+
+	t.Run("a supported config is accepted", func(t *testing.T) {
+		_, err := v.ValidateCreate(t.Context(), kcp(valid))
+
+		require.NoError(t, err)
+	})
+
+	t.Run("a missing ignition block is rejected", func(t *testing.T) {
+		_, err := v.ValidateCreate(t.Context(), kcp(nil))
+
+		require.ErrorContains(t, err, "spec.k0sConfigSpec.provisioner.ignition: Required value")
+	})
+
+	t.Run("an unsupported version is rejected", func(t *testing.T) {
+		_, err := v.ValidateCreate(t.Context(), kcp(unsupported))
+
+		require.ErrorContains(t, err, "spec.k0sConfigSpec.provisioner.ignition.version",
+			"the path has to name the control plane's own location for the field")
+	})
+
+	t.Run("introducing an unsupported version on update is rejected", func(t *testing.T) {
+		_, err := v.ValidateUpdate(t.Context(), kcp(valid), kcp(unsupported))
+
+		require.ErrorContains(t, err, "spec.k0sConfigSpec.provisioner.ignition.version")
+	})
+
+	t.Run("an update that inherits an unsupported version is allowed", func(t *testing.T) {
+		_, err := v.ValidateUpdate(t.Context(), kcp(unsupported), kcp(unsupported))
 
 		require.NoError(t, err)
 	})
