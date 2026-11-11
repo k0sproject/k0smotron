@@ -93,7 +93,7 @@ jobs:
           password: ${{ secrets.QUAY_PASSWORD }}
 
       - name: Build image and push to Docker Hub and GitHub image registry
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           build-args: |
             BUILD_IMG=golang:1.26.5
