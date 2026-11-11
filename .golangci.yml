@@ -1,7 +1,5 @@
 version: "2"
 run:
-  build-tags:
-    - hack
   modules-download-mode: readonly
   tests: true
   allow-parallel-runners: true

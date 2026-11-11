@@ -380,9 +380,9 @@ hack/lint/.golangci-lint.stamp: hack/lint/Dockerfile Makefile.variables
 	  .
 	touch -- '$@'
 
-# Build tag sets to lint with. Each set needs its own run: some files are
-# excluded by a tag (//go:build !envtest), so the sets cannot be combined.
-GO_LINT_BUILD_TAGS ?= hack hack,envtest hack,e2e hack,extension
+# Build tags to lint with, after a run without tags. Each needs its own run: some files
+# are excluded by a tag (//go:build !envtest), so the tags cannot be combined.
+GO_LINT_BUILD_TAGS ?= envtest e2e extension
 # Set to stop at the first tag set with findings instead of reporting all of them (CI does).
 GO_LINT_FAIL_FAST ?=
 # Host caches the lint container reuses, so unchanged packages are neither rebuilt nor
@@ -409,8 +409,8 @@ lint: hack/lint/.golangci-lint.stamp
 	  -w /go/src/github.com/k0sproject/k0smotron \
 	  k0smotron.golangci-lint sh -c '\
 	    rc=0; \
-	    for tags in $(GO_LINT_BUILD_TAGS); do \
-	      echo "golangci-lint: build tags $$tags"; \
+	    for tags in "" $(GO_LINT_BUILD_TAGS); do \
+	      echo "golangci-lint: build tags $${tags:-none}"; \
 	      golangci-lint run --config .golangci.yml --build-tags "$$tags" $(GOLANGCI_LINT_FLAGS) $(GO_LINT_DIRS) || { rc=1; [ -z "$(GO_LINT_FAIL_FAST)" ] || break; }; \
 	    done; \
 	    exit $$rc'
