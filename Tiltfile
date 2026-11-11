@@ -35,11 +35,11 @@ local_resource(
 
 dockerfile_contents = """
 # Tilt image
-FROM golang:1.26.5 as tilt-helper
+FROM golang:1.27.3 as tilt-helper
 # Install delve. Note this should be kept in step with the Go release minor version.
-RUN go install github.com/go-delve/delve/cmd/dlv@v1.26
+RUN go install github.com/go-delve/delve/cmd/dlv@v1.27
 
-FROM golang:1.26.5 as tilt
+FROM golang:1.27.3 as tilt
 WORKDIR /
 COPY --from=tilt-helper /go/bin/dlv .
 COPY manager .
