@@ -108,16 +108,12 @@ func ignitionProvisioningSpec(t *testing.T) {
 	require.NoError(t, err)
 	fmt.Println("Control plane is initialized")
 
-	waitMachineInterval := util.GetInterval(e2eConfig, testName, "wait-machines")
-	err = util.WaitForWorkerMachine(ctx, util.WaitForWorkersMachineInput{
-		Lister:    bootstrapClusterProxy.GetClient(),
-		Namespace: namespace.Name,
-		// TODO: Once another higher-level resource is used to set machines, get configuration about resource replicas here.
-		ExpectedWorkers:          1,
-		ClusterName:              clusterName,
-		WaitForMachinesIntervals: waitMachineInterval,
+	md, err := util.DiscoveryAndWaitForMachineDeploymentReady(ctx, capiframework.DiscoveryAndWaitForMachineDeploymentsInput{
+		Lister:  bootstrapClusterProxy.GetClient(),
+		Cluster: cluster,
 	})
 	require.NoError(t, err)
+	require.NotNil(t, md)
 	fmt.Println("Worker nodes are ready!")
 	fmt.Println("Cluster is ready!")
 }

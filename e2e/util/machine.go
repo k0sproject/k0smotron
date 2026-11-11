@@ -24,6 +24,8 @@ import (
 	"reflect"
 	"time"
 
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/util/wait"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/test/framework"
@@ -148,46 +150,36 @@ type WaitForWorkersMachineInput struct {
 	WaitForMachinesIntervals Interval
 }
 
-// WaitForMachine waits for worker machine to join the cluster. Checks machine.spec has the proper providerId set.
+// WaitForWorkerMachine waits for the expected number of worker machines to have a ProviderID set.
 func WaitForWorkerMachine(ctx context.Context, input WaitForWorkersMachineInput) error {
-	inClustersNamespaceListOption := client.InNamespace(input.Namespace)
-	matchClusterGetOption := client.MatchingLabels{
-		clusterv1.ClusterNameLabel: input.ClusterName,
+	clusterReq, err := labels.NewRequirement(clusterv1.ClusterNameLabel, selection.Equals, []string{input.ClusterName})
+	if err != nil {
+		return fmt.Errorf("building cluster label requirement: %w", err)
 	}
+	notControlPlaneReq, err := labels.NewRequirement(clusterv1.MachineControlPlaneLabel, selection.DoesNotExist, nil)
+	if err != nil {
+		return fmt.Errorf("building worker label requirement: %w", err)
+	}
+	workerSelector := labels.NewSelector().Add(*clusterReq, *notControlPlaneReq)
 
 	machineList := &clusterv1.MachineList{}
 
-	// Waits for the desired worker machine to exist.
-	err := wait.PollUntilContextTimeout(ctx, input.WaitForMachinesIntervals.tick, input.WaitForMachinesIntervals.timeout, true, func(ctx context.Context) (done bool, err error) {
-		// Gets the worker machine
-		if err := input.Lister.List(ctx, machineList, inClustersNamespaceListOption, matchClusterGetOption); err != nil {
+	err = wait.PollUntilContextTimeout(ctx, input.WaitForMachinesIntervals.tick, input.WaitForMachinesIntervals.timeout, true, func(ctx context.Context) (bool, error) {
+		if err := input.Lister.List(ctx, machineList,
+			client.InNamespace(input.Namespace),
+			client.MatchingLabelsSelector{Selector: workerSelector},
+		); err != nil {
 			return false, err
 		}
 
 		currentWorkerMachines := 0
 		for _, m := range machineList.Items {
-			isWorker := true
-			for k, _ := range m.GetLabels() {
-				if k == clusterv1.MachineControlPlaneLabel {
-					isWorker = false
-					break
-				}
-			}
-
-			if isWorker {
-				mProviderId := m.Spec.ProviderID
-				if mProviderId == "" {
-					continue
-				}
-
+			if m.Spec.ProviderID != "" {
 				currentWorkerMachines++
 			}
 		}
-		if input.ExpectedWorkers != currentWorkerMachines {
-			return false, nil
-		}
 
-		return true, nil
+		return currentWorkerMachines == input.ExpectedWorkers, nil
 	})
 	if err != nil {
 		return fmt.Errorf("Failed to get the expected worker machine: %w", err)
