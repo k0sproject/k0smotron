@@ -93,3 +93,32 @@ func TestRewriteKubeconfigNames(t *testing.T) {
 		t.Fatalf("kubeconfig mismatch:\nGot:\n%s\nWant:\n%s", string(gotBytes), string(wantBytes))
 	}
 }
+
+// TestRewriteKubeconfigBracketsAnIPv6IngressHost covers a cluster exposed through
+// an ingress on an IPv6 address, where an unbracketed server URL is unusable.
+func TestRewriteKubeconfigBracketsAnIPv6IngressHost(t *testing.T) {
+	kmc := &v1beta2.Cluster{
+		ObjectMeta: metav1.ObjectMeta{Name: "wl1", Namespace: "default"},
+		Spec: v1beta2.ClusterSpec{
+			Ingress: &v1beta2.IngressSpec{APIHost: "2001:db8::10", Port: 443},
+		},
+	}
+
+	out, err := rewriteKubeconfigValues(sampleKubeconfig, kmc)
+	if err != nil {
+		t.Fatalf("rewriteKubeconfigValues returned error: %v", err)
+	}
+
+	cfg, err := clientcmd.Load([]byte(out))
+	if err != nil {
+		t.Fatalf("failed to load processed kubeconfig: %v", err)
+	}
+	cluster, ok := cfg.Clusters["wl1-k0s"]
+	if !ok {
+		t.Fatalf("cluster %q not found in processed kubeconfig", "wl1-k0s")
+	}
+	const want = "https://[2001:db8::10]:443"
+	if cluster.Server != want {
+		t.Fatalf("server mismatch: got %q, want %q", cluster.Server, want)
+	}
+}

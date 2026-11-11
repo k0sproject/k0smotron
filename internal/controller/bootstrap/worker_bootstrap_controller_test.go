@@ -19,16 +19,23 @@ limitations under the License.
 package bootstrap
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
+	"encoding/base64"
+	"io"
 	"testing"
 
 	bootstrapv2 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
+	km "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	kubeadmbootstrapv1 "sigs.k8s.io/cluster-api/api/bootstrap/kubeadm/v1beta2"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	bsutil "sigs.k8s.io/cluster-api/bootstrap/util"
+	"sigs.k8s.io/cluster-api/util/secret"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -325,4 +332,69 @@ func Test_clusterToWorkerBootstrapMapFunc(t *testing.T) {
 
 	got := r.clusterToWorkerBootstrapMapFunc(context.Background(), cluster)
 	require.Equal(t, []ctrl.Request{{NamespacedName: client.ObjectKey{Namespace: "default", Name: "worker-config-1"}}}, got)
+}
+
+// TestGetK0sTokenBracketsAnIPv6JoinHost covers a worker joining a control plane
+// exposed on an IPv6 address. Without brackets the join URL cannot be parsed and
+// the worker never joins.
+func TestGetK0sTokenBracketsAnIPv6JoinHost(t *testing.T) {
+	cluster := &clusterv1.Cluster{
+		ObjectMeta: metav1.ObjectMeta{Name: "cluster-1", Namespace: "default"},
+		Spec: clusterv1.ClusterSpec{
+			ControlPlaneEndpoint: clusterv1.APIEndpoint{Host: "2001:db8::10", Port: 6443},
+		},
+	}
+
+	clusterCerts := secret.NewCertificatesForInitialControlPlane(&kubeadmbootstrapv1.ClusterConfiguration{})
+	require.NoError(t, clusterCerts.Generate())
+	caSecret := clusterCerts.GetByPurpose(secret.ClusterCA).AsSecret(client.ObjectKeyFromObject(cluster), metav1.OwnerReference{})
+
+	for _, tc := range []struct {
+		name        string
+		ingressSpec *km.IngressSpec
+		want        string
+	}{
+		{
+			name: "control plane endpoint",
+			want: "https://[2001:db8::10]:6443",
+		},
+		{
+			name:        "ingress",
+			ingressSpec: &km.IngressSpec{APIHost: "2001:db8::20", Port: 443},
+			want:        "https://[2001:db8::20]:443",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			mgmtClient := fake.NewClientBuilder().WithObjects(caSecret.DeepCopy()).Build()
+			r := &Controller{
+				TokenTTL:              DefaultTokenTTL,
+				workloadClusterClient: fake.NewClientBuilder().Build(),
+			}
+			scope := &Scope{
+				Cluster:             cluster,
+				ingressSpec:         tc.ingressSpec,
+				client:              mgmtClient,
+				secretCachingClient: mgmtClient,
+			}
+
+			token, err := r.getK0sToken(context.Background(), scope)
+			require.NoError(t, err)
+
+			require.Contains(t, decodeJoinToken(t, token), "server: "+tc.want+"\n")
+		})
+	}
+}
+
+// decodeJoinToken returns the kubeconfig a k0s join token carries.
+func decodeJoinToken(t *testing.T, token string) string {
+	t.Helper()
+
+	compressed, err := base64.StdEncoding.DecodeString(token)
+	require.NoError(t, err)
+	gz, err := gzip.NewReader(bytes.NewReader(compressed))
+	require.NoError(t, err)
+	kubeconfig, err := io.ReadAll(gz)
+	require.NoError(t, err)
+
+	return string(kubeconfig)
 }

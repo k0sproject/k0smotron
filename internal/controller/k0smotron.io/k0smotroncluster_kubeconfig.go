@@ -38,6 +38,7 @@ import (
 	km "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
 	kcontrollerutil "github.com/k0sproject/k0smotron/v2/internal/controller/util"
 	"github.com/k0sproject/k0smotron/v2/internal/exec"
+	kutil "github.com/k0sproject/k0smotron/v2/internal/util"
 )
 
 func (scope *kmcScope) reconcileKubeConfigSecret(ctx context.Context, managementClusterClient client.Client, kmc *km.Cluster) error {
@@ -138,7 +139,7 @@ func rewriteKubeconfigValues(kubeconfigYAML string, kmc *km.Cluster) (string, er
 		return "", fmt.Errorf("cluster server is empty")
 	}
 	if kmc.Spec.Ingress != nil {
-		srcCluster.Server = fmt.Sprintf("https://%s:%d", kmc.Spec.Ingress.APIHost, kmc.Spec.Ingress.Port)
+		srcCluster.Server = kutil.HostPortURL("https", kmc.Spec.Ingress.APIHost, int(kmc.Spec.Ingress.Port))
 	}
 	if len(srcUser.ClientCertificateData) == 0 || len(srcUser.ClientKeyData) == 0 {
 		return "", fmt.Errorf("client certificate/key data not found in kubeconfig")

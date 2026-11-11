@@ -48,6 +48,7 @@ import (
 	km "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
 	"github.com/k0sproject/k0smotron/v2/internal/controller/util"
 	"github.com/k0sproject/k0smotron/v2/internal/exec"
+	kutil "github.com/k0sproject/k0smotron/v2/internal/util"
 )
 
 // joinTokenRequestFinalizer is the finalizer used by JoinTokenRequest to clean up resources.
@@ -320,7 +321,7 @@ func updateJoinTokenURL(token string, kmc km.Cluster) (string, error) {
 	}
 
 	for _, cluster := range cfg.Clusters {
-		cluster.Server = fmt.Sprintf("https://%s:%d", kmc.Spec.Ingress.APIHost, kmc.Spec.Ingress.Port)
+		cluster.Server = kutil.HostPortURL("https", kmc.Spec.Ingress.APIHost, int(kmc.Spec.Ingress.Port))
 	}
 
 	updatedData, err := clientcmd.Write(*cfg)

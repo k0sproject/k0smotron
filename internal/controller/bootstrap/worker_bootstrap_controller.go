@@ -637,9 +637,9 @@ func (r *Controller) getK0sToken(ctx context.Context, scope *Scope) (string, err
 	}
 
 	var joinToken string
-	joinURL := fmt.Sprintf("https://%s:%d", scope.Cluster.Spec.ControlPlaneEndpoint.Host, scope.Cluster.Spec.ControlPlaneEndpoint.Port)
+	joinURL := kutil.HostPortURL("https", scope.Cluster.Spec.ControlPlaneEndpoint.Host, int(scope.Cluster.Spec.ControlPlaneEndpoint.Port))
 	if scope.ingressSpec != nil {
-		joinURL = fmt.Sprintf("https://%s:%d", scope.ingressSpec.APIHost, scope.ingressSpec.Port)
+		joinURL = kutil.HostPortURL("https", scope.ingressSpec.APIHost, int(scope.ingressSpec.Port))
 	}
 
 	joinToken, err = kutil.CreateK0sJoinToken(ca.KeyPair.Cert, token, joinURL, "kubelet-bootstrap")
