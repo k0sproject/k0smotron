@@ -38,7 +38,7 @@ jobs:
           make build
 
       - name: Upload manager binary
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: manager-binary
           path: bin/manager
@@ -49,7 +49,7 @@ jobs:
           make k0smotron-image-bundle.tar
 
       - name: Upload image bundle
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: k0smotron-image-bundle
           path: k0smotron-image-bundle.tar
@@ -69,7 +69,7 @@ jobs:
           cp -r v0.0.0 k0sproject-k0smotron/infrastructure-k0sproject-k0smotron/
 
       - name: Upload cluster api components
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: cluster-api-components
           path: |
@@ -81,7 +81,7 @@ jobs:
           make release-standalone
 
       - name: Upload install-standalone yaml
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: install-standalone-yaml
           path: install-standalone.yaml
@@ -91,7 +91,7 @@ jobs:
           make release-extension-webhook
 
       - name: Upload inplace-extension yaml
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: install-extension-webhook-yaml
           path: install-extension-webhook.yaml
@@ -176,7 +176,7 @@ jobs:
           mkdir -p sbom && chmod 777 sbom
           make sbom/spdx.json
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: spdx.json
           path: sbom/spdx.json

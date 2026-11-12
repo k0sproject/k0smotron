@@ -126,7 +126,7 @@ jobs:
           make build
 
       - name: Upload manager binary
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: manager-binary
           path: bin/manager
@@ -137,7 +137,7 @@ jobs:
           make k0smotron-image-bundle.tar
 
       - name: Upload image bundle
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: k0smotron-image-bundle
           path: k0smotron-image-bundle.tar
@@ -157,7 +157,7 @@ jobs:
           cp -r v0.0.0 k0sproject-k0smotron/infrastructure-k0sproject-k0smotron/
 
       - name: Upload cluster api components
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: cluster-api-components
           path: |
@@ -169,7 +169,7 @@ jobs:
           make release
 
       - name: Upload install yaml
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: install-yaml
           path: install.yaml
@@ -252,7 +252,7 @@ jobs:
 
       - name: Archive artifacts
         if: failure()
-        uses: actions/upload-artifact@v4.3.2
+        uses: actions/upload-artifact@v7
         with:
           name: e2e-artifacts
           path: _artifacts
