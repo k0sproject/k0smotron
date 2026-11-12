@@ -51,7 +51,7 @@ func clusterctlMoveSpec(t *testing.T) {
 	workloadClusterTemplate := clusterctl.ConfigCluster(ctx, clusterctl.ConfigClusterInput{
 		ClusterctlConfigPath: clusterctlConfigPath,
 		KubeconfigPath:       bootstrapClusterProxy.GetKubeconfigPath(),
-		Flavor:               "move",
+		Flavor:               "",
 
 		Namespace:                namespace.Name,
 		ClusterName:              clusterName,
