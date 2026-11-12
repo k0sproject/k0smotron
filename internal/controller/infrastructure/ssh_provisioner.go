@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -43,9 +44,10 @@ var regex = regexp.MustCompile(`--kubelet-root-dir[ =](/[/a-zA-Z0-9_-]+)+`)
 func init() {
 	// RemoteMachine manages infrastructure where VMs may be reprovisioned with
 	// new host keys at the same address. Disable host key verification to avoid
-	// persistent connection failures after a wipe-and-reprovision cycle.
+	// persistent connection failures after a wipe-and-reprovision cycle. An
+	// empty path is what switches verification off.
 	hostkey.KnownHostsPathFromEnv = func() (string, bool) {
-		return "/dev/null", true
+		return "", true
 	}
 }
 
@@ -81,7 +83,7 @@ func (p *SSHProvisioner) Provision(ctx context.Context) error {
 		return err
 	}
 	defer connection.Disconnect()
-	// rig runs commands without a context, so closing the connection is what stops a hung one.
+	// Closing the connection is what stops a hung command or filesystem call.
 	defer context.AfterFunc(ctx, connection.Disconnect)()
 
 	// If sudo is required, run commands with elevated permissions and use the
@@ -90,7 +92,7 @@ func (p *SSHProvisioner) Provision(ctx context.Context) error {
 	if p.machine.Spec.UseSudo {
 		runner = connection.Sudo()
 	}
-	fsys := runner.FS()
+	fsys := remotefs.WithContext(ctx, runner.FS())
 
 	installScriptPath := filepath.Join(p.machine.Spec.WorkingDir, "bootstrap.sh")
 
@@ -118,25 +120,25 @@ func (p *SSHProvisioner) Provision(ctx context.Context) error {
 		p.log.Info("running install script", "command", installScriptPath)
 		output, err := execOutput(ctx, runner, installScriptPath)
 		if err != nil {
-			p.log.Error(err, "failed to run command", "command", installScriptPath, "output", output)
+			p.log.Error(err, "failed to run command", "command", installScriptPath, "output", output, "stderr", cmd.StderrOf(err))
 			return fmt.Errorf("failed to run command: %w", err)
 		}
 		log.Info("executed install script", "command", installScriptPath, "output", output)
 	} else {
 		// Run commands
-		for _, cmd := range p.cloudInit.Commands {
-			p.log.Info("running command", "command", cmd)
-			output, err := execOutput(ctx, runner, cmd)
+		for _, command := range p.cloudInit.Commands {
+			p.log.Info("running command", "command", command)
+			output, err := execOutput(ctx, runner, command)
 			if err != nil {
-				p.log.Error(err, "failed to run command", "command", cmd, "output", output)
+				p.log.Error(err, "failed to run command", "command", command, "output", output, "stderr", cmd.StderrOf(err))
 				return fmt.Errorf("failed to run command: %w", err)
 			}
-			log.Info("executed command", "command", cmd, "output", output)
+			log.Info("executed command", "command", command, "output", output)
 		}
 	}
 
 	// Check for sentinel file
-	if _, err := connection.Sudo().FS().Stat("/run/cluster-api/bootstrap-success.complete"); err != nil {
+	if _, err := remotefs.WithContext(ctx, connection.Sudo().FS()).Stat("/run/cluster-api/bootstrap-success.complete"); err != nil {
 		return errors.New("bootstrap sentinel file not found")
 	}
 
@@ -166,12 +168,12 @@ func (p *SSHProvisioner) Cleanup(ctx context.Context, mode RemoteMachineMode) er
 
 	if p.machine.Spec.CleanUpCommands != nil {
 		p.log.Info("Cleaning up remote machine...")
-		for _, cmd := range p.machine.Spec.CleanUpCommands {
-			output, err := execOutput(ctx, runner, cmd)
+		for _, command := range p.machine.Spec.CleanUpCommands {
+			output, err := execOutput(ctx, runner, command)
 			if err != nil {
-				p.log.Error(err, "failed to run command", "command", cmd, "output", output)
+				p.log.Error(err, "failed to run command", "command", command, "output", output, "stderr", cmd.StderrOf(err))
 			} else {
-				p.log.Info("executed command", "command", cmd, "output", output)
+				p.log.Info("executed command", "command", command, "output", output)
 			}
 		}
 
@@ -210,14 +212,14 @@ func (p *SSHProvisioner) Cleanup(ctx context.Context, mode RemoteMachineMode) er
 	}
 
 	p.log.Info("Cleaning up remote machine...")
-	for _, cmd := range cmds {
-		output, err := execOutput(ctx, runner, cmd)
+	for _, command := range cmds {
+		output, err := execOutput(ctx, runner, command)
 		if err != nil {
 			// if k0s command is not installed, manually remove files added for k0s bootstrap.
-			if strings.Contains(err.Error(), "command not found") {
+			if isCommandNotFound(cmd.StderrOf(err)) {
 				for _, file := range p.cloudInit.Files {
 					p.log.Info("Removing file", "path", file.Path)
-					err := connection.Sudo().FS().Remove(file.Path)
+					err := remotefs.WithContext(ctx, connection.Sudo().FS()).Remove(file.Path)
 					if err != nil {
 						p.log.Error(err, "failed to remove file", "path", file.Path)
 					} else {
@@ -225,7 +227,7 @@ func (p *SSHProvisioner) Cleanup(ctx context.Context, mode RemoteMachineMode) er
 					}
 				}
 			}
-			p.log.Error(err, "failed to run command", "command", cmd, "output", output)
+			p.log.Error(err, "failed to run command", "command", command, "output", output, "stderr", cmd.StderrOf(err))
 		}
 	}
 
@@ -244,6 +246,13 @@ func execOutput(ctx context.Context, runner commandRunner, command string) (stri
 	var out bytes.Buffer
 	err := runner.ExecContext(ctx, command, cmd.Stdout(&out))
 	return out.String(), err
+}
+
+// isCommandNotFound reports whether a command's stderr says the shell could not
+// find it. Commands run under /bin/sh, and dash reports "k0s: not found" where
+// bash says "command not found", so match the part both share.
+func isCommandNotFound(stderr string) bool {
+	return strings.Contains(stderr, "not found")
 }
 
 // shellQuote wraps s in single quotes so it survives a POSIX shell as one
@@ -284,16 +293,20 @@ func (p *SSHProvisioner) uploadFile(ctx context.Context, runner commandRunner, f
 	if err != nil {
 		return fmt.Errorf("failed to open remote file for writing: %w", err)
 	}
-	defer destFile.Close()
 	if _, err := destFile.Write(content); err != nil {
+		_ = destFile.Close()
 		return fmt.Errorf("failed to write to remote file: %w", err)
+	}
+	// On Windows the close is what confirms the remote helper finished the write.
+	if err := destFile.Close(); err != nil {
+		return fmt.Errorf("failed to close remote file: %w", err)
 	}
 
 	// remotefs.FS cannot change ownership, so shell out for it. Done after the
 	// write, which already created the file with its restrictive mode.
 	if file.Owner != "" {
-		cmd := fmt.Sprintf("chown -- %s %s", shellQuote(file.Owner), shellQuote(file.Path))
-		if output, err := execOutput(ctx, runner, cmd); err != nil {
+		chownCmd := fmt.Sprintf("chown -- %s %s", shellQuote(file.Owner), shellQuote(file.Path))
+		if output, err := execOutput(ctx, runner, chownCmd); err != nil {
 			return fmt.Errorf("failed to set owner %q on %s: %w (output: %s)", file.Owner, file.Path, err, output)
 		}
 	}
@@ -314,12 +327,17 @@ func (p *SSHProvisioner) connect(ctx context.Context) (*rig.Client, error) {
 		Port:        p.machine.Spec.Port,
 		User:        p.machine.Spec.User,
 		AuthMethods: authM,
+		// Keep the controller hermetic: an ssh_config in the image or a mounted
+		// home directory must not change how machines are reached.
+		IgnoreSSHConfig: true,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create ssh connection: %w", err)
 	}
 
-	client, err := rig.NewClient(rig.WithConnection(conn))
+	// rig logs nothing at info level on its own, only warnings such as a sudo
+	// that needs a terminal, so routing it here adds no noise.
+	client, err := rig.NewClient(rig.WithConnection(conn), rig.WithLogger(slog.New(logr.ToSlogHandler(p.log))))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create ssh client: %w", err)
 	}

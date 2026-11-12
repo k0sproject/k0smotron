@@ -47,13 +47,14 @@ import (
 
 // fakeFile records what was written to it.
 type fakeFile struct {
-	buf bytes.Buffer
+	buf      bytes.Buffer
+	closeErr error
 }
 
 func (f *fakeFile) Write(p []byte) (int, error)           { return f.buf.Write(p) }
 func (f *fakeFile) Read(_ []byte) (int, error)            { return 0, io.EOF }
 func (f *fakeFile) Name() string                          { return "file" }
-func (f *fakeFile) Close() error                          { return nil }
+func (f *fakeFile) Close() error                          { return f.closeErr }
 func (f *fakeFile) Stat() (fs.FileInfo, error)            { return fakeInfo{name: "file"}, nil }
 func (f *fakeFile) Seek(_ int64, _ int) (int64, error)    { return 0, nil }
 func (f *fakeFile) CopyFrom(src io.Reader) (int64, error) { return io.Copy(&f.buf, src) }
@@ -75,6 +76,7 @@ func (i fakeInfo) Sys() any           { return nil }
 // fakeFsys is the smallest remotefs.FS that uploadFile exercises.
 type fakeFsys struct {
 	remotefs.FS
+	closeErr  error
 	file      *fakeFile
 	openFlag  int
 	openPerm  fs.FileMode
@@ -86,7 +88,7 @@ type fakeFsys struct {
 
 func (f *fakeFsys) OpenFile(path string, flag int, perm fs.FileMode) (remotefs.File, error) {
 	f.openPath, f.openFlag, f.openPerm = path, flag, perm
-	f.file = &fakeFile{}
+	f.file = &fakeFile{closeErr: f.closeErr}
 	return f.file, nil
 }
 
@@ -272,6 +274,29 @@ func TestUploadFileRejectsUndecodableContent(t *testing.T) {
 
 	require.ErrorContains(t, err, "failed to base64 decode")
 	require.Nil(t, fsys.file, "nothing should be written when content cannot be decoded")
+}
+
+func TestUploadFileSurfacesCloseFailure(t *testing.T) {
+	// A Windows host confirms the write only when the file is closed.
+	runner := &fakeRunner{}
+
+	err := newProvisioner().uploadFile(t.Context(), runner, &fakeFsys{closeErr: errors.New("remote helper gone")}, provisioner.File{
+		Path: "/etc/thing", Content: "body", Permissions: "0644", Owner: "nobody",
+	})
+
+	require.ErrorContains(t, err, "remote helper gone")
+	require.Empty(t, runner.cmds, "chown must not run on a file whose write was not confirmed")
+}
+
+func TestIsCommandNotFound(t *testing.T) {
+	for stderr, want := range map[string]bool{
+		"sh: 1: k0s: not found":                true, // dash
+		"bash: line 1: k0s: command not found": true,
+		"Error: etcd member not ready":         false,
+		"":                                     false,
+	} {
+		require.Equal(t, want, isCommandNotFound(stderr), "stderr %q", stderr)
+	}
 }
 
 func TestShellQuote(t *testing.T) {
