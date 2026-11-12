@@ -238,7 +238,7 @@ jobs:
         smoke-suite:
           - check-capi-remote-machine
           - check-capi-remote-machine-template
-        k0s-version: ["v1.28.11", "v1.29.6", "v1.30.2"]
+        k0s-version: ["v1.35.10+k0s.0", "v1.36.6+k0s.0", "v1.37.2+k0s.1"]
 
     uses: ./.github/workflows/capi-smoke-tests.yml
     with:
