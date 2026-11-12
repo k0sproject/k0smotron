@@ -200,3 +200,6 @@ intervals:
   machinedeployment/wait-cluster: ["20m", "10s"]
   machinedeployment/wait-control-plane: ["20m", "10s"]
   machinedeployment/wait-delete-cluster: ["20m", "10s"]
+  clusterctl-move/wait-cluster: ["10m", "10s"]
+  clusterctl-move/wait-control-plane: ["15m", "10s"]
+  clusterctl-move/wait-delete-cluster: ["5m", "10s"]
