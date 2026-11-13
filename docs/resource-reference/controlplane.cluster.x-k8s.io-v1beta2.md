@@ -2918,7 +2918,10 @@ will use emptyDir as a volume. See https://docs.k0smotron.io/stable/configuratio
         <td>object</td>
         <td>
           RemoteHostCluster defines the configuration for deploying the k0s control plane in a remote hosting cluster.
-If not specified, k0smotron will deploy the control plane in the management cluster.<br/>
+If not specified, k0smotron will deploy the control plane in the management cluster.
+When set, resources that the control plane pods reference by name, such as the volumes in spec.mounts
+and the secret in spec.storage.kine.dataSourceSecretName, are not copied from the management cluster
+and must exist in the same namespace in the hosting cluster.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -12029,6 +12032,9 @@ Note: New statuses can be added in the future. Consumers should check for unknow
 
 RemoteHostCluster defines the configuration for deploying the k0s control plane in a remote hosting cluster.
 If not specified, k0smotron will deploy the control plane in the management cluster.
+When set, resources that the control plane pods reference by name, such as the volumes in spec.mounts
+and the secret in spec.storage.kine.dataSourceSecretName, are not copied from the management cluster
+and must exist in the same namespace in the hosting cluster.
 
 <table>
     <thead>
@@ -13386,7 +13392,10 @@ will use emptyDir as a volume. See https://docs.k0smotron.io/stable/configuratio
         <td>object</td>
         <td>
           RemoteHostCluster defines the configuration for deploying the k0s control plane in a remote hosting cluster.
-If not specified, k0smotron will deploy the control plane in the management cluster.<br/>
+If not specified, k0smotron will deploy the control plane in the management cluster.
+When set, resources that the control plane pods reference by name, such as the volumes in spec.mounts
+and the secret in spec.storage.kine.dataSourceSecretName, are not copied from the management cluster
+and must exist in the same namespace in the hosting cluster.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -22497,6 +22506,9 @@ Note: New statuses can be added in the future. Consumers should check for unknow
 
 RemoteHostCluster defines the configuration for deploying the k0s control plane in a remote hosting cluster.
 If not specified, k0smotron will deploy the control plane in the management cluster.
+When set, resources that the control plane pods reference by name, such as the volumes in spec.mounts
+and the secret in spec.storage.kine.dataSourceSecretName, are not copied from the management cluster
+and must exist in the same namespace in the hosting cluster.
 
 <table>
     <thead>
