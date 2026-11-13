@@ -1,0 +1,85 @@
+name: Backport
+on:
+  pull_request_target:
+    types: [closed, labeled]
+    branches: [main, release-*]
+  workflow_dispatch:
+    inputs:
+      pull_number:
+        description: Number of the merged pull request to backport
+        type: number
+        required: true
+      target_branches:
+        description: Space-separated target branches (default is to use the backport/* labels)
+        type: string
+
+# This workflow runs with elevated trust on pull requests from forks. It must
+# never check out or execute pull request code, and it must not evaluate user
+# input in a way that allows code injection. All steps use the backport token
+# for repository access.
+
+permissions: {}
+
+jobs:
+  backport:
+    name: Backport Pull Request
+    # Run the action if a PR is merged with backport labels
+    # OR
+    # when already merged PR is labeled with backport labels
+    if: >
+      github.event_name == 'workflow_dispatch'
+      || (
+        github.event.pull_request.merged
+        && (
+          github.event.action == 'closed'
+          || (
+            github.event.action == 'labeled'
+            && startsWith(github.event.label.name, 'backport/')
+          )
+        )
+      )
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          token: ${{ secrets.GH_BACKPORT_TOKEN }}
+
+      - name: Setup Mergiraf
+        env:
+          MERGIRAF_VERSION: 0.20.0 # renovate: datasource=gitea-releases registryUrl=https://codeberg.org depName=mergiraf/mergiraf
+        run: |
+          mkdir .git/mergiraf
+          curl --proto '=https' --tlsv1.2 --retry 5 --retry-all-errors -sSLfo .git/mergiraf/mergiraf.tar.gz "https://codeberg.org/mergiraf/mergiraf/releases/download/v$MERGIRAF_VERSION/mergiraf_x86_64-unknown-linux-musl.tar.gz"
+          tar xvf .git/mergiraf/mergiraf.tar.gz -C .git/mergiraf
+          .git/mergiraf/mergiraf --version
+          .git/mergiraf/mergiraf languages --gitattributes >.git/info/attributes
+          git config merge.conflictStyle diff3
+          git config merge.mergiraf.name mergiraf
+          git config merge.mergiraf.driver '${{ github.workspace }}/.git/mergiraf/mergiraf merge --git %O %A %B -s %S -x %X -y %Y -p %P -l %L'
+
+      - name: Create backport PRs
+        uses: korthout/backport-action@0ebd44f9c79a4a0a171200dcdcceec3ed9ca732f # v4.7.1
+        with:
+          # Inputs documented here: https://github.com/korthout/backport-action?tab=readme-ov-file#inputs
+          github_token: ${{ secrets.GH_BACKPORT_TOKEN }}
+          github_workspace: ${{ github.workspace }}
+          source_pr_number: ${{ inputs.pull_number }}
+          target_branches: ${{ inputs.target_branches }}
+
+          auto_merge_enabled: true
+
+          # On cherry-pick conflicts, open a draft PR with the conflicting
+          # commit committed instead of failing, so it can be resolved manually.
+          experimental: >
+            {
+              "conflict_resolution": "draft_commit_conflicts"
+            }
+
+          # Regex pattern to match github labels
+          # The capture group catches the target branch
+          # i.e. label backport/release-1.23 will create backport PR for branch release-1.23
+          label_pattern: ^backport\/([^ ]+)$
+
+          pull_description: |-
+            ${{ inputs.target_branches != '' && format('Automated backport to `${target_branch}`, manually triggered by @{0} for #${pull_number}.', github.actor) || 'Automated backport to `${target_branch}`, triggered by a label in #${pull_number}.' }}
+            See ${issue_refs}.
