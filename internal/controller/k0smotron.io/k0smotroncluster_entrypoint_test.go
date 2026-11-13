@@ -196,3 +196,26 @@ spec:
 		})
 	}
 }
+
+func TestK0sVersionAtLeast(t *testing.T) {
+	tests := []struct {
+		name    string
+		version string
+		want    bool
+	}{
+		{"empty", "", false},
+		{"invalid", "not-a-version", false},
+		{"older", "v1.36.2+k0s.0", false},
+		{"older with dash suffix", "v1.36.2-k0s.0", false},
+		{"exact", "v1.37.0", true},
+		{"exact with plus suffix", "v1.37.0+k0s.0", true},
+		{"exact with dash suffix", "v1.37.0-k0s.0", true},
+		{"newer", "v1.38.1+k0s.1", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, k0sVersionAtLeast(tt.version, minVersionWithoutSetcap))
+		})
+	}
+}
