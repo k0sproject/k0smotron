@@ -301,6 +301,39 @@ func TestControlPlaneController_detectJoinHost(t *testing.T) {
 		require.Error(t, err)
 	})
 
+	for _, tc := range []struct {
+		name    string
+		address clusterv1.MachineAddress
+	}{
+		{
+			name:    "an IPv6 external address of the first controller is bracketed",
+			address: clusterv1.MachineAddress{Type: clusterv1.MachineExternalIP, Address: "2001:db8::10"},
+		},
+		{
+			name:    "an IPv6 internal address of the first controller is bracketed",
+			address: clusterv1.MachineAddress{Type: clusterv1.MachineInternalIP, Address: "2001:db8::10"},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ipv6Scope := &ControllerScope{
+				Cluster: scope.Cluster,
+				Config:  scope.Config,
+				machines: collections.FromMachines(&clusterv1.Machine{
+					ObjectMeta: metav1.ObjectMeta{Name: "first-controller"},
+					Status: clusterv1.MachineStatus{
+						Addresses: clusterv1.MachineAddresses{tc.address},
+					},
+				}),
+			}
+			ca := &secret.Certificate{KeyPair: &certs.KeyPair{Cert: untrustedCACert}}
+
+			host, err := c.detectJoinHost(context.Background(), ipv6Scope, ca)
+
+			require.NoError(t, err)
+			require.Equal(t, "https://[2001:db8::10]:"+serverURL.Port(), host)
+		})
+	}
+
 	t.Run("a config that carries no k0s config joins on the default port", func(t *testing.T) {
 		bare := &ControllerScope{
 			Cluster: scope.Cluster,

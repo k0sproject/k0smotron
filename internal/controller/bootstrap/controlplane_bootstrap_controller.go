@@ -25,7 +25,6 @@ import (
 	"net/http"
 	"net/netip"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
@@ -895,15 +894,15 @@ func (c *ControlPlaneController) detectJoinHost(ctx context.Context, scope *Cont
 		k0sConfig = scope.Config.Spec.K0s.Object
 	}
 
-	port := "9443"
+	port := 9443
 	k0sAPIPort, found, err := unstructured.NestedInt64(k0sConfig, "spec", "api", "k0sApiPort")
 	if err != nil {
 		return "", fmt.Errorf("error retrieving k0sAPIPort: %w", err)
 	}
 	if found && k0sAPIPort > 0 {
-		port = strconv.Itoa(int(k0sAPIPort))
+		port = int(k0sAPIPort)
 	}
-	host := fmt.Sprintf("https://%s:%s", scope.Cluster.Spec.ControlPlaneEndpoint.Host, port)
+	host := kutil.HostPortURL("https", scope.Cluster.Spec.ControlPlaneEndpoint.Host, port)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, host+"/v1beta1/ca", nil)
 	if err != nil {
@@ -919,7 +918,7 @@ func (c *ControlPlaneController) detectJoinHost(ctx context.Context, scope *Cont
 		return "", fmt.Errorf("failed to get first controller IP: %w", err)
 	}
 
-	return fmt.Sprintf("https://%s:%s", firstControllerIP, port), nil
+	return kutil.HostPortURL("https", firstControllerIP, port), nil
 }
 
 func (c *ControlPlaneController) findFirstControllerIP(ctx context.Context, scope *ControllerScope) (string, error) {
@@ -944,7 +943,7 @@ func (c *ControlPlaneController) findFirstControllerIP(ctx context.Context, scop
 				break
 			}
 			if ip.Is6() {
-				intAddr = fmt.Sprintf("[%s]", ip.WithZone("").String())
+				intAddr = ip.WithZone("").String()
 			}
 		}
 	}
@@ -979,7 +978,7 @@ func (c *ControlPlaneController) findFirstControllerIP(ctx context.Context, scop
 						break
 					}
 					if ip.Is6() {
-						intAddr = fmt.Sprintf("[%s]", ip.WithZone("").String())
+						intAddr = ip.WithZone("").String()
 					}
 				}
 			}
