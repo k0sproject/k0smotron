@@ -141,6 +141,9 @@ const (
 type ClusterSpec struct {
 	// RemoteHostCluster defines the configuration for deploying the k0s control plane in a remote hosting cluster.
 	// If not specified, k0smotron will deploy the control plane in the management cluster.
+	// When set, resources that the control plane pods reference by name, such as the volumes in spec.mounts
+	// and the secret in spec.storage.kine.dataSourceSecretName, are not copied from the management cluster
+	// and must exist in the same namespace in the hosting cluster.
 	// +kubebuilder:validation:Optional
 	RemoteHostCluster *RemoteHostClusterSpec `json:"remoteHostCluster,omitempty"`
 	// Replicas is the desired number of replicas of the k0s control planes.
