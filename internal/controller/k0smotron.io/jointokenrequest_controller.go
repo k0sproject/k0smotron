@@ -137,19 +137,46 @@ func (r *JoinTokenRequestReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 
 	logger.Info("Reconciling")
-	pod, err := util.FindStatefulSetPod(ctx, r.ClientSet, km.GetStatefulSetName(jtr.Spec.ClusterName), clusterNamespace)
-	if err != nil && !isJTRBeingDeleted {
-		reconcileFailureMessage = "Failed finding pods in statefulset"
-		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
+	var cluster km.Cluster
+	err = r.Client.Get(ctx, types.NamespacedName{Name: jtr.Spec.ClusterName, Namespace: clusterNamespace}, &cluster)
+	if err != nil {
+		// The cluster might already be gone when the JoinTokenRequest is deleted. Then there is no
+		// controller left in which the token could be invalidated.
+		if !isJTRBeingDeleted || !apierrors.IsNotFound(err) {
+			reconcileFailureMessage = "Failed to get cluster"
+			return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
+		}
+	}
+
+	var (
+		pod        *v1.Pod
+		clientSet  *kubernetes.Clientset
+		restConfig *rest.Config
+	)
+	if err == nil {
+		clientSet, restConfig, err = r.hostingClusterClients(ctx, &cluster)
+		if err != nil && !isJTRBeingDeleted {
+			reconcileFailureMessage = "Failed to get hosting cluster client"
+			return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
+		}
+	}
+	if err == nil {
+		pod, err = util.FindStatefulSetPod(ctx, clientSet, km.GetStatefulSetName(cluster.Name), cluster.Namespace)
+		if err != nil && !isJTRBeingDeleted {
+			reconcileFailureMessage = "Failed finding pods in statefulset"
+			return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
+		}
 	}
 
 	if isJTRBeingDeleted {
 		if controllerutil.ContainsFinalizer(&jtr, joinTokenRequestFinalizer) {
 			if pod != nil {
 				logger.Info("Invalidating token before deletion")
-				if err := r.invalidateToken(ctx, &jtr, pod); err != nil {
+				if err := r.invalidateToken(ctx, &jtr, clientSet, restConfig, pod); err != nil {
 					return ctrl.Result{}, err
 				}
+			} else {
+				logger.Info("Skipping token invalidation, no running controller pod found", "error", err)
 			}
 			controllerutil.RemoveFinalizer(&jtr, joinTokenRequestFinalizer)
 			if err := r.Update(ctx, &jtr); err != nil {
@@ -164,12 +191,6 @@ func (r *JoinTokenRequestReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, nil
 	}
 
-	var cluster km.Cluster
-	err = r.Client.Get(ctx, types.NamespacedName{Name: jtr.Spec.ClusterName, Namespace: clusterNamespace}, &cluster)
-	if err != nil {
-		reconcileFailureMessage = "Failed to get cluster"
-		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
-	}
 	clusterUID = cluster.GetUID()
 	if isV1Beta1WithPossibleCrossNamespace {
 		// Cross namespace JoinTokenRequest created in v1beta1, we set the cluster UID label for filtering the JoinTokenRequests related to a cluster
@@ -178,7 +199,7 @@ func (r *JoinTokenRequestReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 
 	cmd := fmt.Sprintf("k0s token create --role=%s --expiry=%s", jtr.Spec.Role, jtr.Spec.Expiry)
-	token, err := exec.PodExecCmdOutput(ctx, r.ClientSet, r.RESTConfig, pod.Name, pod.Namespace, cmd)
+	token, err := exec.PodExecCmdOutput(ctx, clientSet, restConfig, pod.Name, pod.Namespace, cmd)
 	if err != nil {
 		reconcileFailureMessage = "Failed getting token"
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
@@ -208,9 +229,23 @@ func (r *JoinTokenRequestReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	return ctrl.Result{}, nil
 }
 
-func (r *JoinTokenRequestReconciler) invalidateToken(ctx context.Context, jtr *km.JoinTokenRequest, pod *v1.Pod) error {
+// hostingClusterClients returns the clients for the cluster where the control plane pods of the given
+// k0smotron cluster run: the remote host cluster if one is configured, the management cluster otherwise.
+func (r *JoinTokenRequestReconciler) hostingClusterClients(ctx context.Context, kmc *km.Cluster) (*kubernetes.Clientset, *rest.Config, error) {
+	if kmc.Spec.RemoteHostCluster == nil || kmc.Spec.RemoteHostCluster.KubeconfigRef == nil {
+		return r.ClientSet, r.RESTConfig, nil
+	}
+
+	_, clientSet, restConfig, err := util.GetKmcClientFromClusterKubeconfigSecret(ctx, r.Client, kmc.Spec.RemoteHostCluster.KubeconfigRef)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get client from the remote host cluster kubeconfig: %w", err)
+	}
+	return clientSet, restConfig, nil
+}
+
+func (r *JoinTokenRequestReconciler) invalidateToken(ctx context.Context, jtr *km.JoinTokenRequest, clientSet *kubernetes.Clientset, restConfig *rest.Config, pod *v1.Pod) error {
 	cmd := fmt.Sprintf("k0s token invalidate %s", jtr.Status.TokenID)
-	_, err := exec.PodExecCmdOutput(ctx, r.ClientSet, r.RESTConfig, pod.Name, pod.Namespace, cmd)
+	_, err := exec.PodExecCmdOutput(ctx, clientSet, restConfig, pod.Name, pod.Namespace, cmd)
 	return err
 }
 
