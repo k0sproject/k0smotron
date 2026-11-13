@@ -203,12 +203,12 @@ func (scope *kmcScope) generateStatefulSet(ctx context.Context, kmc *km.Cluster)
 							{
 								Name:          "api",
 								Protocol:      v1.ProtocolTCP,
-								ContainerPort: int32(kmc.Spec.Service.APIPort),
+								ContainerPort: servicePort(kmc.Spec.Service.APIPort),
 							},
 							{
 								Name:          "konnectivity",
 								Protocol:      v1.ProtocolTCP,
-								ContainerPort: int32(kmc.Spec.Service.KonnectivityPort),
+								ContainerPort: servicePort(kmc.Spec.Service.KonnectivityPort),
 							},
 						},
 						EnvFrom: []v1.EnvFromSource{{
@@ -814,7 +814,7 @@ func (scope *kmcScope) reconcileStatefulSet(ctx context.Context, kmc *km.Cluster
 
 	if foundStatefulSet.Status.ReadyReplicas == 0 {
 		logger.Info(fmt.Sprintf("StatefulSet '%s' has no ready replicas yet (%d/%d)", foundStatefulSet.GetName(), foundStatefulSet.Status.ReadyReplicas, kmc.Spec.Replicas))
-		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, nil
+		return ctrl.Result{RequeueAfter: time.Minute}, nil
 	}
 
 	return ctrl.Result{}, nil
@@ -824,7 +824,7 @@ func (scope *kmcScope) reconcileStatefulSet(ctx context.Context, kmc *km.Cluster
 func detectAndSetCurrentClusterVersion(foundStatefulSet *apps.StatefulSet, kmc *km.Cluster) {
 	if kmc.Spec.Version == "" {
 		imageParts := strings.Split(foundStatefulSet.Spec.Template.Spec.Containers[0].Image, ":")
-		if len(imageParts) > 1 && versionRegex.Match([]byte(imageParts[1])) {
+		if len(imageParts) > 1 && versionRegex.MatchString(imageParts[1]) {
 			kmc.Spec.Version = imageParts[1]
 		}
 	}

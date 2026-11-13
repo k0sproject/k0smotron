@@ -491,10 +491,11 @@ func TestReconcileKubeconfigTunnelingModeProxy(t *testing.T) {
 		assert.NoError(c, testEnv.Get(ctx, secretKey, kubeconfigProxiedSecret))
 
 		kubeconfigProxiedSecretCrt, _ := runtime.Decode(clientcmdlatest.Codec, kubeconfigProxiedSecret.Data["value"])
-		if !assert.NotNil(c, kubeconfigProxiedSecretCrt) {
+		kubeconfig, ok := kubeconfigProxiedSecretCrt.(*api.Config)
+		if !assert.True(c, ok, "the secret does not hold a kubeconfig: %T", kubeconfigProxiedSecretCrt) {
 			return
 		}
-		for _, v := range kubeconfigProxiedSecretCrt.(*api.Config).Clusters {
+		for _, v := range kubeconfig.Clusters {
 			assert.Equal(c, "https://test.endpoint:6443", v.Server)
 			assert.Equal(c, "http://test.com:9999", v.ProxyURL)
 		}
@@ -588,10 +589,11 @@ func TestReconcileKubeconfigTunnelingModeTunnel(t *testing.T) {
 		assert.NoError(c, testEnv.Get(ctx, secretKey, kubeconfigProxiedSecret))
 
 		kubeconfigProxiedSecretCrt, _ := runtime.Decode(clientcmdlatest.Codec, kubeconfigProxiedSecret.Data["value"])
-		if !assert.NotNil(c, kubeconfigProxiedSecretCrt) {
+		kubeconfig, ok := kubeconfigProxiedSecretCrt.(*api.Config)
+		if !assert.True(c, ok, "the secret does not hold a kubeconfig: %T", kubeconfigProxiedSecretCrt) {
 			return
 		}
-		for _, v := range kubeconfigProxiedSecretCrt.(*api.Config).Clusters {
+		for _, v := range kubeconfig.Clusters {
 			assert.Equal(c, "https://test.com:9999", v.Server)
 		}
 
@@ -762,17 +764,17 @@ func TestReconcileK0sConfigWithNLLBEnabled(t *testing.T) {
 	// Enable '.spec.network.nodeLocalLoadBalancing'
 	kcp.Spec.K0sConfigSpec = bootstrapv2.K0sConfigSpec{
 		K0s: &unstructured.Unstructured{
-			Object: map[string]interface{}{
+			Object: map[string]any{
 				"apiVersion": "k0s.k0sproject.io/v1beta1",
 				"kind":       "ClusterConfig",
-				"spec": map[string]interface{}{
-					"api": map[string]interface{}{
-						"sans": []interface{}{
+				"spec": map[string]any{
+					"api": map[string]any{
+						"sans": []any{
 							"test.com",
 						},
 					},
-					"network": map[string]interface{}{
-						"nodeLocalLoadBalancing": map[string]interface{}{
+					"network": map[string]any{
+						"nodeLocalLoadBalancing": map[string]any{
 							"enabled": true,
 						},
 					},
@@ -803,18 +805,18 @@ func TestReconcileK0sConfigWithNLLBEnabled(t *testing.T) {
 	require.NoError(t, err)
 
 	expectedk0sConfig := &unstructured.Unstructured{
-		Object: map[string]interface{}{
+		Object: map[string]any{
 			"apiVersion": "k0s.k0sproject.io/v1beta1",
 			"kind":       "ClusterConfig",
-			"spec": map[string]interface{}{
-				"api": map[string]interface{}{
-					"sans": []interface{}{
+			"spec": map[string]any{
+				"api": map[string]any{
+					"sans": []any{
 						"test.endpoint",
 						"test.com",
 					},
 				},
-				"network": map[string]interface{}{
-					"nodeLocalLoadBalancing": map[string]interface{}{
+				"network": map[string]any{
+					"nodeLocalLoadBalancing": map[string]any{
 						"enabled": true,
 					},
 				},
@@ -834,12 +836,12 @@ func TestReconcileK0sConfigWithNLLBDisabled(t *testing.T) {
 	// Disable '.spec.network.nodeLocalLoadBalancing'
 	kcp.Spec.K0sConfigSpec = bootstrapv2.K0sConfigSpec{
 		K0s: &unstructured.Unstructured{
-			Object: map[string]interface{}{
+			Object: map[string]any{
 				"apiVersion": "k0s.k0sproject.io/v1beta1",
 				"kind":       "ClusterConfig",
-				"spec": map[string]interface{}{
-					"api": map[string]interface{}{
-						"sans": []interface{}{
+				"spec": map[string]any{
+					"api": map[string]any{
+						"sans": []any{
 							"test.com",
 						},
 					},
@@ -870,12 +872,12 @@ func TestReconcileK0sConfigWithNLLBDisabled(t *testing.T) {
 	require.NoError(t, err)
 
 	expectedk0sConfig := &unstructured.Unstructured{
-		Object: map[string]interface{}{
+		Object: map[string]any{
 			"apiVersion": "k0s.k0sproject.io/v1beta1",
 			"kind":       "ClusterConfig",
-			"spec": map[string]interface{}{
-				"api": map[string]interface{}{
-					"sans": []interface{}{
+			"spec": map[string]any{
+				"api": map[string]any{
+					"sans": []any{
 						"test.com",
 					},
 					"externalAddress": "test.endpoint",
@@ -896,12 +898,12 @@ func TestReconcileK0sConfigTunnelingServerAddressToApiSans(t *testing.T) {
 	// With '.spec.k0sConfigSpec.Tunneling.ServerAddress'
 	kcp.Spec.K0sConfigSpec = bootstrapv2.K0sConfigSpec{
 		K0s: &unstructured.Unstructured{
-			Object: map[string]interface{}{
+			Object: map[string]any{
 				"apiVersion": "k0s.k0sproject.io/v1beta1",
 				"kind":       "ClusterConfig",
-				"spec": map[string]interface{}{
-					"api": map[string]interface{}{
-						"sans": []interface{}{
+				"spec": map[string]any{
+					"api": map[string]any{
+						"sans": []any{
 							"test.com",
 						},
 					},
@@ -935,12 +937,12 @@ func TestReconcileK0sConfigTunnelingServerAddressToApiSans(t *testing.T) {
 	require.NoError(t, err)
 
 	expectedk0sConfig := &unstructured.Unstructured{
-		Object: map[string]interface{}{
+		Object: map[string]any{
 			"apiVersion": "k0s.k0sproject.io/v1beta1",
 			"kind":       "ClusterConfig",
-			"spec": map[string]interface{}{
-				"api": map[string]interface{}{
-					"sans": []interface{}{
+			"spec": map[string]any{
+				"api": map[string]any{
+					"sans": []any{
 						"test.com",
 						"my-tunneling-server-address.com",
 					},
@@ -1110,7 +1112,7 @@ func TestReconcileInitializeControlPlanes(t *testing.T) {
 	}, 20*time.Second, 200*time.Millisecond, "the reconcile never got far enough to write the status")
 
 	require.Equal(t, "v1.30.0+k0s.0", kcp.Status.Version)
-	require.Equal(t, ptr.Deref(kcp.Status.Replicas, 0), int32(1))
+	require.Equal(t, int32(1), ptr.Deref(kcp.Status.Replicas, 0))
 	require.NoError(t, testEnv.GetAPIReader().Get(ctx, util.ObjectKey(gmt), gmt))
 	require.Contains(t, gmt.GetOwnerReferences(), metav1.OwnerReference{
 		APIVersion:         clusterv1.GroupVersion.String(),
@@ -1249,7 +1251,7 @@ func (f *fakeRoundTripper) run(req *http.Request) (*http.Response, error) {
 	header.Set("Content-Type", runtime.ContentTypeJSON)
 
 	switch req.Method {
-	case "GET":
+	case http.MethodGet:
 		if req.URL.Path == etcdMembersAPIPath && f.etcdMembers != nil {
 			res, err := json.Marshal(etcdMemberList{Items: f.etcdMembers})
 			if err != nil {
@@ -1276,11 +1278,11 @@ func (f *fakeRoundTripper) run(req *http.Request) (*http.Response, error) {
 
 			return &http.Response{StatusCode: http.StatusNotFound, Header: header, Body: nil}, nil
 		}
-	case "DELETE":
+	case http.MethodDelete:
 		if strings.HasPrefix(req.URL.Path, "/apis/autopilot.k0sproject.io/v1beta2/controlnodes/") {
 			return &http.Response{StatusCode: http.StatusOK, Header: header, Body: nil}, nil
 		}
-	case "PATCH":
+	case http.MethodPatch:
 		switch {
 		case strings.HasPrefix(req.URL.Path, "/apis/etcd.k0sproject.io/v1beta1/etcdmembers/"):
 			{
@@ -1382,20 +1384,20 @@ func createClusterWithControlPlane(namespace string) (*clusterv1.Cluster, *cpv1b
 	}
 
 	genericMachineTemplate := &unstructured.Unstructured{
-		Object: map[string]interface{}{
+		Object: map[string]any{
 			"kind":       "GenericInfrastructureMachineTemplate",
 			"apiVersion": "infrastructure.cluster.x-k8s.io/v1beta1",
-			"metadata": map[string]interface{}{
+			"metadata": map[string]any{
 				"name":      "infra-foo",
 				"namespace": namespace,
-				"annotations": map[string]interface{}{
+				"annotations": map[string]any{
 					clusterv1.TemplateClonedFromNameAnnotation:      kcp.Spec.MachineTemplate.Spec.InfrastructureRef.Name,
 					clusterv1.TemplateClonedFromGroupKindAnnotation: schema.GroupKind{Group: kcp.Spec.MachineTemplate.Spec.InfrastructureRef.APIGroup, Kind: kcp.Spec.MachineTemplate.Spec.InfrastructureRef.Kind}.String(),
 				},
 			},
-			"spec": map[string]interface{}{
-				"template": map[string]interface{}{
-					"spec": map[string]interface{}{
+			"spec": map[string]any{
+				"template": map[string]any{
+					"spec": map[string]any{
 						"hello": "world",
 					},
 				},
@@ -1413,12 +1415,12 @@ func normalizeUnstructured(obj *unstructured.Unstructured) *unstructured.Unstruc
 	if err == nil && found {
 		strSans := make([]string, len(sans))
 		for i, v := range sans {
-			strSans[i] = v.(string)
+			strSans[i] = fmt.Sprint(v)
 		}
 
 		sort.Strings(strSans)
 
-		sortedSans := make([]interface{}, len(strSans))
+		sortedSans := make([]any, len(strSans))
 		for i, v := range strSans {
 			sortedSans[i] = v
 		}
@@ -1449,6 +1451,8 @@ func (r *recordingClusterCache) GetClusterSource(controllerName string, mapFunc 
 // reconciles while the control plane still reports itself available.
 func TestSetupWithManagerWatchesTheClusterCache(t *testing.T) {
 	newManager := func(t *testing.T) ctrl.Manager {
+		t.Helper()
+
 		mgr, err := ctrl.NewManager(testEnv.GetConfig(), ctrl.Options{
 			Scheme: testEnv.GetScheme(),
 			Metrics: metricsserver.Options{
@@ -1489,7 +1493,7 @@ func TestSetupWithManagerWatchesTheClusterCache(t *testing.T) {
 	})
 }
 
-// TestHostedSetupWithManagerWatchesTheClusterCache covers the hosted flavour getting
+// TestHostedSetupWithManagerWatchesTheClusterCache covers the hosted flavor getting
 // the same wake up, since nothing else notices it going away either.
 func TestHostedSetupWithManagerWatchesTheClusterCache(t *testing.T) {
 	mgr, err := ctrl.NewManager(testEnv.GetConfig(), ctrl.Options{
@@ -1515,7 +1519,7 @@ func TestHostedSetupWithManagerWatchesTheClusterCache(t *testing.T) {
 		[]ctrl.Request{{NamespacedName: client.ObjectKey{Namespace: "ns", Name: "cp"}}},
 		cache.mapFuncs[0](ctx, cluster))
 
-	// A cluster running the other flavour must not be enqueued here.
+	// A cluster running the other flavor must not be enqueued here.
 	cluster.Spec.ControlPlaneRef.Kind = "K0sControlPlane"
 	require.Nil(t, cache.mapFuncs[0](ctx, cluster))
 }

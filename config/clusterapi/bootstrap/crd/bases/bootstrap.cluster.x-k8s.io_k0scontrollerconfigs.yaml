@@ -738,6 +738,7 @@ spec:
                 description: |-
                   Version is ignored: the k0s version is taken from the Machine, which the control plane
                   controller sets from the K0sControlPlane version.
+
                   Deprecated: This field is ignored and will be removed in a future release.
                 type: string
               workingDir:

@@ -146,9 +146,9 @@ func (s *CAPIDockerClusterClassSuite) TestCAPIDockerClusterClass() {
 	s.T().Log("cluster objects applied, waiting for cluster to be ready")
 
 	var localPort int
-	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(_ context.Context) (bool, error) {
-		localPort, _ = getLBPort("docker-test-cluster-lb")
+	//nolint:staticcheck // Deprecated, but PollUntilContextCancel returns a different error on timeout.
+	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+		localPort, _ = getLBPort(ctx, "docker-test-cluster-lb")
 		return localPort > 0, nil
 	})
 	s.Require().NoError(err)
@@ -158,21 +158,21 @@ func (s *CAPIDockerClusterClassSuite) TestCAPIDockerClusterClass() {
 	s.Require().NoError(err)
 
 	s.T().Log("waiting for control-plane")
-	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(_ context.Context) (bool, error) {
+	//nolint:staticcheck // Deprecated, but PollUntilContextCancel returns a different error on timeout.
+	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
 		b, _ := s.client.RESTClient().
 			Get().
 			AbsPath("/healthz").
-			DoRaw(context.Background())
+			DoRaw(ctx)
 
 		return string(b) == "ok", nil
 	})
 	s.Require().NoError(err)
 
 	s.T().Log("waiting for worker nodes")
-	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(_ context.Context) (bool, error) {
-		nodes, _ := kmcKC.CoreV1().Nodes().List(s.ctx, metav1.ListOptions{})
+	//nolint:staticcheck // Deprecated, but PollUntilContextCancel returns a different error on timeout.
+	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+		nodes, _ := kmcKC.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
 		return len(nodes.Items) == 2, nil
 	})
 	s.Require().NoError(err)
@@ -189,9 +189,9 @@ func (s *CAPIDockerClusterClassSuite) TestCAPIDockerClusterClass() {
 
 	kcpName := kcpList.Items[0].Name
 	// Wait to see the controlplane status is correct
-	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(_ context.Context) (bool, error) {
-		kcp, err := util.GetK0sControlPlane(s.ctx, s.client, kcpName, "default")
+	//nolint:staticcheck // Deprecated, but PollUntilContextCancel returns a different error on timeout.
+	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+		kcp, err := util.GetK0sControlPlane(ctx, s.client, kcpName, "default")
 		if err != nil {
 			return true, err
 		}
@@ -217,9 +217,9 @@ func (s *CAPIDockerClusterClassSuite) TestCAPIDockerClusterClass() {
 	s.Require().NoError(err)
 
 	s.T().Log("waiting for control-plane nodes to be updated")
-	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(_ context.Context) (bool, error) {
-		cp, err := util.GetK0sControlPlane(s.ctx, s.client, kcpName, "default")
+	//nolint:staticcheck // Deprecated, but PollUntilContextCancel returns a different error on timeout.
+	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+		cp, err := util.GetK0sControlPlane(ctx, s.client, kcpName, "default")
 		if err != nil {
 			return false, err
 		}
@@ -254,8 +254,8 @@ func (s *CAPIDockerClusterClassSuite) createCluster() {
 	s.Require().NoError(err)
 	s.Require().NotEmpty(machines)
 
-	s.Require().NoError(os.WriteFile(s.haProxyCfgPath, []byte(haProxyConfig), 0644))
-	out, err := exec.Command("kubectl", "apply", "-f", s.haProxyCfgPath).CombinedOutput()
+	s.Require().NoError(os.WriteFile(s.haProxyCfgPath, []byte(haProxyConfig), 0o600))
+	out, err := exec.CommandContext(s.ctx, "kubectl", "apply", "-f", s.haProxyCfgPath).CombinedOutput()
 	s.Require().NoError(err, "failed to create ha proxy config: %s", string(out))
 
 	// Parse the cluster yaml as template
@@ -275,20 +275,20 @@ func (s *CAPIDockerClusterClassSuite) createCluster() {
 	s.Require().NoError(err)
 	bytes := clusterClassYaml.Bytes()
 
-	s.Require().NoError(os.WriteFile(s.clusterClassYamlsPath, bytes, 0644))
-	out, err = exec.Command("kubectl", "apply", "-f", s.clusterClassYamlsPath).CombinedOutput()
+	s.Require().NoError(os.WriteFile(s.clusterClassYamlsPath, bytes, 0o600))
+	out, err = exec.CommandContext(s.ctx, "kubectl", "apply", "-f", s.clusterClassYamlsPath).CombinedOutput()
 	s.Require().NoError(err, "failed to update cluster objects: %s", string(out))
 
-	s.Require().NoError(os.WriteFile(s.clusterYamlsPath, []byte(clusterYaml), 0644))
-	out, err = exec.Command("kubectl", "apply", "-f", s.clusterYamlsPath).CombinedOutput()
+	s.Require().NoError(os.WriteFile(s.clusterYamlsPath, []byte(clusterYaml), 0o600))
+	out, err = exec.CommandContext(s.ctx, "kubectl", "apply", "-f", s.clusterYamlsPath).CombinedOutput()
 	s.Require().NoError(err, "failed to apply cluster objects: %s", string(out))
 }
 
 func (s *CAPIDockerClusterClassSuite) deleteCluster() {
 	// Exec via kubectl
-	out, err := exec.Command("kubectl", "delete", "-f", s.clusterYamlsPath).CombinedOutput()
+	out, err := exec.CommandContext(context.WithoutCancel(s.ctx), "kubectl", "delete", "-f", s.clusterYamlsPath).CombinedOutput()
 	s.Require().NoError(err, "failed to delete cluster objects: %s", string(out))
-	out, err = exec.Command("kubectl", "delete", "-f", s.clusterClassYamlsPath).CombinedOutput()
+	out, err = exec.CommandContext(context.WithoutCancel(s.ctx), "kubectl", "delete", "-f", s.clusterClassYamlsPath).CombinedOutput()
 	s.Require().NoError(err, "failed to delete cluster class objects: %s", string(out))
 }
 
@@ -303,8 +303,8 @@ func (s *CAPIDockerClusterClassSuite) getWorkerIP() string {
 	return ipAddress
 }
 
-func getLBPort(name string) (int, error) {
-	b, err := exec.Command("docker", "inspect", name, "--format", "{{json .NetworkSettings.Ports}}").Output()
+func getLBPort(ctx context.Context, name string) (int, error) {
+	b, err := exec.CommandContext(ctx, "docker", "inspect", name, "--format", "{{json .NetworkSettings.Ports}}").Output()
 	if err != nil {
 		return 0, fmt.Errorf("failed to get inspect info from container %s: %w", name, err)
 	}

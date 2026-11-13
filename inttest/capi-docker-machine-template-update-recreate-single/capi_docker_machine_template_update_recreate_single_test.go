@@ -69,9 +69,9 @@ func (s *CAPIDevMachineTemplateUpdateRecreateSingle) SetupSuite() {
 
 	tmpDir := s.T().TempDir()
 	s.clusterYamlsPath = tmpDir + "/cluster.yaml"
-	s.Require().NoError(os.WriteFile(s.clusterYamlsPath, []byte(dockerClusterYaml), 0644))
+	s.Require().NoError(os.WriteFile(s.clusterYamlsPath, []byte(dockerClusterYaml), 0o600))
 	s.clusterYamlsUpdatePath = tmpDir + "/update.yaml"
-	s.Require().NoError(os.WriteFile(s.clusterYamlsUpdatePath, []byte(controlPlaneUpdate), 0644))
+	s.Require().NoError(os.WriteFile(s.clusterYamlsUpdatePath, []byte(controlPlaneUpdate), 0o600))
 
 	s.ctx, _ = util.NewSuiteContext(s.T())
 }
@@ -89,14 +89,14 @@ func (s *CAPIDevMachineTemplateUpdateRecreateSingle) TestCAPIControlPlaneDockerD
 			return
 		}
 		s.T().Log("Deleting cluster objects")
-		s.Require().NoError(util.DeleteCluster("docker-test-cluster"))
+		s.Require().NoError(util.DeleteCluster(context.WithoutCancel(s.ctx), "docker-test-cluster"))
 	}()
 	s.T().Log("cluster objects applied, waiting for cluster to be ready")
 
 	var localPort int
-	// nolint:staticcheck
-	err := wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(_ context.Context) (bool, error) {
-		localPort, _ = getLBPort("docker-test-cluster-lb")
+	//nolint:staticcheck // Deprecated, but PollUntilContextCancel returns a different error on timeout.
+	err := wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+		localPort, _ = getLBPort(ctx, "docker-test-cluster-lb")
 		return localPort > 0, nil
 	})
 	s.Require().NoError(err)
@@ -105,18 +105,18 @@ func (s *CAPIDevMachineTemplateUpdateRecreateSingle) TestCAPIControlPlaneDockerD
 	kmcKC, err := util.GetKMCClientSet(s.ctx, s.client, "docker-test-cluster", "default", localPort)
 	s.Require().NoError(err)
 
-	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(_ context.Context) (bool, error) {
+	//nolint:staticcheck // Deprecated, but PollUntilContextCancel returns a different error on timeout.
+	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
 		b, _ := s.client.RESTClient().
 			Get().
 			AbsPath("/healthz").
-			DoRaw(context.Background())
+			DoRaw(ctx)
 
 		return string(b) == "ok", nil
 	})
 	s.Require().NoError(err)
 
-	// nolint:staticcheck
+	//nolint:staticcheck // Deprecated, but PollUntilContextCancel returns a different error on timeout.
 	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
 		machines, err := util.GetControlPlaneMachinesByKcpName(ctx, "docker-test-cluster-docker-test", "default", s.client)
 		if err != nil {
@@ -127,7 +127,7 @@ func (s *CAPIDevMachineTemplateUpdateRecreateSingle) TestCAPIControlPlaneDockerD
 			return false, nil
 		}
 
-		output, err := exec.Command("docker", "exec", machines[0].GetName(), "k0s", "status").Output()
+		output, err := exec.CommandContext(ctx, "docker", "exec", machines[0].GetName(), "k0s", "status").Output()
 		if err != nil {
 			return false, nil
 		}
@@ -142,10 +142,10 @@ func (s *CAPIDevMachineTemplateUpdateRecreateSingle) TestCAPIControlPlaneDockerD
 	s.T().Log("updating cluster objects")
 	s.updateClusterObjects()
 
-	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(s.ctx, 100*time.Millisecond, func(_ context.Context) (bool, error) {
+	//nolint:staticcheck // Deprecated, but PollUntilContextCancel returns a different error on timeout.
+	err = wait.PollImmediateUntilWithContext(s.ctx, 100*time.Millisecond, func(ctx context.Context) (bool, error) {
 		var err error
-		newNodeIDs, err := util.GetControlPlaneNodesIDs("docker-test-cluster-docker-test-")
+		newNodeIDs, err := util.GetControlPlaneNodesIDs(ctx, "docker-test-cluster-docker-test-")
 
 		if err != nil {
 			return false, nil
@@ -155,10 +155,10 @@ func (s *CAPIDevMachineTemplateUpdateRecreateSingle) TestCAPIControlPlaneDockerD
 	})
 	s.Require().NoError(err)
 
-	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(_ context.Context) (bool, error) {
+	//nolint:staticcheck // Deprecated, but PollUntilContextCancel returns a different error on timeout.
+	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
 		var err error
-		nodeIDs, err := util.GetControlPlaneNodesIDs("docker-test-cluster-docker-test-")
+		nodeIDs, err := util.GetControlPlaneNodesIDs(ctx, "docker-test-cluster-docker-test-")
 
 		if err != nil {
 			return false, nil
@@ -168,7 +168,7 @@ func (s *CAPIDevMachineTemplateUpdateRecreateSingle) TestCAPIControlPlaneDockerD
 	})
 	s.Require().NoError(err)
 
-	// nolint:staticcheck
+	//nolint:staticcheck // Deprecated, but PollUntilContextCancel returns a different error on timeout.
 	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
 		machines, err := util.GetControlPlaneMachinesByKcpName(ctx, "docker-test-cluster-docker-test", "default", s.client)
 		if err != nil {
@@ -179,7 +179,7 @@ func (s *CAPIDevMachineTemplateUpdateRecreateSingle) TestCAPIControlPlaneDockerD
 			return false, nil
 		}
 
-		output, err := exec.Command("docker", "exec", machines[0].GetName(), "k0s", "status").CombinedOutput()
+		output, err := exec.CommandContext(ctx, "docker", "exec", machines[0].GetName(), "k0s", "status").CombinedOutput()
 		if err != nil {
 			return false, nil
 		}
@@ -191,18 +191,18 @@ func (s *CAPIDevMachineTemplateUpdateRecreateSingle) TestCAPIControlPlaneDockerD
 
 func (s *CAPIDevMachineTemplateUpdateRecreateSingle) applyClusterObjects() {
 	// Exec via kubectl
-	out, err := exec.Command("kubectl", "apply", "-f", s.clusterYamlsPath).CombinedOutput()
+	out, err := exec.CommandContext(s.ctx, "kubectl", "apply", "-f", s.clusterYamlsPath).CombinedOutput()
 	s.Require().NoError(err, "failed to apply cluster objects: %s", string(out))
 }
 
 func (s *CAPIDevMachineTemplateUpdateRecreateSingle) updateClusterObjects() {
 	// Exec via kubectl
-	out, err := exec.Command("kubectl", "apply", "-f", s.clusterYamlsUpdatePath).CombinedOutput()
+	out, err := exec.CommandContext(s.ctx, "kubectl", "apply", "-f", s.clusterYamlsUpdatePath).CombinedOutput()
 	s.Require().NoError(err, "failed to update cluster objects: %s", string(out))
 }
 
-func getLBPort(name string) (int, error) {
-	b, err := exec.Command("docker", "inspect", name, "--format", "{{json .NetworkSettings.Ports}}").Output()
+func getLBPort(ctx context.Context, name string) (int, error) {
+	b, err := exec.CommandContext(ctx, "docker", "inspect", name, "--format", "{{json .NetworkSettings.Ports}}").Output()
 	if err != nil {
 		return 0, fmt.Errorf("failed to get inspect info from container %s: %w", name, err)
 	}

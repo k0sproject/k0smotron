@@ -252,7 +252,7 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 			Reason:  bootstrapv2.WaitingForControlPlaneInitializationReason,
 			Message: "Control plane endpoint is not set",
 		})
-		return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 30}, nil
+		return ctrl.Result{RequeueAfter: time.Second * 30}, nil
 	}
 
 	machines, err := collections.GetFilteredMachinesForCluster(ctx, c.Client, cluster, collections.ControlPlaneMachines(cluster.Name), collections.ActiveMachines)
@@ -275,7 +275,7 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 			Reason:  bootstrapv2.WaitingForInfrastructureInitializationReason,
 			Message: "No control plane machines found, waiting for machines to be created",
 		})
-		return ctrl.Result{Requeue: true}, nil
+		return util.RequeueWithBackoff(), nil
 	}
 	scope.machines = machines
 
@@ -368,7 +368,7 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 	config.Status.Initialization.DataSecretCreated = new(true)
 	config.Status.DataSecretName = new(bootstrapSecret.Name)
 
-	log.Info("Reconciled succesfully")
+	log.Info("Reconciled successfully")
 
 	if scope.bootstrapTokenID == "" {
 		// Empty bootstrap token ID indicates that the initial controller does not use a join token,
@@ -452,7 +452,7 @@ func (c *ControlPlaneController) generateBootstrapDataForController(ctx context.
 	if scope.Config.Spec.K0s != nil {
 		k0sConfigBytes, err := scope.Config.Spec.K0s.MarshalJSON()
 		if err != nil {
-			return nil, fmt.Errorf("error marshalling k0s config: %v", err)
+			return nil, fmt.Errorf("error marshaling k0s config: %w", err)
 		}
 		k0sConfigPath := scope.Config.Spec.GetK0sConfigPath()
 		files = append(files, provisioner.File{
@@ -466,7 +466,7 @@ func (c *ControlPlaneController) generateBootstrapDataForController(ctx context.
 	if mayInitControlPlane(scope) && scope.machines.Oldest().Name == scope.Config.Name {
 		files, err = c.genInitialControlPlaneFiles(ctx, scope, files)
 		if err != nil {
-			return nil, fmt.Errorf("error generating initial control plane files: %v", err)
+			return nil, fmt.Errorf("error generating initial control plane files: %w", err)
 		}
 		installCmd = createCPInstallCmd(scope)
 	} else {
@@ -480,7 +480,7 @@ func (c *ControlPlaneController) generateBootstrapDataForController(ctx context.
 	if scope.Config.Spec.Tunneling.Enabled {
 		tunnelingFiles, err := c.genTunnelingFiles(ctx, scope)
 		if err != nil {
-			return nil, fmt.Errorf("error generating tunneling files: %v", err)
+			return nil, fmt.Errorf("error generating tunneling files: %w", err)
 		}
 		files = append(files, tunnelingFiles...)
 	}
@@ -620,12 +620,11 @@ func (c *ControlPlaneController) genTunnelingFiles(ctx context.Context, scope *C
 	}
 	frpToken := string(frpSecret.Data["value"])
 
-	localIP := "10.96.0.1"
 	kubeSvcIP, err := constants.GetAPIServerVirtualIP(scope.Cluster.Spec.ClusterNetwork.Services.String())
 	if err != nil {
 		return nil, err
 	}
-	localIP = kubeSvcIP.String()
+	localIP := kubeSvcIP.String()
 
 	var modeConfig string
 	if scope.Config.Spec.Tunneling.Mode == "proxy" {
@@ -876,7 +875,12 @@ func (c *ControlPlaneController) detectJoinHost(ctx context.Context, scope *Cont
 		return "", errors.New("failed to load cluster CA certificate for join host detection")
 	}
 
-	transport := http.DefaultTransport.(*http.Transport).Clone()
+	// http.DefaultTransport is a process-wide variable that something else may have replaced.
+	defaultTransport, ok := http.DefaultTransport.(*http.Transport)
+	if !ok {
+		return "", fmt.Errorf("unexpected http.DefaultTransport %T", http.DefaultTransport)
+	}
+	transport := defaultTransport.Clone()
 	transport.TLSClientConfig = &tls.Config{
 		// The join API serves a certificate signed by the cluster CA, so we
 		// trust it explicitly instead of skipping verification.
@@ -903,7 +907,7 @@ func (c *ControlPlaneController) detectJoinHost(ctx context.Context, scope *Cont
 	if found && k0sAPIPort > 0 {
 		port = strconv.Itoa(int(k0sAPIPort))
 	}
-	host := fmt.Sprintf("https://%s:%s", scope.Cluster.Spec.ControlPlaneEndpoint.Host, port)
+	host := "https://" + util.JoinHostPort(scope.Cluster.Spec.ControlPlaneEndpoint.Host, port)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, host+"/v1beta1/ca", nil)
 	if err != nil {
@@ -919,7 +923,7 @@ func (c *ControlPlaneController) detectJoinHost(ctx context.Context, scope *Cont
 		return "", fmt.Errorf("failed to get first controller IP: %w", err)
 	}
 
-	return fmt.Sprintf("https://%s:%s", firstControllerIP, port), nil
+	return "https://" + util.JoinHostPort(firstControllerIP, port), nil
 }
 
 func (c *ControlPlaneController) findFirstControllerIP(ctx context.Context, scope *ControllerScope) (string, error) {
@@ -964,13 +968,20 @@ func (c *ControlPlaneController) findFirstControllerIP(ctx context.Context, scop
 
 		if found {
 			for _, addr := range addresses {
-				addrMap, _ := addr.(map[string]any)
+				addrMap, ok := addr.(map[string]any)
+				if !ok {
+					continue
+				}
+				address, ok := addrMap["address"].(string)
+				if !ok {
+					continue
+				}
 				if addrMap["type"] == string(corev1.NodeExternalIP) {
-					extAddr = addrMap["address"].(string)
+					extAddr = address
 					break
 				}
 				if addrMap["type"] == string(corev1.NodeInternalIP) {
-					ip, err := netip.ParseAddr(addrMap["address"].(string))
+					ip, err := netip.ParseAddr(address)
 					if err != nil {
 						continue
 					}
@@ -1079,6 +1090,7 @@ command="/etc/bin/k0sleave.sh"
 		{
 			Path:        fmt.Sprintf("%s/k0sleave-sysv", workingDir),
 			Permissions: "0644",
+			//nolint:dupword // Shell script, its nested blocks end in fi fi.
 			Content: `#!/bin/sh
 # For RedHat and cousins:
 # chkconfig: - 99 01

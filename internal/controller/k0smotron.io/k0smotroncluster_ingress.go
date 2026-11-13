@@ -35,13 +35,9 @@ func (scope *kmcScope) reconcileIngress(ctx context.Context, kmc *km.Cluster) er
 		return nil
 	}
 
-	configMap, err := scope.generateIngressManifestsConfigMap(kmc)
-	if err != nil {
-		return fmt.Errorf("failed to generate ingress manifests configmap: %w", err)
-	}
+	configMap := scope.generateIngressManifestsConfigMap(kmc)
 	_ = kcontrollerutil.SetExternalOwnerReference(kmc, &configMap, scope.client.Scheme(), scope.externalOwner)
-	err = scope.reconcileResource(ctx, kmc, &configMap)
-	if err != nil {
+	if err := scope.reconcileResource(ctx, kmc, &configMap); err != nil {
 		return fmt.Errorf("failed to patch haproxy configmap for ingress: %w", err)
 	}
 
@@ -51,12 +47,9 @@ func (scope *kmcScope) reconcileIngress(ctx context.Context, kmc *km.Cluster) er
 	// pointed at the ingress endpoint.
 	native := kmc.Spec.HasNativeIngressKonnectivity()
 	if !native {
-		configMap, err = scope.generateKonnectivityIngressConfigMap(kmc)
-		if err != nil {
-			return fmt.Errorf("failed to generate konnectivity ingress configmap: %w", err)
-		}
+		configMap = scope.generateKonnectivityIngressConfigMap(kmc)
 		_ = kcontrollerutil.SetExternalOwnerReference(kmc, &configMap, scope.client.Scheme(), scope.externalOwner)
-		if err = scope.reconcileResource(ctx, kmc, &configMap); err != nil {
+		if err := scope.reconcileResource(ctx, kmc, &configMap); err != nil {
 			return fmt.Errorf("failed to reconcile konnectivity configmap for ingress: %w", err)
 		}
 	}
@@ -189,7 +182,7 @@ func (scope *kmcScope) getKonnectivityAgentPullPolicy(kmc *km.Cluster) string {
 	return "IfNotPresent"
 }
 
-func (scope *kmcScope) generateIngressManifestsConfigMap(kmc *km.Cluster) (corev1.ConfigMap, error) {
+func (scope *kmcScope) generateIngressManifestsConfigMap(kmc *km.Cluster) corev1.ConfigMap {
 	configMap := corev1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ConfigMap",
@@ -312,10 +305,10 @@ spec:
 		},
 	}
 
-	return configMap, nil
+	return configMap
 }
 
-func (scope *kmcScope) generateKonnectivityIngressConfigMap(kmc *km.Cluster) (corev1.ConfigMap, error) {
+func (scope *kmcScope) generateKonnectivityIngressConfigMap(kmc *km.Cluster) corev1.ConfigMap {
 	configMap := corev1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ConfigMap",
@@ -422,7 +415,7 @@ spec:
 		},
 	}
 
-	return configMap, nil
+	return configMap
 }
 
 func (scope *kmcScope) generateIngress(kmc *km.Cluster) v1.Ingress {
@@ -456,7 +449,7 @@ func (scope *kmcScope) generateIngress(kmc *km.Cluster) v1.Ingress {
 									Service: &v1.IngressServiceBackend{
 										Name: kmc.GetServiceName(),
 										Port: v1.ServiceBackendPort{
-											Number: int32(kmc.Spec.Service.APIPort),
+											Number: servicePort(kmc.Spec.Service.APIPort),
 										},
 									},
 								},
@@ -475,7 +468,7 @@ func (scope *kmcScope) generateIngress(kmc *km.Cluster) v1.Ingress {
 									Service: &v1.IngressServiceBackend{
 										Name: kmc.GetServiceName(),
 										Port: v1.ServiceBackendPort{
-											Number: int32(kmc.Spec.Service.KonnectivityPort),
+											Number: servicePort(kmc.Spec.Service.KonnectivityPort),
 										},
 									},
 								},

@@ -40,7 +40,7 @@ func TestControlplaneConditions(t *testing.T) {
 	setupAndRun(t, controlplaneConditionsSpec)
 }
 
-func controlplaneConditionsSpec(t *testing.T) {
+func controlplaneConditionsSpec(t *testing.T) { //nolint:thelper // Test body run by setupAndRun, t.Helper would move its failures to the caller.
 	testName := "kcp-conditions"
 
 	// Setup a Namespace where to host objects for this spec and create a watcher for the namespace events.

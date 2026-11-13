@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"maps"
 	"sort"
+	"strconv"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -31,6 +32,7 @@ import (
 	"k8s.io/client-go/util/retry"
 
 	infrastructure "github.com/k0sproject/k0smotron/v2/api/infrastructure/v1beta2"
+	"github.com/k0sproject/k0smotron/v2/internal/controller/util"
 	"github.com/k0sproject/k0smotron/v2/internal/provisioner"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -117,11 +119,11 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 	// Fetch the Machine that ows RemoteMachine
 	machine, err := capiutil.GetOwnerMachine(ctx, r.Client, rm.ObjectMeta)
 	if err != nil {
-		return ctrl.Result{Requeue: true}, err
+		return ctrl.Result{}, err
 	}
 	if machine == nil {
 		log.Info("Waiting for Machine Controller to set OwnerRef on RemoterMachine")
-		return ctrl.Result{Requeue: true}, nil
+		return util.RequeueWithBackoff(), nil
 	}
 
 	log = log.WithValues("machine", machine.Name)
@@ -130,11 +132,11 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 	cluster, err := capiutil.GetClusterFromMetadata(ctx, r.Client, machine.ObjectMeta)
 	if err != nil {
 		log.Info("RemoteMachine owner Machine is missing cluster label or cluster does not exist")
-		return ctrl.Result{Requeue: true}, err
+		return ctrl.Result{}, err
 	}
 	if cluster == nil {
 		log.Info(fmt.Sprintf("Cluster association broken for RemoteMachine %s/%s", rm.Namespace, rm.Name))
-		return ctrl.Result{Requeue: true}, nil
+		return util.RequeueWithBackoff(), nil
 	}
 
 	if isPaused, requeue, err := paused.EnsurePausedCondition(ctx, r.Client, cluster, rm); err != nil || isPaused || requeue {
@@ -143,12 +145,12 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 
 	if !conditions.IsTrue(cluster, clusterv1.ClusterInfrastructureReadyCondition) {
 		log.Info("Cluster infrastructure is not ready yet")
-		return ctrl.Result{Requeue: true}, nil
+		return util.RequeueWithBackoff(), nil
 	}
 
 	if machine.Spec.Bootstrap.DataSecretName == nil {
 		log.Info("Waiting for Bootstrap Controller to set bootstrap data")
-		return ctrl.Result{Requeue: true}, nil
+		return util.RequeueWithBackoff(), nil
 	}
 
 	rmPatchHelper, err := patch.NewHelper(rm, r.Client)
@@ -184,7 +186,7 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 		err := r.reservePooledMachineAndPopulateRemoteMachine(ctx, rm)
 		if err != nil {
 			log.Error(err, "Error reconciling PooledMachine")
-			return ctrl.Result{Requeue: true}, err
+			return ctrl.Result{}, err
 		}
 	}
 
@@ -205,7 +207,7 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 		sshKey, err := r.getSSHKey(ctx, rm)
 		if err != nil {
 			log.Error(err, "Failed to get ssh key")
-			return ctrl.Result{Requeue: true}, err
+			return ctrl.Result{}, err
 		}
 
 		p = &SSHProvisioner{
@@ -218,7 +220,7 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 
 	if !rm.ObjectMeta.DeletionTimestamp.IsZero() {
 		if controllerutil.ContainsFinalizer(rm, RemoteMachineFinalizer) {
-			mode := ModeNonK0s
+			var mode RemoteMachineMode
 			switch machine.Spec.Bootstrap.ConfigRef.Kind {
 			case "K0sWorkerConfig":
 				mode = ModeWorker
@@ -259,7 +261,7 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 	if rm.Spec.ProvisionJob == nil {
 		if rm.Spec.Address == "" || rm.Spec.SSHKeyRef.Name == "" {
 			rm.Status.SetFailures("MissingFields", "If pool is empty, following fields are required: address, sshKeyRef")
-			return ctrl.Result{Requeue: true}, nil
+			return util.RequeueWithBackoff(), nil
 		}
 	}
 
@@ -282,7 +284,7 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 				updatedRemoteMachine := &infrastructure.RemoteMachine{}
 				if err := r.Get(provisionCtx, client.ObjectKeyFromObject(rm), updatedRemoteMachine); err == nil &&
 					!updatedRemoteMachine.DeletionTimestamp.IsZero() {
-					log.Info("Cancelling Bootstrap because the underlying machine has been deleted")
+					log.Info("Canceling Bootstrap because the underlying machine has been deleted")
 					cancel()
 					return
 				}
@@ -306,7 +308,7 @@ func (r *RemoteMachineController) Reconcile(ctx context.Context, req ctrl.Reques
 		Reason: infrastructure.RemoteMachineBootstrapExecSucceededReason,
 	})
 
-	rm.Spec.ProviderID = fmt.Sprintf("remote-machine://%s:%d", rm.Spec.Address, rm.Spec.Port)
+	rm.Spec.ProviderID = "remote-machine://" + util.JoinHostPort(rm.Spec.Address, strconv.Itoa(rm.Spec.Port))
 
 	m := machine.DeepCopy()
 	for l := range rm.Labels {

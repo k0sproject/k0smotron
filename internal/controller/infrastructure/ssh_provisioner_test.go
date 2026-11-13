@@ -100,7 +100,7 @@ func (f *fakeFsys) Stat(name string) (fs.FileInfo, error) {
 	return nil, &fs.PathError{Op: "stat", Path: name, Err: fs.ErrNotExist}
 }
 
-func (f *fakeFsys) Open(_ string) (fs.File, error)  { return nil, nil }
+func (f *fakeFsys) Open(_ string) (fs.File, error)  { return nil, nil } //nolint:nilnil // Stub, the provisioner only calls OpenFile.
 func (f *fakeFsys) Sha256(_ string) (string, error) { return "", nil }
 func (f *fakeFsys) Remove(_ string) error           { return nil }
 func (f *fakeFsys) RemoveAll(_ string) error        { return nil }
@@ -195,7 +195,7 @@ func TestUploadFileCreatesDirectoryTraversable(t *testing.T) {
 		if permissions != "" {
 			parsed, err := provisioner.File{Permissions: permissions}.PermissionsAsInt()
 			require.NoError(t, err)
-			want = fs.FileMode(parsed)
+			want = fs.FileMode(parsed) //nolint:gosec // PermissionsAsInt keeps it within 0-07777.
 		}
 		require.Equal(t, want, fsys.openPerm, "file mode for permissions %q", permissions)
 	}
@@ -456,7 +456,7 @@ func TestExtractCloudInitRejectsAppend(t *testing.T) {
 func remoteArgv(t *testing.T, script string) []string {
 	t.Helper()
 
-	out, err := osexec.Command("sh", "-c", "scp() { :; }\nssh() { [ $# -eq 2 ] || exit 1; eval \"set -- $2\"; printf '%s\\n' \"$@\"; echo; }\n"+script).Output()
+	out, err := osexec.CommandContext(t.Context(), "sh", "-c", "scp() { :; }\nssh() { [ $# -eq 2 ] || exit 1; eval \"set -- $2\"; printf '%s\\n' \"$@\"; echo; }\n"+script).Output()
 	require.NoError(t, err)
 
 	return strings.Split(strings.Split(string(out), "\n\n")[0], "\n")
@@ -492,11 +492,11 @@ func TestProvisionStopsWhenTheContextEnds(t *testing.T) {
 	keyPEM, err := ssh.MarshalPrivateKey(key, "")
 	require.NoError(t, err)
 	serverConfig := &ssh.ServerConfig{
-		PublicKeyCallback: func(ssh.ConnMetadata, ssh.PublicKey) (*ssh.Permissions, error) { return nil, nil },
+		PublicKeyCallback: func(ssh.ConnMetadata, ssh.PublicKey) (*ssh.Permissions, error) { return nil, nil }, //nolint:nilnil // Accepts any key, the ssh API's (nil, nil).
 	}
 	serverConfig.AddHostKey(signer)
 
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	listener, err := (&net.ListenConfig{}).Listen(t.Context(), "tcp", "127.0.0.1:0")
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = listener.Close() })
 	go func() {
@@ -530,7 +530,8 @@ func TestProvisionStopsWhenTheContextEnds(t *testing.T) {
 		}
 	}()
 
-	addr := listener.Addr().(*net.TCPAddr)
+	addr, ok := listener.Addr().(*net.TCPAddr)
+	require.True(t, ok, "listener address is a %T", listener.Addr())
 	p := &SSHProvisioner{
 		cloudInit: &provisioner.InputProvisionData{Commands: []string{"sleep infinity"}},
 		machine: &api.RemoteMachine{Spec: api.RemoteMachineSpec{

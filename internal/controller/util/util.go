@@ -17,7 +17,9 @@ package util
 
 import (
 	"maps"
+	"net"
 	"sort"
+	"strings"
 
 	km "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
 )
@@ -113,4 +115,10 @@ func AddToExistingSans(existing []string, newSan []string) []string {
 	sort.Strings(finalSans)
 
 	return finalSans
+}
+
+// JoinHostPort joins host and port like net.JoinHostPort, bracketing an IPv6
+// host. A host that is already in brackets is accepted rather than bracketed twice.
+func JoinHostPort(host, port string) string {
+	return net.JoinHostPort(strings.TrimSuffix(strings.TrimPrefix(host, "["), "]"), port)
 }

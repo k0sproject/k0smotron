@@ -90,7 +90,7 @@ func TestDeprecatedInfrastructureRefStillApplies(t *testing.T) {
 	require.NoError(t, err)
 
 	// testEnv is shared for the whole package run, so these outlive the test. The package context
-	// rather than t.Context(), which is already cancelled by the time a cleanup runs.
+	// rather than t.Context(), which is already canceled by the time a cleanup runs.
 	t.Cleanup(func() {
 		require.NoError(t, testEnv.Cleanup(ctx, ns))
 	})

@@ -17,6 +17,7 @@ limitations under the License.
 package v1beta1
 
 import (
+	"fmt"
 	"github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
 	"github.com/k0sproject/k0smotron/v2/internal/provisioner"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
@@ -26,7 +27,10 @@ var _ conversion.Convertible = &K0sControllerConfig{}
 
 // ConvertTo converts this version (v1beta1) to the hub version (v1beta2).
 func (c *K0sControllerConfig) ConvertTo(dstRaw conversion.Hub) error {
-	dst := dstRaw.(*v1beta2.K0sControllerConfig)
+	dst, ok := dstRaw.(*v1beta2.K0sControllerConfig)
+	if !ok {
+		return fmt.Errorf("expected *v1beta2.K0sControllerConfig, got %T", dstRaw)
+	}
 	dst.ObjectMeta = *c.ObjectMeta.DeepCopy()
 
 	dst.Spec = k0sControllerConfigV1beta1ToV1beta2Spec(c.Spec)
@@ -43,7 +47,7 @@ func (c *K0sControllerConfig) ConvertTo(dstRaw conversion.Hub) error {
 
 func k0sControllerConfigV1beta1ToV1beta2Spec(spec K0sControllerConfigSpec) v1beta2.K0sControllerConfigSpec {
 	res := v1beta2.K0sControllerConfigSpec{
-		Version: spec.Version,
+		Version: spec.Version, //nolint:staticcheck // Conversion carries the deprecated field.
 	}
 	if spec.K0sConfigSpec != nil {
 		res.K0sConfigSpec = ConvertK0sConfigSpecV1beta1ToV1beta2(spec.K0sConfigSpec)
@@ -92,7 +96,10 @@ func ConvertK0sConfigSpecV1beta1ToV1beta2(spec *K0sConfigSpec) *v1beta2.K0sConfi
 
 // ConvertFrom converts from the hub version (v1beta2) to this version (v1beta1).
 func (c *K0sControllerConfig) ConvertFrom(srcRaw conversion.Hub) error {
-	src := srcRaw.(*v1beta2.K0sControllerConfig)
+	src, ok := srcRaw.(*v1beta2.K0sControllerConfig)
+	if !ok {
+		return fmt.Errorf("expected *v1beta2.K0sControllerConfig, got %T", srcRaw)
+	}
 	c.ObjectMeta = src.ObjectMeta
 
 	c.Spec = k0sControllerConfigSpecV1beta2ToV1beta1(src.Spec)
@@ -110,7 +117,7 @@ func (c *K0sControllerConfig) ConvertFrom(srcRaw conversion.Hub) error {
 
 func k0sControllerConfigSpecV1beta2ToV1beta1(spec v1beta2.K0sControllerConfigSpec) K0sControllerConfigSpec {
 	res := K0sControllerConfigSpec{
-		Version: spec.Version,
+		Version: spec.Version, //nolint:staticcheck // Conversion carries the deprecated field.
 	}
 	if spec.K0sConfigSpec != nil {
 		res.K0sConfigSpec = ConvertK0sConfigSpecV1beta2ToV1beta1(spec.K0sConfigSpec)

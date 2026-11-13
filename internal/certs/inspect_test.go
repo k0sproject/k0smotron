@@ -138,5 +138,5 @@ func TestFingerprint(t *testing.T) {
 	assert.NotEqual(t, Fingerprint(a), Fingerprint(c))
 
 	assert.NotEmpty(t, Fingerprint(a))
-	assert.Equal(t, "", Fingerprint(nil))
+	assert.Empty(t, Fingerprint(nil))
 }

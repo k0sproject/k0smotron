@@ -79,7 +79,7 @@ func (s *CAPIDockerSuite) TestCAPIDocker() {
 			return
 		}
 		s.T().Log("Deleting cluster objects")
-		s.Require().NoError(util.DeleteCluster("docker-md-test"))
+		s.Require().NoError(util.DeleteCluster(context.WithoutCancel(s.ctx), "docker-md-test"))
 	}()
 	s.T().Log("cluster objects applied, waiting for cluster to be ready")
 
@@ -130,7 +130,7 @@ func (s *CAPIDockerSuite) TestCAPIDocker() {
 	s.Require().NoError(err)
 	// Check that the MD gets to ready state
 	s.T().Log("waiting for machinedeployment to be ready")
-	// nolint:staticcheck
+	//nolint:staticcheck // Deprecated, but PollUntilContextCancel returns a different error on timeout.
 	s.Require().NoError(wait.PollImmediateUntilWithContext(ctx, 1*time.Second, func(ctx context.Context) (done bool, err error) {
 		// Get the MachineDeployment
 		md := &clusterv1.MachineDeployment{}
@@ -153,6 +153,6 @@ func (s *CAPIDockerSuite) TestCAPIDocker() {
 
 func (s *CAPIDockerSuite) applyClusterObjects() {
 	// Exec via kubectl
-	out, err := exec.Command("kubectl", "apply", "-f", "../../config/samples/capi/docker/cluster-with-machinedeployment.yaml").CombinedOutput()
+	out, err := exec.CommandContext(s.ctx, "kubectl", "apply", "-f", "../../config/samples/capi/docker/cluster-with-machinedeployment.yaml").CombinedOutput()
 	s.Require().NoError(err, "failed to apply cluster objects: %s", string(out))
 }

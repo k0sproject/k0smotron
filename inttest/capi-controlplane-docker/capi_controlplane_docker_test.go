@@ -71,7 +71,7 @@ func (s *CAPIControlPlaneDockerSuite) SetupSuite() {
 
 	tmpDir := s.T().TempDir()
 	s.clusterYamlsPath = tmpDir + "/cluster.yaml"
-	s.Require().NoError(os.WriteFile(s.clusterYamlsPath, []byte(dockerClusterYaml), 0644))
+	s.Require().NoError(os.WriteFile(s.clusterYamlsPath, []byte(dockerClusterYaml), 0o600))
 
 	s.ctx, _ = util.NewSuiteContext(s.T())
 }
@@ -89,14 +89,14 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 			return
 		}
 		s.T().Log("Deleting cluster objects")
-		s.Require().NoError(util.DeleteCluster("docker-test-cluster"))
+		s.Require().NoError(util.DeleteCluster(context.WithoutCancel(s.ctx), "docker-test-cluster"))
 	}()
 	s.T().Log("cluster objects applied, waiting for cluster to be ready")
 
 	var localPort int
-	// nolint:staticcheck
-	err := wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(_ context.Context) (bool, error) {
-		localPort, _ = getLBPort("docker-test-cluster-lb")
+	//nolint:staticcheck // Deprecated, but PollUntilContextCancel returns a different error on timeout.
+	err := wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+		localPort, _ = getLBPort(ctx, "docker-test-cluster-lb")
 		return localPort > 0, nil
 	})
 	s.Require().NoError(err)
@@ -105,11 +105,11 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 	kmcKC, err := util.GetKMCClientSet(s.ctx, s.client, "docker-test-cluster", "default", localPort)
 	s.Require().NoError(err)
 
-	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(_ context.Context) (bool, error) {
+	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
 		b, _ := s.client.RESTClient().
 			Get().
 			AbsPath("/healthz").
-			DoRaw(context.Background())
+			DoRaw(ctx)
 
 		return string(b) == "ok", nil
 	})
@@ -129,7 +129,7 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 	s.Require().NoError(err)
 
 	controlPlaneMachineName := ""
-	// nolint:staticcheck
+	//nolint:staticcheck // Deprecated, but PollUntilContextCancel returns a different error on timeout.
 	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
 		machines, err := util.GetControlPlaneMachinesByKcpName(ctx, "docker-test", "default", s.client)
 		if err != nil {
@@ -142,7 +142,7 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 
 		for i := range machines {
 			nodeName := fmt.Sprintf("docker-test-cluster-%s", machines[i].GetName())
-			output, err := exec.Command("docker", "exec", nodeName, "k0s", "status").Output()
+			output, err := exec.CommandContext(ctx, "docker", "exec", nodeName, "k0s", "status").Output()
 			if err != nil {
 				return false, nil
 			}
@@ -161,37 +161,37 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 	s.Require().NoError(util.WaitForNodeReadyStatus(s.ctx, kmcKC, "docker-test-worker-0", corev1.ConditionTrue))
 
 	s.T().Log("verifying k0s.yaml")
-	k0sConfig, err := getDockerNodeFile(controlPlaneMachineName, "/etc/k0s.yaml")
+	k0sConfig, err := getDockerNodeFile(s.ctx, controlPlaneMachineName, "/etc/k0s.yaml")
 	s.Require().NoError(err)
-	s.Require().True(strings.Contains(k0sConfig, "controlPlaneLoadBalancing"))
-	s.Require().True(strings.Contains(k0sConfig, "192.168.0.0/16"))
+	s.Require().Contains(k0sConfig, "controlPlaneLoadBalancing")
+	s.Require().Contains(k0sConfig, "192.168.0.0/16")
 
 	s.T().Log("verifying cloud-init extras")
-	preStartFile, err := getDockerNodeFile(controlPlaneMachineName, "/tmp/pre-start")
+	preStartFile, err := getDockerNodeFile(s.ctx, controlPlaneMachineName, "/tmp/pre-start")
 	s.Require().NoError(err)
 	s.Require().Equal("pre-start", preStartFile)
-	postStartFile, err := getDockerNodeFile(controlPlaneMachineName, "/tmp/post-start")
+	postStartFile, err := getDockerNodeFile(s.ctx, controlPlaneMachineName, "/tmp/post-start")
 	s.Require().NoError(err)
 	s.Require().Equal("post-start", postStartFile)
-	preStartFile, err = getDockerNodeFile("docker-test-cluster-docker-test-worker-0", "/tmp/pre-start")
+	preStartFile, err = getDockerNodeFile(s.ctx, "docker-test-cluster-docker-test-worker-0", "/tmp/pre-start")
 	s.Require().NoError(err)
 	s.Require().Equal("pre-start", preStartFile)
-	postStartFile, err = getDockerNodeFile("docker-test-cluster-docker-test-worker-0", "/tmp/post-start")
+	postStartFile, err = getDockerNodeFile(s.ctx, "docker-test-cluster-docker-test-worker-0", "/tmp/post-start")
 	s.Require().NoError(err)
 	s.Require().Equal("post-start", postStartFile)
-	customFile, err := getDockerNodeFile("docker-test-cluster-docker-test-worker-0", "/tmp/custom")
+	customFile, err := getDockerNodeFile(s.ctx, "docker-test-cluster-docker-test-worker-0", "/tmp/custom")
 	s.Require().NoError(err)
 	s.Require().Equal("custom", customFile)
-	extraFile, err := getDockerNodeFile("docker-test-cluster-docker-test-worker-0", "/tmp/test-file")
+	extraFile, err := getDockerNodeFile(s.ctx, "docker-test-cluster-docker-test-worker-0", "/tmp/test-file")
 	s.Require().NoError(err)
 	s.Require().Equal("test-file", extraFile)
-	extraFileFromSecret, err := getDockerNodeFile(controlPlaneMachineName, "/tmp/test-file-secret")
+	extraFileFromSecret, err := getDockerNodeFile(s.ctx, controlPlaneMachineName, "/tmp/test-file-secret")
 	s.Require().NoError(err)
 	s.Require().Equal("test", extraFileFromSecret)
-	customControllerFile, err := getDockerNodeFile(controlPlaneMachineName, "/tmp/custom")
+	customControllerFile, err := getDockerNodeFile(s.ctx, controlPlaneMachineName, "/tmp/custom")
 	s.Require().NoError(err)
 	s.Require().Equal("custom", customControllerFile)
-	extraFileFromSecret, err = getDockerNodeFile("docker-test-cluster-docker-test-worker-0", "/tmp/test-file-secret")
+	extraFileFromSecret, err = getDockerNodeFile(s.ctx, "docker-test-cluster-docker-test-worker-0", "/tmp/test-file-secret")
 	s.Require().NoError(err)
 	s.Require().Equal("test", extraFileFromSecret)
 
@@ -201,12 +201,12 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 		Do(s.ctx).
 		Error()
 
-	err = wait.PollUntilContextCancel(s.ctx, 100*time.Millisecond, true, func(_ context.Context) (bool, error) {
+	err = wait.PollUntilContextCancel(s.ctx, 100*time.Millisecond, true, func(ctx context.Context) (bool, error) {
 		var obj unstructured.UnstructuredList
 		err := s.client.RESTClient().
 			Get().
 			AbsPath("/apis/cluster.x-k8s.io/v1beta1/namespaces/default/machines").
-			Do(s.ctx).
+			Do(ctx).
 			Into(&obj)
 		if err != nil {
 			return false, nil
@@ -217,11 +217,11 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 	})
 	s.Require().NoError(err)
 
-	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(_ context.Context) (bool, error) {
+	err = wait.PollUntilContextCancel(s.ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
 		b, _ := s.client.RESTClient().
 			Get().
 			AbsPath("/healthz").
-			DoRaw(context.Background())
+			DoRaw(ctx)
 
 		return string(b) == "ok", nil
 	})
@@ -231,17 +231,17 @@ func (s *CAPIControlPlaneDockerSuite) TestCAPIControlPlaneDocker() {
 
 func (s *CAPIControlPlaneDockerSuite) applyClusterObjects() {
 	// Exec via kubectl
-	out, err := exec.Command("kubectl", "apply", "-f", s.clusterYamlsPath).CombinedOutput()
+	out, err := exec.CommandContext(s.ctx, "kubectl", "apply", "-f", s.clusterYamlsPath).CombinedOutput()
 	s.Require().NoError(err, "failed to apply cluster objects: %s", string(out))
 }
 
-func getDockerNodeFile(nodeName string, path string) (string, error) {
-	output, err := exec.Command("docker", "exec", nodeName, "cat", path).Output()
+func getDockerNodeFile(ctx context.Context, nodeName string, path string) (string, error) {
+	output, err := exec.CommandContext(ctx, "docker", "exec", nodeName, "cat", path).Output()
 	if err != nil {
 		return "", fmt.Errorf("failed to get file %s from node %s: %w", path, nodeName, err)
 	}
 
-	return string(string(output)), nil
+	return string(output), nil
 }
 
 func GetKMCClientSet(ctx context.Context, kc *kubernetes.Clientset, name string, namespace string) (*kubernetes.Clientset, error) {
@@ -255,7 +255,7 @@ func GetKMCClientSet(ctx context.Context, kc *kubernetes.Clientset, name string,
 		return nil, err
 	}
 
-	kmcCfg, err := clientcmd.RESTConfigFromKubeConfig([]byte(kubeConf.Data["value"]))
+	kmcCfg, err := clientcmd.RESTConfigFromKubeConfig(kubeConf.Data["value"])
 	if err != nil {
 		return nil, err
 	}
@@ -263,8 +263,8 @@ func GetKMCClientSet(ctx context.Context, kc *kubernetes.Clientset, name string,
 	return kubernetes.NewForConfig(kmcCfg)
 }
 
-func getLBPort(name string) (int, error) {
-	b, err := exec.Command("docker", "inspect", name, "--format", "{{json .NetworkSettings.Ports}}").Output()
+func getLBPort(ctx context.Context, name string) (int, error) {
+	b, err := exec.CommandContext(ctx, "docker", "inspect", name, "--format", "{{json .NetworkSettings.Ports}}").Output()
 	if err != nil {
 		return 0, fmt.Errorf("failed to get inspect info from container %s: %w", name, err)
 	}

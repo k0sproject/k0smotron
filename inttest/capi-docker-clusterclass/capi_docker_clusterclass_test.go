@@ -153,9 +153,9 @@ func (s *CAPIDockerClusterClassSuite) TestCAPIDockerClusterClass() {
 	s.T().Log("cluster objects applied, waiting for cluster to be ready")
 
 	var localPort int
-	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(_ context.Context) (bool, error) {
-		localPort, _ = getLBPort("TestCAPIDockerClusterClassSuite-k0smotron0")
+	//nolint:staticcheck // Deprecated, but PollUntilContextCancel returns a different error on timeout.
+	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+		localPort, _ = getLBPort(ctx, "TestCAPIDockerClusterClassSuite-k0smotron0")
 		return localPort > 0, nil
 	})
 	s.Require().NoError(err)
@@ -165,21 +165,21 @@ func (s *CAPIDockerClusterClassSuite) TestCAPIDockerClusterClass() {
 	s.Require().NoError(err)
 
 	s.T().Log("waiting for control-plane")
-	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(_ context.Context) (bool, error) {
+	//nolint:staticcheck // Deprecated, but PollUntilContextCancel returns a different error on timeout.
+	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
 		b, _ := s.client.RESTClient().
 			Get().
 			AbsPath("/healthz").
-			DoRaw(context.Background())
+			DoRaw(ctx)
 
 		return string(b) == "ok", nil
 	})
 	s.Require().NoError(err)
 
 	s.T().Log("waiting for worker nodes")
-	// nolint:staticcheck
-	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(_ context.Context) (bool, error) {
-		nodes, _ := kmcKC.CoreV1().Nodes().List(s.ctx, metav1.ListOptions{})
+	//nolint:staticcheck // Deprecated, but PollUntilContextCancel returns a different error on timeout.
+	err = wait.PollImmediateUntilWithContext(s.ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+		nodes, _ := kmcKC.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
 		return len(nodes.Items) == 2, nil
 	})
 	s.Require().NoError(err)
@@ -228,20 +228,20 @@ func (s *CAPIDockerClusterClassSuite) createCluster() {
 	s.Require().NoError(err)
 	clusterBytes := clusterYaml.Bytes()
 
-	s.Require().NoError(os.WriteFile(s.clusterClassYamlsPath, clusterClassBytes, 0644))
-	out, err := exec.Command("kubectl", "apply", "-f", s.clusterClassYamlsPath).CombinedOutput()
+	s.Require().NoError(os.WriteFile(s.clusterClassYamlsPath, clusterClassBytes, 0o600))
+	out, err := exec.CommandContext(s.ctx, "kubectl", "apply", "-f", s.clusterClassYamlsPath).CombinedOutput()
 	s.Require().NoError(err, "failed to update cluster objects: %s", string(out))
 
-	s.Require().NoError(os.WriteFile(s.clusterYamlsPath, clusterBytes, 0644))
-	out, err = exec.Command("kubectl", "apply", "-f", s.clusterYamlsPath).CombinedOutput()
+	s.Require().NoError(os.WriteFile(s.clusterYamlsPath, clusterBytes, 0o600))
+	out, err = exec.CommandContext(s.ctx, "kubectl", "apply", "-f", s.clusterYamlsPath).CombinedOutput()
 	s.Require().NoError(err, "failed to apply cluster objects: %s", string(out))
 }
 
 func (s *CAPIDockerClusterClassSuite) deleteCluster() {
 	// Exec via kubectl
-	out, err := exec.Command("kubectl", "delete", "cluster", "docker-test-cluster").CombinedOutput()
+	out, err := exec.CommandContext(context.WithoutCancel(s.ctx), "kubectl", "delete", "cluster", "docker-test-cluster").CombinedOutput()
 	s.Require().NoError(err, "failed to delete cluster objects: %s", string(out))
-	out, err = exec.Command("kubectl", "delete", "clusterclass", "k0smotron-clusterclass").CombinedOutput()
+	out, err = exec.CommandContext(context.WithoutCancel(s.ctx), "kubectl", "delete", "clusterclass", "k0smotron-clusterclass").CombinedOutput()
 	s.Require().NoError(err, "failed to delete cluster class objects: %s", string(out))
 }
 
@@ -256,8 +256,8 @@ func (s *CAPIDockerClusterClassSuite) getNodeIP(idx int) string {
 	return ipAddress
 }
 
-func getLBPort(name string) (int, error) {
-	b, err := exec.Command("docker", "inspect", name, "--format", "{{json .NetworkSettings.Ports}}").Output()
+func getLBPort(ctx context.Context, name string) (int, error) {
+	b, err := exec.CommandContext(ctx, "docker", "inspect", name, "--format", "{{json .NetworkSettings.Ports}}").Output()
 	if err != nil {
 		return 0, fmt.Errorf("failed to get inspect info from container %s: %w", name, err)
 	}

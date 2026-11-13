@@ -212,6 +212,7 @@ func TestControlPlaneController_detectJoinHost(t *testing.T) {
 			openConns.Add(1)
 		case http.StateClosed, http.StateHijacked:
 			openConns.Add(-1)
+		case http.StateActive, http.StateIdle:
 		}
 	}
 	server.StartTLS()

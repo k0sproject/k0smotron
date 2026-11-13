@@ -327,9 +327,9 @@ func TestIsClusterSpecSynced(t *testing.T) {
 				kmc.Spec = tc.kmcSpec
 				result, kcpSpecHash, err := isClusterSpecSynced(kmc, tc.kcpSpec)
 				require.NoError(t, err)
-				require.EqualValues(t, tc.expected, result)
+				require.Equal(t, tc.expected, result)
 				if mode == withAnnotation {
-					require.EqualValues(t, tc.expected, kcpSpecHash == kmc.GetAnnotations()[kapi.AnnotationKeyClusterSpecHash])
+					require.Equal(t, tc.expected, kcpSpecHash == kmc.GetAnnotations()[kapi.AnnotationKeyClusterSpecHash])
 				}
 			})
 		}
@@ -478,7 +478,7 @@ func Test_patchInfrastructureStatus(t *testing.T) {
 	}
 }
 
-// TestSetHostedScalingConditions covers the hosted flavour reporting scaling and
+// TestSetHostedScalingConditions covers the hosted flavor reporting scaling and
 // rollout separately, which it did not report at all before.
 func TestSetHostedScalingConditions(t *testing.T) {
 	get := func(kcp *cpv1beta2.K0smotronControlPlane, condType string) *v1.Condition {
@@ -524,8 +524,8 @@ func TestHostedComputeStatusSetsScalingConditions(t *testing.T) {
 	cl := fake.NewClientBuilder().WithScheme(hostedStatusScheme(t)).
 		WithObjects(
 			&kapi.Cluster{ObjectMeta: v1.ObjectMeta{Name: "test", Namespace: "default"}},
-			controlPlanePod("cp-0", false),
-			controlPlanePod("cp-1", false),
+			notReadyControlPlanePod("cp-0"),
+			notReadyControlPlanePod("cp-1"),
 		).Build()
 	c := &K0smotronController{Client: cl, ClusterCache: stubClusterCache{err: fmt.Errorf("connection refused")}}
 

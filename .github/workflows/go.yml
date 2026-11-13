@@ -7,7 +7,6 @@ on:
       - release-*
       - v1beta2-api-version
     paths-ignore: &common_ignores
-      - 'config/**'
       - 'docs/**'
       - 'mkdocs.yml'
       - '**.md'
@@ -18,8 +17,69 @@ on:
     paths-ignore: *common_ignores
 
 jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      # Restores and saves ~/go/pkg/mod and ~/.cache/go-build, which make lint
+      # mounts into its container.
+      - name: Set up Go
+        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        with:
+          go-version-file: go.mod
+
+      # golangci-lint's analysis cache. The key changes on every commit so each
+      # run saves its results; restore-keys picks up the closest earlier run.
+      - name: Cache golangci-lint analysis
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/golangci-lint
+          key: golangci-lint-${{ runner.os }}-${{ hashFiles('go.sum', '.golangci.yml', 'Makefile.variables') }}-${{ github.sha }}
+          restore-keys: |
+            golangci-lint-${{ runner.os }}-${{ hashFiles('go.sum', '.golangci.yml', 'Makefile.variables') }}-
+            golangci-lint-${{ runner.os }}-
+
+      # The lint image builds golangci-lint from source, so keep it until its
+      # Dockerfile or the pinned versions change.
+      - name: Cache golangci-lint image
+        id: lint-image
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/k0smotron-golangci-lint-image.tar
+          key: golangci-lint-image-${{ runner.os }}-${{ hashFiles('hack/lint/Dockerfile', 'Makefile.variables') }}
+
+      - name: Check generated code to be consistent
+        run: make generate-all && git diff --exit-code
+
+      # After generate-all, whose clean step deletes the image stamp.
+      - name: Load golangci-lint image
+        if: steps.lint-image.outputs.cache-hit == 'true'
+        run: |
+          docker load -i ~/.cache/k0smotron-golangci-lint-image.tar
+          touch hack/lint/.golangci-lint.stamp
+
+      - name: Run linter
+        env:
+          GOLANGCI_LINT_FLAGS: --output.text.path=stdout
+          GO_LINT_FAIL_FAST: "true"
+        run: make lint
+
+      - name: Save golangci-lint image
+        if: always() && steps.lint-image.outputs.cache-hit != 'true'
+        run: |
+          if docker image inspect k0smotron.golangci-lint >/dev/null 2>&1; then
+            docker save k0smotron.golangci-lint -o ~/.cache/k0smotron-golangci-lint-image.tar
+          fi
+
   build:
     name: Build artifacts
+    needs: lint
     runs-on: ubuntu-latest
     steps:
       - name: Check out code into the Go module directory

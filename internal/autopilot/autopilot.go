@@ -269,7 +269,11 @@ func GetPlanTargetVersion(plan *unstructured.Unstructured) (string, error) {
 		return "", fmt.Errorf("error getting current autopilot plan's commands: %w", err)
 	}
 
-	version, found, err := unstructured.NestedString(commands[0].(map[string]any), "k0supdate", "version")
+	command, ok := commands[0].(map[string]any)
+	if !ok {
+		return "", fmt.Errorf("unexpected autopilot plan command %T", commands[0])
+	}
+	version, found, err := unstructured.NestedString(command, "k0supdate", "version")
 	if err != nil || !found {
 		return "", fmt.Errorf("error getting current autopilot plan's version: %w", err)
 	}

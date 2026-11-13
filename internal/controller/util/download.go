@@ -47,7 +47,8 @@ func DownloadCommands(preInstalledK0s bool, downloadURL string, version string, 
 	if downloadURL != DefaultK0sDownloadURL {
 		parsedURL, err := url.Parse(downloadURL)
 		if err != nil {
-			return []string{fmt.Sprintf("echo 'Invalid download URL: %s'", downloadURL)}, nil
+			// Reported by the generated script. The parse error is left out, its text would land unquoted in the script.
+			return []string{fmt.Sprintf("echo 'Invalid download URL: %s'", downloadURL)}, nil //nolint:nilerr // See above.
 		}
 
 		switch parsedURL.Scheme {

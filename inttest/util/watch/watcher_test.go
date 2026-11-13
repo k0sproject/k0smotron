@@ -148,7 +148,7 @@ func TestWatcher(t *testing.T) {
 				return true, nil
 			})
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, 1, callsToCondition)
 		assert.Equal(t, 1, provider.callsToList)
 		assert.Zero(t, provider.callsToWatch)
@@ -160,7 +160,7 @@ func TestWatcher(t *testing.T) {
 		t.Parallel()
 		provider, underTest := newTestWatcher()
 		provider.nextList.ListMeta.ResourceVersion = t.Name()
-		provider.watch = func(metav1.ListOptions) error {
+		provider.watch = func(metav1.ListOptions) error { //nolint:unparam // The signature is set by the watch field it is assigned to.
 			provider.ch = closedEventChanWith()
 			provider.watch = forbiddenWatch(t)
 			return nil
@@ -170,7 +170,7 @@ func TestWatcher(t *testing.T) {
 			WithErrorCallback(forbiddenErrorCallback(t)).
 			Until(ctx, forbiddenCondition(t))
 
-		assert.ErrorContains(t, err, "result channel closed unexpectedly")
+		require.ErrorContains(t, err, "result channel closed unexpectedly")
 		assert.Equal(t, 1, provider.callsToList)
 		assert.Equal(t, 1, provider.callsToWatch)
 		assert.Equal(t, 1, provider.callsToStop)
@@ -204,7 +204,7 @@ func TestWatcher(t *testing.T) {
 
 				assertErr := func(err error) {
 					t.Helper()
-					assert.ErrorContains(t, err, test.errorMessage)
+					require.ErrorContains(t, err, test.errorMessage)
 					var statusErr *apierrors.StatusError
 					if assert.ErrorAs(t, err, &statusErr) {
 						assert.Equal(t, injectedErr, statusErr)
@@ -256,7 +256,7 @@ func TestWatcher(t *testing.T) {
 			return true, nil
 		})
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, 1, callsToCondition)
 		assert.Equal(t, 1, provider.callsToList)
 		assert.Equal(t, 1, provider.callsToWatch)
@@ -298,7 +298,7 @@ func TestWatcher(t *testing.T) {
 				return true, nil
 			})
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, 1, callsToCondition)
 		assert.Equal(t, 2, provider.callsToList)
 		assert.Equal(t, 2, provider.callsToWatch)
@@ -362,7 +362,7 @@ func TestWatcher(t *testing.T) {
 
 		assertErr := func(err error) {
 			t.Helper()
-			assert.ErrorContains(t, err, `got an event of type "ADDED", expecting an object of type *v1.ConfigMap: `)
+			require.ErrorContains(t, err, `got an event of type "ADDED", expecting an object of type *v1.ConfigMap: `)
 			var wrappedErr *apierrors.UnexpectedObjectError
 			if assert.ErrorAs(t, err, &wrappedErr) {
 				assert.Equal(t, &bogusSecret, wrappedErr.Object)
@@ -415,7 +415,7 @@ func TestWatcher(t *testing.T) {
 					return false, nil
 				})
 
-			assert.ErrorContains(t, err, `list returned invalid resource version: "0"`)
+			require.ErrorContains(t, err, `list returned invalid resource version: "0"`)
 			assert.Equal(t, 1, callsToCondition)
 			assert.Equal(t, 1, provider.callsToList)
 			assert.Equal(t, 1, callsToErrorCallback)
@@ -441,7 +441,7 @@ func TestWatcher(t *testing.T) {
 
 			assertErr := func(err error) {
 				t.Helper()
-				assert.ErrorContains(t, err, `invalid resource version: `)
+				require.ErrorContains(t, err, `invalid resource version: `)
 				var wrappedErr *apierrors.UnexpectedObjectError
 				if assert.ErrorAs(t, err, &wrappedErr) {
 					assert.Equal(t, &invalidConfigMap, wrappedErr.Object)
@@ -494,7 +494,7 @@ func TestWatcher(t *testing.T) {
 
 			return nil
 		}
-		second = func(opts metav1.ListOptions) error {
+		second = func(opts metav1.ListOptions) error { //nolint:unparam // The signature is set by the watch field it is assigned to.
 			assert.Equal(t, "the bookmark", opts.ResourceVersion)
 			assert.True(t, opts.AllowWatchBookmarks)
 
@@ -506,7 +506,7 @@ func TestWatcher(t *testing.T) {
 
 			return nil
 		}
-		third = func(opts metav1.ListOptions) error {
+		third = func(opts metav1.ListOptions) error { //nolint:unparam // The signature is set by the watch field it is assigned to.
 			assert.Equal(t, "someConfigMap", opts.ResourceVersion)
 			assert.True(t, opts.AllowWatchBookmarks)
 
@@ -536,7 +536,7 @@ func TestWatcher(t *testing.T) {
 				}
 			})
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, 1, provider.callsToList)
 		assert.Equal(t, 3, provider.callsToWatch)
 		assert.Equal(t, 3, provider.callsToStop)
@@ -599,7 +599,7 @@ func TestWatcher(t *testing.T) {
 				return true, nil
 			})
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, 2, provider.callsToList)
 		assert.Equal(t, 1, callsToErrorCallback)
 		assert.Equal(t, 1, callsToCondition)
@@ -634,6 +634,8 @@ func TestWatcher(t *testing.T) {
 }
 
 func forbiddenCondition(t *testing.T) Condition[corev1.ConfigMap] {
+	t.Helper()
+
 	return func(*corev1.ConfigMap) (bool, error) {
 		require.Fail(t, "Condition shouldn't be called.")
 		return false, nil
@@ -641,6 +643,8 @@ func forbiddenCondition(t *testing.T) Condition[corev1.ConfigMap] {
 }
 
 func forbiddenWatch(t *testing.T) func(metav1.ListOptions) error {
+	t.Helper()
+
 	return func(metav1.ListOptions) error {
 		require.Fail(t, "Watch shouldn't be called.")
 		return nil
@@ -648,6 +652,8 @@ func forbiddenWatch(t *testing.T) func(metav1.ListOptions) error {
 }
 
 func forbiddenErrorCallback(t *testing.T) ErrorCallback {
+	t.Helper()
+
 	return func(err error) (time.Duration, error) {
 		require.Fail(t, "ErrorCallback shouldn't be called.", "Error was: %v", err)
 		return 0, nil

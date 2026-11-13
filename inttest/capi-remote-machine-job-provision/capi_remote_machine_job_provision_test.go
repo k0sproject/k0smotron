@@ -24,6 +24,7 @@ import (
 	"encoding/base64"
 	"encoding/pem"
 	"fmt"
+	"net"
 	"os"
 	"testing"
 	"text/template"
@@ -156,7 +157,7 @@ func (s *RemoteMachineSuite) TestCAPIRemoteMachine() {
 	s.Require().NoError(err)
 	s.Require().NotNil(rm.Status.Initialization.Provisioned)
 	s.Require().True(*rm.Status.Initialization.Provisioned)
-	expectedProviderID := fmt.Sprintf("remote-machine://%s:22", s.getWorkerIP())
+	expectedProviderID := "remote-machine://" + net.JoinHostPort(s.getWorkerIP(), "22")
 	s.Require().Equal(expectedProviderID, rm.Spec.ProviderID)
 
 	s.T().Log("deleting node from cluster")
@@ -222,7 +223,6 @@ func (s *RemoteMachineSuite) createCluster() {
 	})
 	s.Require().NoError(err)
 	bytes := clusterYaml.Bytes()
-	// s.T().Logf("cluster yaml: %s", string(bytes))
 	resources, err := util.ParseManifests(bytes)
 	s.Require().NoError(err)
 	s.Require().NotEmpty(resources)

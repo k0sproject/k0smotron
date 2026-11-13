@@ -36,7 +36,7 @@ func TestIgnitionProvisioning(t *testing.T) {
 }
 
 // Validation of the correct operation of k0smotron when using Ignition provisioning.
-func ignitionProvisioningSpec(t *testing.T) {
+func ignitionProvisioningSpec(t *testing.T) { //nolint:thelper // Test body run by setupAndRun, t.Helper would move its failures to the caller.
 	testName := "ignition"
 
 	// Setup a Namespace where to host objects for this spec and create a watcher for the namespace events.

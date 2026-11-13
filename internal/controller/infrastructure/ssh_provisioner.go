@@ -127,7 +127,8 @@ func (p *SSHProvisioner) Provision(ctx context.Context) error {
 	}
 	defer connection.Disconnect()
 	// rig runs commands without a context, so closing the connection is what stops a hung one.
-	defer context.AfterFunc(ctx, connection.SSH.Disconnect)()
+	stopDisconnectOnCancel := context.AfterFunc(ctx, connection.SSH.Disconnect)
+	defer stopDisconnectOnCancel()
 
 	// If sudo is required, run commands with elevated permissions and use the
 	// sudo-capable filesystem for uploads.
@@ -331,13 +332,17 @@ func (p *SSHProvisioner) uploadFile(runner commandRunner, execOpts []exec.Option
 		}
 	}
 
-	destFile, err := fsys.OpenFile(file.Path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, fs.FileMode(perms))
+	destFile, err := fsys.OpenFile(file.Path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, fs.FileMode(perms)) //nolint:gosec // PermissionsAsInt keeps it within 0-07777.
 	if err != nil {
 		return fmt.Errorf("failed to open remote file for writing: %w", err)
 	}
-	defer destFile.Close()
 	if _, err := destFile.Write(content); err != nil {
+		_ = destFile.Close()
 		return fmt.Errorf("failed to write to remote file: %w", err)
+	}
+	// Close the file before the chown, and report a close error instead of dropping it.
+	if err := destFile.Close(); err != nil {
+		return fmt.Errorf("failed to close remote file: %w", err)
 	}
 
 	// rigfs.Fsys cannot change ownership, so shell out for it. Done after the

@@ -99,7 +99,7 @@ type ClusterSpec struct {
 	Mounts []v2.Mount `json:"mounts,omitempty"`
 	// ControlPlaneFlags allows to configure additional flags for k0s
 	// control plane and to override existing ones. The default flags are
-	// kept unless they are overriden explicitly. Flags with arguments must
+	// kept unless they are overridden explicitly. Flags with arguments must
 	// be specified as a single string, e.g. --some-flag=argument
 	//+kubebuilder:validation:Optional
 	ControlPlaneFlags []string `json:"controllerPlaneFlags,omitempty"`
@@ -150,7 +150,7 @@ type ServiceSpec struct {
 	// ExternalTrafficPolicy defines the external traffic policy for the service. Used only when service type is NodePort or LoadBalancer.
 	//+kubebuilder:validation:Optional
 	//+kubebuilder:validation:Enum=Cluster;Local
-	ExternalTrafficPolicy v1.ServiceExternalTrafficPolicyType `json:"externalTrafficPolicy,omitempty"`
+	ExternalTrafficPolicy v1.ServiceExternalTrafficPolicy `json:"externalTrafficPolicy,omitempty"`
 }
 
 const (

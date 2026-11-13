@@ -83,8 +83,6 @@ const (
 	AnnotationValueManagedByK0smotron = "k0smotron"
 )
 
-var currentSpec kapi.ClusterSpec
-
 // K0smotronController is the controller for K0smotronControlPlane objects.
 type K0smotronController struct {
 	client.Client
@@ -156,12 +154,12 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 	kcpPatchHelper, err := patch.NewHelper(kcp, c.Client)
 	if err != nil {
 		log.Error(err, "Failed to configure K0smotronControlPlane patch helper")
-		return ctrl.Result{Requeue: true}, nil
+		return util.RequeueWithBackoff(), nil
 	}
 	clusterPatchHelper, err := patch.NewHelper(cluster, c.Client)
 	if err != nil {
 		log.Error(err, "Failed to configure Cluster patch helper")
-		return ctrl.Result{Requeue: true}, nil
+		return util.RequeueWithBackoff(), nil
 	}
 
 	log = log.WithValues("cluster", cluster.Name)
@@ -203,7 +201,7 @@ func (c *K0smotronController) Reconcile(ctx context.Context, req ctrl.Request) (
 			serr = c.computeStatus(ctx, cluster, kcp, kmcScope)
 			if serr != nil {
 				if errors.Is(serr, util.ErrNotReady) {
-					res = ctrl.Result{RequeueAfter: 10 * time.Second, Requeue: true}
+					res = ctrl.Result{RequeueAfter: 10 * time.Second}
 				} else {
 					log.Error(serr, "Failed to update K0smotronControlPlane status")
 					// Recorded without returning, since the availability computed above is
@@ -379,6 +377,11 @@ func (c *K0smotronController) reconcile(ctx context.Context, cluster *clusterv1.
 		return ctrl.Result{}, fmt.Errorf("failed to enrich k0s config with cluster data for K0smotronControlPlane %s/%s", kcp.Namespace, kcp.Name)
 	}
 
+	specHash, err := generateClusterSpecHashWithoutExternalAddress(kcp.Spec)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
 	desiredK0smotronCluster := kapi.Cluster{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: kapi.GroupVersion.String(),
@@ -391,7 +394,7 @@ func (c *K0smotronController) reconcile(ctx context.Context, cluster *clusterv1.
 				clusterv1.ClusterNameLabel: cluster.Name,
 			},
 			Annotations: map[string]string{
-				kapi.AnnotationKeyClusterSpecHash: generateClusterSpecHashWithoutExternalAddress(kcp.Spec),
+				kapi.AnnotationKeyClusterSpecHash: specHash,
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				{
@@ -408,13 +411,12 @@ func (c *K0smotronController) reconcile(ctx context.Context, cluster *clusterv1.
 	var foundCluster kapi.Cluster
 	err = c.Client.Get(ctx, types.NamespacedName{Name: desiredK0smotronCluster.Name, Namespace: desiredK0smotronCluster.Namespace}, &foundCluster)
 	if err != nil && apierrors.IsNotFound(err) {
-		currentSpec = *kcp.Spec.DeepCopy()
 		if err := c.Client.Create(ctx, &desiredK0smotronCluster); err != nil {
 			return ctrl.Result{}, err
 		}
 
 		logger.Info("Requeuing because k0smotron Cluster has just been created")
-		return ctrl.Result{RequeueAfter: 5 * time.Second, Requeue: true}, nil
+		return ctrl.Result{RequeueAfter: 5 * time.Second}, nil
 	}
 
 	if kcp.Spec.ExternalAddress == "" {
@@ -450,7 +452,10 @@ func (c *K0smotronController) reconcile(ctx context.Context, cluster *clusterv1.
 // The comparison is done by first checking the hash of the specification stored in the annotation, if present. If the annotation is not present, it falls back to a deprecated
 // logic that compares the specs while ignoring the fields that are expected to be modified by the K0smotron Cluster controller.
 func isClusterSpecSynced(kmc kapi.Cluster, kcpSpec kapi.ClusterSpec) (isSynced bool, kcpSpecHash string, err error) {
-	kcpSpecHash = generateClusterSpecHashWithoutExternalAddress(kcpSpec)
+	kcpSpecHash, err = generateClusterSpecHashWithoutExternalAddress(kcpSpec)
+	if err != nil {
+		return false, "", err
+	}
 	// Use the hash annotation if present, as it is the most reliable way to detect spec changes.
 	if clusterSpecHash, ok := kmc.GetAnnotations()[kapi.AnnotationKeyClusterSpecHash]; ok {
 		// Compare separately at the ExternalAddress because it is a field that is expected to be updated by the controller after the creation of the Cluster, so it is not
@@ -669,7 +674,7 @@ func (c *K0smotronController) computeStatus(ctx context.Context, cluster *cluste
 
 	// Held back until every counter below is known, so an error on the way there
 	// cannot persist one of them against stale values for the rest.
-	replicas := int32(len(contolPlanePods.Items))
+	replicas := int32(len(contolPlanePods.Items)) //nolint:gosec // A pod count cannot reach MaxInt32.
 
 	var upToDateReplicas, readyReplicas, unavailableReplicas, availableReplicas int
 
@@ -820,7 +825,7 @@ func (c *K0smotronController) computeAvailability(ctx context.Context, cluster *
 	logger := log.FromContext(ctx).WithValues("cluster", cluster.Name)
 
 	// Assumed unavailable up front for the same reasons as in the K0sControlPlane
-	// flavour, including the read below being what latches initialization.
+	// flavor, including the read below being what latches initialization.
 	everReached := initialized(kcp.Status.Initialization.ControlPlaneInitialized)
 	if !everReached {
 		conditions.Set(kcp, metav1.Condition{
@@ -1023,7 +1028,7 @@ func (c *K0smotronController) reconcileDelete(ctx context.Context, key types.Nam
 
 	if !kmc.GetDeletionTimestamp().IsZero() {
 		// Requeue the reconciliation to wait for the complete deletion of the k0smotron Cluster meaning all dependent resources are deleted.
-		return ctrl.Result{Requeue: true, RequeueAfter: 5 * time.Second}, nil
+		return ctrl.Result{RequeueAfter: 5 * time.Second}, nil
 	}
 
 	if err := c.Client.Delete(ctx, kmc); err != nil {
@@ -1077,13 +1082,16 @@ func (c *K0smotronController) getKmcScope(ctx context.Context, kcp *cpv1beta2.K0
 // creation and must not be a reason to mark the specs as not synced.
 // JSON marshaling is used instead of spew-based hashing so that fields with omitempty and zero/nil values are omitted from the hash input,
 // making the hash stable when new optional fields are added to ClusterSpec.
-func generateClusterSpecHashWithoutExternalAddress(spec kapi.ClusterSpec) string {
+func generateClusterSpecHashWithoutExternalAddress(spec kapi.ClusterSpec) (string, error) {
 	normalizedSpec := spec.DeepCopy()
 	normalizedSpec.ExternalAddress = ""
-	data, _ := json.Marshal(normalizedSpec)
+	data, err := json.Marshal(normalizedSpec)
+	if err != nil {
+		return "", fmt.Errorf("failed to encode the cluster spec for its hash: %w", err)
+	}
 	hasher := fnv.New32a()
 	_, _ = hasher.Write(data)
-	return rand.SafeEncodeString(fmt.Sprint(hasher.Sum32()))
+	return rand.SafeEncodeString(fmt.Sprint(hasher.Sum32())), nil
 }
 
 // SetupWithManager sets up the controller with the Manager.

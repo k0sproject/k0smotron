@@ -18,7 +18,7 @@ package infrastructure
 import (
 	"bytes"
 	"context"
-	"crypto/md5"
+	"crypto/md5" //nolint:gosec // Not a security use, see the call site.
 	"fmt"
 	"path/filepath"
 
@@ -110,11 +110,11 @@ func (p *JobProvisioner) Provision(ctx context.Context) error {
 
 	job.Spec.Template.Spec.Containers[0].Args = []string{"/var/lib/bootstrap-data/k0smotron-entrypoint.sh"}
 
-	if err := p.client.Patch(context.Background(), secret, client.Apply, patchOpts...); err != nil {
+	if err := p.client.Patch(ctx, secret, client.Apply, patchOpts...); err != nil {
 		return fmt.Errorf("failed to create a secret: %w", err)
 	}
 
-	if err := p.client.Create(context.Background(), job, &client.CreateOptions{}); err != nil {
+	if err := p.client.Create(ctx, job, &client.CreateOptions{}); err != nil {
 		return fmt.Errorf("failed to create job: %w", err)
 	}
 
@@ -248,5 +248,5 @@ func (p *JobProvisioner) Cleanup(_ context.Context, _ RemoteMachineMode) error {
 }
 
 func genFileName(filePath string) string {
-	return fmt.Sprintf("%s-%x", filepath.Base(filePath), md5.Sum([]byte(filePath)))
+	return fmt.Sprintf("%s-%x", filepath.Base(filePath), md5.Sum([]byte(filePath))) //nolint:gosec // Not a security use, only a stable file name.
 }

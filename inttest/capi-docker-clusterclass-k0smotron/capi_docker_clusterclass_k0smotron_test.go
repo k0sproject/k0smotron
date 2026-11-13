@@ -66,9 +66,9 @@ func (s *CAPIDockerClusterClassK0smotronSuite) SetupSuite() {
 
 	tmpDir := s.T().TempDir()
 	s.clusterYamlsPath = tmpDir + "/cluster.yaml"
-	s.Require().NoError(os.WriteFile(s.clusterYamlsPath, []byte(clusterYaml), 0644))
+	s.Require().NoError(os.WriteFile(s.clusterYamlsPath, []byte(clusterYaml), 0o600))
 	s.clusterClassYamlsPath = tmpDir + "/cluster-class.yaml"
-	s.Require().NoError(os.WriteFile(s.clusterClassYamlsPath, []byte(clusterClassYaml), 0644))
+	s.Require().NoError(os.WriteFile(s.clusterClassYamlsPath, []byte(clusterClassYaml), 0o600))
 
 	s.ctx, _ = util.NewSuiteContext(s.T())
 }
@@ -123,17 +123,17 @@ func (s *CAPIDockerClusterClassK0smotronSuite) TestCAPIDocker() {
 
 func (s *CAPIDockerClusterClassK0smotronSuite) applyClusterObjects() {
 	// Exec via kubectl
-	out, err := exec.Command("kubectl", "apply", "-f", s.clusterClassYamlsPath).CombinedOutput()
+	out, err := exec.CommandContext(s.ctx, "kubectl", "apply", "-f", s.clusterClassYamlsPath).CombinedOutput()
 	s.Require().NoError(err, "failed to apply cluster class objects: %s", string(out))
-	out, err = exec.Command("kubectl", "apply", "-f", s.clusterYamlsPath).CombinedOutput()
+	out, err = exec.CommandContext(s.ctx, "kubectl", "apply", "-f", s.clusterYamlsPath).CombinedOutput()
 	s.Require().NoError(err, "failed to apply cluster objects: %s", string(out))
 }
 
 func (s *CAPIDockerClusterClassK0smotronSuite) deleteCluster() {
 	// Exec via kubectl
-	out, err := exec.Command("kubectl", "delete", "-f", s.clusterYamlsPath).CombinedOutput()
+	out, err := exec.CommandContext(context.WithoutCancel(s.ctx), "kubectl", "delete", "-f", s.clusterYamlsPath).CombinedOutput()
 	s.Require().NoError(err, "failed to delete cluster objects: %s", string(out))
-	out, err = exec.Command("kubectl", "delete", "-f", s.clusterClassYamlsPath).CombinedOutput()
+	out, err = exec.CommandContext(context.WithoutCancel(s.ctx), "kubectl", "delete", "-f", s.clusterClassYamlsPath).CombinedOutput()
 	s.Require().NoError(err, "failed to delete cluster class objects: %s", string(out))
 }
 

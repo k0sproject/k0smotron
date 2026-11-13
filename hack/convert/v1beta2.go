@@ -86,7 +86,7 @@ WARNING: This is an experimental staging tool. Output should be reviewed before 
 			if err != nil {
 				return err
 			}
-			defer f.Close()
+			defer func() { _ = f.Close() }()
 			return processStream(f, os.Stdout)
 		},
 	}
@@ -121,10 +121,14 @@ func processStream(r io.Reader, w io.Writer) error {
 		}
 
 		if !first {
-			fmt.Fprint(w, "---\n")
+			if _, err := fmt.Fprint(w, "---\n"); err != nil {
+				return err
+			}
 		}
 		first = false
-		fmt.Fprintf(w, "%s\n", converted)
+		if _, err := fmt.Fprintf(w, "%s\n", converted); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -132,7 +136,7 @@ func processStream(r io.Reader, w io.Writer) error {
 func convertDocument(raw []byte) ([]byte, error) {
 	var u unstructured.Unstructured
 	if err := sigsyaml.Unmarshal(raw, &u.Object); err != nil {
-		return raw, nil // not a Kubernetes object; pass through unchanged
+		return raw, nil //nolint:nilerr // not a Kubernetes object; pass through unchanged
 	}
 
 	apiVersion := u.GetAPIVersion()
@@ -163,7 +167,7 @@ func convert(group, kind string, raw []byte) ([]byte, error) {
 	srcObj, err := scheme.New(srcGVK)
 	if err != nil {
 		// Kind not registered — not a k0smotron resource, pass through.
-		return raw, nil
+		return raw, nil //nolint:nilerr // See above.
 	}
 
 	src, ok := srcObj.(conversion.Convertible)

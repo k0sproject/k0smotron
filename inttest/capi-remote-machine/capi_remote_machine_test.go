@@ -25,6 +25,7 @@ import (
 	"encoding/base64"
 	"encoding/pem"
 	"fmt"
+	"net"
 	"os"
 	"strings"
 	"testing"
@@ -174,7 +175,7 @@ func (s *RemoteMachineSuite) TestCAPIRemoteMachine() {
 	s.Require().NoError(err)
 	s.Require().NotNil(rm.Status.Initialization.Provisioned)
 	s.Require().True(*rm.Status.Initialization.Provisioned)
-	expectedProviderID := fmt.Sprintf("remote-machine://%s:22", s.getWorkerIP())
+	expectedProviderID := "remote-machine://" + net.JoinHostPort(s.getWorkerIP(), "22")
 	s.Require().Equal(expectedProviderID, rm.Spec.ProviderID)
 
 	err = wait.PollUntilContextCancel(ctx, time.Second, true, func(ctx context.Context) (done bool, err error) {
@@ -264,7 +265,6 @@ func (s *RemoteMachineSuite) createCluster() {
 	})
 	s.Require().NoError(err)
 	bytes := clusterYamlBuf.Bytes()
-	// s.T().Logf("cluster yaml: %s", string(bytes))
 	resources, err := util.ParseManifests(bytes)
 	s.Require().NoError(err)
 	s.Require().NotEmpty(resources)

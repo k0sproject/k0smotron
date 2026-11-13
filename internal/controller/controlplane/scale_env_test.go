@@ -42,7 +42,6 @@ import (
 	"k8s.io/client-go/rest"
 	restfake "k8s.io/client-go/rest/fake"
 	"k8s.io/kubectl/pkg/scheme"
-	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util/collections"
 	"sigs.k8s.io/cluster-api/util/conditions"
@@ -112,8 +111,8 @@ func TestReconcileMachinesScaleUp(t *testing.T) {
 				Kind:               "Machine",
 				Name:               firstMachineRelatedToControlPlane.GetName(),
 				UID:                firstMachineRelatedToControlPlane.GetUID(),
-				BlockOwnerDeletion: ptr.To(true),
-				Controller:         ptr.To(true),
+				BlockOwnerDeletion: new(true),
+				Controller:         new(true),
 			}},
 		},
 	}
@@ -164,8 +163,8 @@ func TestReconcileMachinesScaleUp(t *testing.T) {
 				Kind:               "Machine",
 				Name:               secondMachineRelatedToControlPlane.GetName(),
 				UID:                secondMachineRelatedToControlPlane.GetUID(),
-				BlockOwnerDeletion: ptr.To(true),
-				Controller:         ptr.To(true),
+				BlockOwnerDeletion: new(true),
+				Controller:         new(true),
 			}},
 		},
 	}
@@ -322,8 +321,8 @@ func TestReconcileMachinesScaleDown(t *testing.T) {
 				Kind:               "Machine",
 				Name:               firstMachineRelatedToControlPlane.GetName(),
 				UID:                firstMachineRelatedToControlPlane.GetUID(),
-				BlockOwnerDeletion: ptr.To(true),
-				Controller:         ptr.To(true),
+				BlockOwnerDeletion: new(true),
+				Controller:         new(true),
 			}},
 		},
 	}
@@ -374,8 +373,8 @@ func TestReconcileMachinesScaleDown(t *testing.T) {
 				Kind:               "Machine",
 				Name:               secondMachineRelatedToControlPlane.GetName(),
 				UID:                secondMachineRelatedToControlPlane.GetUID(),
-				BlockOwnerDeletion: ptr.To(true),
-				Controller:         ptr.To(true),
+				BlockOwnerDeletion: new(true),
+				Controller:         new(true),
 			}},
 		},
 	}
@@ -426,8 +425,8 @@ func TestReconcileMachinesScaleDown(t *testing.T) {
 				Kind:               "Machine",
 				Name:               thirdMachineRelatedToControlPlane.GetName(),
 				UID:                thirdMachineRelatedToControlPlane.GetUID(),
-				BlockOwnerDeletion: ptr.To(true),
-				Controller:         ptr.To(true),
+				BlockOwnerDeletion: new(true),
+				Controller:         new(true),
 			}},
 		},
 	}
@@ -468,8 +467,8 @@ func TestReconcileMachinesScaleDown(t *testing.T) {
 				Kind:               "Machine",
 				Name:               machineNotRelatedToControlPlane.GetName(),
 				UID:                machineNotRelatedToControlPlane.GetUID(),
-				BlockOwnerDeletion: ptr.To(true),
-				Controller:         ptr.To(true),
+				BlockOwnerDeletion: new(true),
+				Controller:         new(true),
 			}},
 		},
 	}
@@ -619,8 +618,8 @@ func TestReconcileMachinesSyncOldMachines(t *testing.T) {
 				Kind:               "Machine",
 				Name:               firstMachineRelatedToControlPlane.GetName(),
 				UID:                firstMachineRelatedToControlPlane.GetUID(),
-				BlockOwnerDeletion: ptr.To(true),
-				Controller:         ptr.To(true),
+				BlockOwnerDeletion: new(true),
+				Controller:         new(true),
 			}},
 		},
 	}
@@ -670,8 +669,8 @@ func TestReconcileMachinesSyncOldMachines(t *testing.T) {
 				Kind:               "Machine",
 				Name:               secondMachineRelatedToControlPlane.GetName(),
 				UID:                secondMachineRelatedToControlPlane.GetUID(),
-				BlockOwnerDeletion: ptr.To(true),
-				Controller:         ptr.To(true),
+				BlockOwnerDeletion: new(true),
+				Controller:         new(true),
 			}},
 		},
 	}
@@ -721,8 +720,8 @@ func TestReconcileMachinesSyncOldMachines(t *testing.T) {
 				Kind:               "Machine",
 				Name:               thirdMachineRelatedToControlPlane.GetName(),
 				UID:                thirdMachineRelatedToControlPlane.GetUID(),
-				BlockOwnerDeletion: ptr.To(true),
-				Controller:         ptr.To(true),
+				BlockOwnerDeletion: new(true),
+				Controller:         new(true),
 			}},
 		},
 	}
@@ -1101,7 +1100,7 @@ type fakeRoundTripperControlNodeNotFound struct{}
 func (f *fakeRoundTripperControlNodeNotFound) run(req *http.Request) (*http.Response, error) {
 	header := http.Header{}
 	header.Set("Content-Type", "application/json")
-	if req.Method == "GET" && strings.HasPrefix(req.URL.Path, "/apis/autopilot.k0sproject.io/v1beta2/controlnodes/") {
+	if req.Method == http.MethodGet && strings.HasPrefix(req.URL.Path, "/apis/autopilot.k0sproject.io/v1beta2/controlnodes/") {
 		return &http.Response{StatusCode: http.StatusNotFound, Header: header, Body: nil}, nil
 	}
 	return (&fakeRoundTripper{}).run(req)
@@ -1114,7 +1113,7 @@ type fakeRoundTripperWithAutopilotPost struct{}
 func (f *fakeRoundTripperWithAutopilotPost) run(req *http.Request) (*http.Response, error) {
 	header := http.Header{}
 	header.Set("Content-Type", "application/json")
-	if req.Method == "POST" && strings.HasPrefix(req.URL.Path, "/apis/autopilot.k0sproject.io/v1beta2/plans") {
+	if req.Method == http.MethodPost && strings.HasPrefix(req.URL.Path, "/apis/autopilot.k0sproject.io/v1beta2/plans") {
 		body := `{"apiVersion":"autopilot.k0sproject.io/v1beta2","kind":"Plan","metadata":{"name":"autopilot"}}`
 		return &http.Response{
 			StatusCode: http.StatusOK,
@@ -1126,7 +1125,7 @@ func (f *fakeRoundTripperWithAutopilotPost) run(req *http.Request) (*http.Respon
 }
 
 // buildTestController creates a K0sController wired to testEnv with a custom workload-cluster
-// round-tripper function. Pass nil to use the default fakeRoundTripper behaviour.
+// round-tripper function. Pass nil to use the default fakeRoundTripper behavior.
 func buildTestController(t *testing.T, roundTripFunc func(*http.Request) (*http.Response, error)) *K0sController {
 	t.Helper()
 	if roundTripFunc == nil {
@@ -1204,8 +1203,8 @@ func createControlPlaneMachine(t *testing.T, name, namespace string, cluster *cl
 				Kind:               "Machine",
 				Name:               machine.GetName(),
 				UID:                machine.GetUID(),
-				BlockOwnerDeletion: ptr.To(true),
-				Controller:         ptr.To(true),
+				BlockOwnerDeletion: new(true),
+				Controller:         new(true),
 			}},
 		},
 	}
@@ -1645,7 +1644,7 @@ func TestReconcileMachinesElectsTheUnhealthyEtcdMember(t *testing.T) {
 				Labels:    controlPlaneCommonLabelsForCluster(kcp, cluster.Name),
 			},
 			Spec: bootstrapv2.K0sControllerConfigSpec{
-				Version:       kcp.Spec.Version,
+				Version:       kcp.Spec.Version, //nolint:staticcheck // Covers objects that still set the deprecated field.
 				K0sConfigSpec: &outdated.Spec.K0sConfigSpec,
 			},
 		}
