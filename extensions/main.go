@@ -25,6 +25,7 @@ import (
 	"os"
 
 	inplaceversionupdate "github.com/k0sproject/k0smotron/v2/extensions/inplaceversionupdate"
+	"github.com/k0sproject/k0smotron/v2/extensions/upgradechain"
 	"github.com/spf13/pflag"
 	"k8s.io/apimachinery/pkg/runtime"
 	cliflag "k8s.io/component-base/cli/flag"
@@ -49,15 +50,23 @@ var (
 	catalog = runtimecatalog.New()
 
 	// Flags.
-	profilerAddress string
-	webhookPort     int
-	webhookCertDir  string
-	logOptions      = logs.NewOptions()
+	profilerAddress   string
+	webhookPort       int
+	webhookCertDir    string
+	enabledExtensions []string
+	logOptions        = logs.NewOptions()
 
 	// Creates a logger to be used during the main func using controller runtime utilities
 	// NOTE: it is not mandatory to use controller runtime utilities in custom RuntimeExtension, but it is recommended
 	// because it makes log from those components similar to log from controllers.
 	setupLog = ctrl.Log.WithName("setup")
+)
+
+const (
+	// extensionInPlaceUpdate enables the in-place version update hooks.
+	extensionInPlaceUpdate = "inplace-update"
+	// extensionChainUpgrades enables the upgrade chain (GenerateUpgradePlan) hooks.
+	extensionChainUpgrades = "chain-upgrades"
 )
 
 func init() {
@@ -78,6 +87,11 @@ func InitFlags(fs *pflag.FlagSet) {
 
 	fs.StringVar(&webhookCertDir, "webhook-cert-dir", "/tmp/k8s-webhook-server/serving-certs/",
 		"Webhook cert dir.")
+
+	fs.StringSliceVar(&enabledExtensions, "extensions", []string{extensionInPlaceUpdate, extensionChainUpgrades},
+		fmt.Sprintf("Comma-separated list of extensions whose hooks are served. Cluster API registers every hook exposed by a server "+
+			"for each ExtensionConfig pointing at it, so extensions that implement the same hook must run in separate servers. "+
+			"Supported values: %s, %s.", extensionInPlaceUpdate, extensionChainUpgrades))
 }
 
 func main() {
@@ -132,10 +146,30 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Register extension handlers.
-	if err := setupInPlaceVersionUpdateHookHandlers(webhookServer, client); err != nil {
-		setupLog.Error(err, "Error setting up in-place update hook handlers")
-		os.Exit(1)
+	for _, ext := range enabledExtensions {
+		switch ext {
+		case extensionInPlaceUpdate:
+			if err := setupInPlaceVersionUpdateHookHandlers(webhookServer, client); err != nil {
+				setupLog.Error(err, "Error setting up in-place update hook handlers")
+				os.Exit(1)
+			}
+		case extensionChainUpgrades:
+			if err := setupUpgradeChainHookHandlers(webhookServer); err != nil {
+				setupLog.Error(err, "Error setting up upgrade chain hook handlers")
+				os.Exit(1)
+			}
+		default:
+			// Enable all extensions by default
+			if err := setupInPlaceVersionUpdateHookHandlers(webhookServer, client); err != nil {
+				setupLog.Error(err, "Error setting up in-place update hook handlers")
+				os.Exit(1)
+			}
+			if err := setupUpgradeChainHookHandlers(webhookServer); err != nil {
+				setupLog.Error(err, "Error setting up upgrade chain hook handlers")
+				os.Exit(1)
+			}
+		}
+		setupLog.Info("Extension enabled", "extension", ext)
 	}
 
 	// Setup a context listening for SIGINT.
@@ -176,6 +210,25 @@ func setupInPlaceVersionUpdateHookHandlers(runtimeExtensionWebhookServer *server
 		HandlerFunc: ipvu.DoUpdateMachine,
 	}); err != nil {
 		return fmt.Errorf("error adding UpdateMachine handler: %w", err)
+	}
+
+	return nil
+}
+
+// setupUpgradeChainHookHandlers sets up the GenerateUpgradePlan hook, which builds upgrade plans from the available k0s versions.
+func setupUpgradeChainHookHandlers(runtimeExtensionWebhookServer *server.Server) error {
+	source, err := upgradechain.NewGitHubVersionSource("")
+	if err != nil {
+		return err
+	}
+	h := upgradechain.NewHandler(source)
+
+	if err := runtimeExtensionWebhookServer.AddExtensionHandler(server.ExtensionHandler{
+		Hook:        runtimehooksv1.GenerateUpgradePlan,
+		Name:        "generate-upgrade-plan",
+		HandlerFunc: h.DoGenerateUpgradePlan,
+	}); err != nil {
+		return fmt.Errorf("error adding GenerateUpgradePlan handler: %w", err)
 	}
 
 	return nil
