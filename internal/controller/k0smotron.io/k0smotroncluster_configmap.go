@@ -153,9 +153,6 @@ func (scope *kmcScope) reconcileK0sConfig(ctx context.Context, kmc *km.Cluster, 
 }
 
 func reconcileDynamicConfig(ctx context.Context, kmc *km.Cluster, k0sConfig map[string]any, c client.Client) error {
-	// Storage can only be configured in the local k0s config of the controllers, so it is dropped
-	// from the dynamic config and the kine data source secret is not needed here. The secret is
-	// consumed only by the control plane pods, in the cluster where they run.
 	u := unstructured.Unstructured{Object: k0sConfig}
 
 	chCS, err := remote.NewClusterClient(ctx, "k0smotron", c, capiutil.ObjectKey(kmc))
