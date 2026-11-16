@@ -114,26 +114,6 @@ func (r *JoinTokenRequestReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	if ns, ok := jtr.Annotations[km.V1Beta1ClusterRefNamespaceAnnotation]; ok {
 		clusterNamespace = ns
 		isV1Beta1WithPossibleCrossNamespace = true
-	} else {
-		// Do not try to add owner references when deleting because the cluster might be deleted at this point.
-		if !isJTRBeingDeleted {
-			// JoinTokenRequest created in v1beta2
-			var kmc km.Cluster
-			err = r.Client.Get(ctx, types.NamespacedName{Name: jtr.Spec.ClusterName, Namespace: clusterNamespace}, &kmc)
-			if err != nil {
-				reconcileFailureMessage = "Failed to get k0smotron cluster"
-				return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
-			}
-			if ownerRefAdded := ensureOwnerReference(&jtr, kmc); ownerRefAdded {
-				// If the owner reference was updated, we need to patch the JoinTokenRequest to persist it before proceeding with the reconciliation,
-				// otherwise the controller may try to update the status of the JoinTokenRequest without the owner reference, which will cause a validation error.
-				err = patchHelper.Patch(ctx, &jtr)
-				if err != nil {
-					logger.Error(err, "Failed to patch JoinTokenRequest with owner reference")
-				}
-				return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 5}, err
-			}
-		}
 	}
 
 	logger.Info("Reconciling")
@@ -145,6 +125,20 @@ func (r *JoinTokenRequestReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		if !isJTRBeingDeleted || !apierrors.IsNotFound(err) {
 			reconcileFailureMessage = "Failed to get cluster"
 			return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
+		}
+	}
+
+	// Do not try to add owner references when deleting because the cluster might be deleted at this point.
+	if !isJTRBeingDeleted && !isV1Beta1WithPossibleCrossNamespace {
+		// JoinTokenRequest created in v1beta2
+		if ownerRefAdded := ensureOwnerReference(&jtr, cluster); ownerRefAdded {
+			// If the owner reference was updated, we need to patch the JoinTokenRequest to persist it before proceeding with the reconciliation,
+			// otherwise the controller may try to update the status of the JoinTokenRequest without the owner reference, which will cause a validation error.
+			err = patchHelper.Patch(ctx, &jtr)
+			if err != nil {
+				logger.Error(err, "Failed to patch JoinTokenRequest with owner reference")
+			}
+			return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 5}, err
 		}
 	}
 
