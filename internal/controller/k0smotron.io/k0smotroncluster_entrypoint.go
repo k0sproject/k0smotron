@@ -24,12 +24,14 @@ import (
 
 	km "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
 	kcontrollerutil "github.com/k0sproject/k0smotron/v2/internal/controller/util"
+	"github.com/k0sproject/version"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 var entrypointTmpl *template.Template
+var minVersionWithoutSetcap = version.MustParse("v1.37.1+k0s.0")
 
 func init() {
 	entrypointTmpl = template.Must(template.New("entrypoint.sh").Parse(entrypointTemplate))
@@ -41,8 +43,9 @@ func (scope *kmcScope) generateEntrypointCM(kmc *km.Cluster) (v1.ConfigMap, erro
 		"KineDataSourceURLPlaceholder": kineDataSourceURLPlaceholder,
 		"NatsTokenPlaceholder":         natsTokenPlaceholder,
 		"K0sControllerArgs":            getControllerFlags(kmc),
-		"PrivilegedPortIsUsed":         kmc.Spec.Service.APIPort <= 1024,
-		"UniversalSedInplace":          universalSedInplace,
+		"BindCapNeeded": kmc.Spec.Service.APIPort <= 1024 &&
+			!k0sVersionAtLeast(kmc.Spec.Version, minVersionWithoutSetcap),
+		"UniversalSedInplace": universalSedInplace,
 	})
 	if err != nil {
 		return v1.ConfigMap{}, err
@@ -107,6 +110,17 @@ func getControllerFlags(kmc *km.Cluster) string {
 	return strings.Join(flags, " ")
 }
 
+func k0sVersionAtLeast(specVersion string, min *version.Version) bool {
+	if specVersion == "" {
+		return false
+	}
+	v, err := version.NewVersion(kcontrollerutil.NormalizeK0sVersion(specVersion))
+	if err != nil {
+		return false
+	}
+	return v.GreaterThanOrEqual(min)
+}
+
 const (
 	entrypointTemplate = `
 #!/bin/sh
@@ -157,7 +171,7 @@ if [ -n "$K0SMOTRON_NATS_TOKEN" ]; then
   sedi "s|{{ .NatsTokenPlaceholder }}|$escaped_token|g" /etc/k0s/k0s.yaml
 fi
 
-{{if .PrivilegedPortIsUsed}}
+{{if .BindCapNeeded}}
 apk add --no-cache libcap
 { while ! setcap 'cap_net_bind_service=+ep' /var/lib/k0s/bin/kube-apiserver; do sleep 1 ; done ; } &
 {{end}}
