@@ -24,7 +24,7 @@ jobs:
           go-version-file: go.mod
 
       - name: Download image bundle
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           name: k0smotron-image-bundle
 
