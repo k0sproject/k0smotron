@@ -117,7 +117,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up Go
-        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
 
@@ -181,7 +181,7 @@ jobs:
     continue-on-error: true
     steps:
       - name: Download image bundle
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: k0smotron-image-bundle
 
@@ -212,12 +212,12 @@ jobs:
           ref: ${{ env.TEST_REF }}
 
       - name: Set up Go
-        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
 
       - name: Download image bundle
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           name: k0smotron-image-bundle
 
@@ -226,7 +226,7 @@ jobs:
           docker load -i k0smotron-image-bundle.tar
 
       - name: Download install manifest
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           name: install-yaml
 
@@ -238,7 +238,7 @@ jobs:
           uri: https://github.com/kubernetes-sigs/cluster-api-provider-aws/releases/download/v2.9.2/clusterawsadm-linux-amd64
 
       - name: Configure AWS credentials using OIDC
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
           aws-region: eu-west-1
