@@ -208,10 +208,13 @@ func TestK0sVersionAtLeast(t *testing.T) {
 		{"older", "v1.36.2+k0s.0", false},
 		{"older with dash suffix", "v1.36.2-k0s.0", false},
 		{"older without suffix", "v1.36.0", false},
-		{"exact", "v1.37.0", true},
-		{"exact with plus suffix", "v1.37.0+k0s.0", true},
-		{"exact with dash suffix", "v1.37.0-k0s.0", true},
+		{"exact", "v1.37.0", false},
+		{"exact with plus suffix", "v1.37.0+k0s.0", false},
+		{"exact with dash suffix", "v1.37.0-k0s.0", false},
 		{"newer", "v1.38.1+k0s.1", true},
+		{"boundary with plus suffix", "v1.37.1+k0s.0", true},
+		{"boundary with dash suffix", "v1.37.1-k0s.0", true},
+		{"boundary without suffix", "v1.37.1", true},
 	}
 
 	for _, tt := range tests {

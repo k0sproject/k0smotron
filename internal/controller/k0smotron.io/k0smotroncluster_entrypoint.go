@@ -31,7 +31,7 @@ import (
 )
 
 var entrypointTmpl *template.Template
-var minVersionWithoutSetcap = version.MustParse("v1.37.0+k0s.0")
+var minVersionWithoutSetcap = version.MustParse("v1.37.1+k0s.0")
 
 func init() {
 	entrypointTmpl = template.Must(template.New("entrypoint.sh").Parse(entrypointTemplate))
@@ -43,7 +43,7 @@ func (scope *kmcScope) generateEntrypointCM(kmc *km.Cluster) (v1.ConfigMap, erro
 		"KineDataSourceURLPlaceholder": kineDataSourceURLPlaceholder,
 		"NatsTokenPlaceholder":         natsTokenPlaceholder,
 		"K0sControllerArgs":            getControllerFlags(kmc),
-		"PrivilegedPortIsUsed": kmc.Spec.Service.APIPort <= 1024 &&
+		"BindCapNeeded": kmc.Spec.Service.APIPort <= 1024 &&
 			!k0sVersionAtLeast(kmc.Spec.Version, minVersionWithoutSetcap),
 		"UniversalSedInplace": universalSedInplace,
 	})
@@ -171,7 +171,7 @@ if [ -n "$K0SMOTRON_NATS_TOKEN" ]; then
   sedi "s|{{ .NatsTokenPlaceholder }}|$escaped_token|g" /etc/k0s/k0s.yaml
 fi
 
-{{if .PrivilegedPortIsUsed}}
+{{if .BindCapNeeded}}
 apk add --no-cache libcap
 { while ! setcap 'cap_net_bind_service=+ep' /var/lib/k0s/bin/kube-apiserver; do sleep 1 ; done ; } &
 {{end}}
