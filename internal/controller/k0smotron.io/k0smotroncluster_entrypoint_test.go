@@ -207,6 +207,7 @@ func TestK0sVersionAtLeast(t *testing.T) {
 		{"invalid", "not-a-version", false},
 		{"older", "v1.36.2+k0s.0", false},
 		{"older with dash suffix", "v1.36.2-k0s.0", false},
+		{"older without suffix", "v1.36.0", false},
 		{"exact", "v1.37.0", true},
 		{"exact with plus suffix", "v1.37.0+k0s.0", true},
 		{"exact with dash suffix", "v1.37.0-k0s.0", true},

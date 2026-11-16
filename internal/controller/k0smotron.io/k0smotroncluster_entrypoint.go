@@ -31,7 +31,7 @@ import (
 )
 
 var entrypointTmpl *template.Template
-var minVersionWithoutSetcap = version.MustParse("v1.37.0")
+var minVersionWithoutSetcap = version.MustParse("v1.37.0+k0s.0")
 
 func init() {
 	entrypointTmpl = template.Must(template.New("entrypoint.sh").Parse(entrypointTemplate))
@@ -114,12 +114,11 @@ func k0sVersionAtLeast(specVersion string, min *version.Version) bool {
 	if specVersion == "" {
 		return false
 	}
-	v, err := version.NewVersion(specVersion)
+	v, err := version.NewVersion(kcontrollerutil.NormalizeK0sVersion(specVersion))
 	if err != nil {
 		return false
 	}
-	// Compare core versions only: "v1.37.0-k0s.0" would otherwise sort as a pre-release of v1.37.0.
-	return v.Core().GreaterThanOrEqual(min.Core())
+	return v.GreaterThanOrEqual(min)
 }
 
 const (
