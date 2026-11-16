@@ -110,7 +110,7 @@ func getControllerFlags(kmc *km.Cluster) string {
 	return strings.Join(flags, " ")
 }
 
-func k0sVersionAtLeast(specVersion string, min *version.Version) bool {
+func k0sVersionAtLeast(specVersion string, minK0sVersion *version.Version) bool {
 	if specVersion == "" {
 		return false
 	}
@@ -118,7 +118,7 @@ func k0sVersionAtLeast(specVersion string, min *version.Version) bool {
 	if err != nil {
 		return false
 	}
-	return v.GreaterThanOrEqual(min)
+	return v.GreaterThanOrEqual(minK0sVersion)
 }
 
 const (
