@@ -155,23 +155,6 @@ func (scope *kmcScope) reconcileK0sConfig(ctx context.Context, kmc *km.Cluster, 
 func reconcileDynamicConfig(ctx context.Context, kmc *km.Cluster, k0sConfig map[string]any, c client.Client) error {
 	u := unstructured.Unstructured{Object: k0sConfig}
 
-	if kmc.Spec.Storage.Kine.DataSourceSecretName != "" {
-		kineDSNSecret := &v1.Secret{}
-		err := c.Get(ctx, client.ObjectKey{Namespace: kmc.Namespace, Name: kmc.Spec.Storage.Kine.DataSourceSecretName}, kineDSNSecret)
-		if err != nil {
-			return fmt.Errorf("failed to get kine data source secret: %w", err)
-		}
-
-		if string(kineDSNSecret.Data["K0SMOTRON_KINE_DATASOURCE_URL"]) == "" {
-			return fmt.Errorf("kine data source secret does not contain K0SMOTRON_KINE_DATASOURCE_URL key")
-		}
-
-		err = unstructured.SetNestedField(u.Object, string(kineDSNSecret.Data["K0SMOTRON_KINE_DATASOURCE_URL"]), "spec", "storage", "kine", "dataSource")
-		if err != nil {
-			return fmt.Errorf("failed to set kine data source url to the k0s config: %w", err)
-		}
-	}
-
 	chCS, err := remote.NewClusterClient(ctx, "k0smotron", c, capiutil.ObjectKey(kmc))
 	if err != nil {
 		return fmt.Errorf("failed to create workload cluster client: %w", err)
