@@ -231,7 +231,7 @@ jobs:
           name: install-yaml
 
       - name: Download clusterawsadm
-        uses: supplypike/setup-bin@v4
+        uses: supplypike/setup-bin@v5
         with:
           name: clusterawsadm
           version: v2.9.2
