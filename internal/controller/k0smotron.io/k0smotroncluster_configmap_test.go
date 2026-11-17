@@ -222,3 +222,89 @@ current-context: workload
 	assert.Contains(t, string(patches[0]), `"provider":"calico"`)
 	assert.NotContains(t, string(patches[0]), "storage")
 }
+
+// TestReconcileK0sConfig_keepsClusterSpec covers the configmap and dynamic config steps of a reconcile.
+// Both must leave kmc.Spec.K0sConfig untouched: the reconciler patches the Cluster from kmc afterwards,
+// so any change to it is persisted, e.g. the user's storage section being dropped.
+func TestReconcileK0sConfig_keepsClusterSpec(t *testing.T) {
+	workload := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/api":
+			_ = json.NewEncoder(w).Encode(metav1.APIVersions{Versions: []string{"v1"}})
+		case r.Method == http.MethodGet && r.URL.Path == "/apis":
+			_ = json.NewEncoder(w).Encode(metav1.APIGroupList{Groups: []metav1.APIGroup{{
+				Name:             "k0s.k0sproject.io",
+				Versions:         []metav1.GroupVersionForDiscovery{{GroupVersion: "k0s.k0sproject.io/v1beta1", Version: "v1beta1"}},
+				PreferredVersion: metav1.GroupVersionForDiscovery{GroupVersion: "k0s.k0sproject.io/v1beta1", Version: "v1beta1"},
+			}}})
+		case r.Method == http.MethodGet && r.URL.Path == "/apis/k0s.k0sproject.io/v1beta1":
+			_ = json.NewEncoder(w).Encode(metav1.APIResourceList{
+				GroupVersion: "k0s.k0sproject.io/v1beta1",
+				APIResources: []metav1.APIResource{{Name: "clusterconfigs", Namespaced: true, Kind: "ClusterConfig", Verbs: metav1.Verbs{"get", "patch"}}},
+			})
+		case r.Method == http.MethodPatch && r.URL.Path == "/apis/k0s.k0sproject.io/v1beta1/namespaces/kube-system/clusterconfigs/k0s":
+			body, _ := io.ReadAll(r.Body)
+			_, _ = w.Write(body)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer workload.Close()
+
+	kmc := &km.Cluster{
+		ObjectMeta: metav1.ObjectMeta{Name: "kmc-test", Namespace: "default"},
+		Spec: km.ClusterSpec{
+			ExternalAddress: "my.external.address",
+			Storage: km.StorageSpec{
+				Type: km.StorageTypeKine,
+				Kine: km.KineSpec{DataSourceURL: "postgres://k0smotron"},
+			},
+			K0sConfig: &unstructured.Unstructured{Object: map[string]any{
+				"apiVersion": "k0s.k0sproject.io/v1beta1",
+				"kind":       "ClusterConfig",
+				"spec": map[string]any{
+					"network": map[string]any{
+						"provider":                  "calico",
+						"controlPlaneLoadBalancing": map[string]any{"enabled": false},
+					},
+					"storage": map[string]any{
+						"type": "kine",
+						"kine": map[string]any{
+							"extraArgs": map[string]any{"datastore-max-open-connections": "10"},
+						},
+					},
+				},
+			}},
+		},
+	}
+	wantK0sConfig := kmc.Spec.K0sConfig.DeepCopy()
+
+	workloadKubeconfig := fmt.Sprintf(`apiVersion: v1
+kind: Config
+clusters:
+- name: workload
+  cluster:
+    server: %s
+contexts:
+- name: workload
+  context:
+    cluster: workload
+current-context: workload
+`, workload.URL)
+
+	scheme := runtime.NewScheme()
+	require.NoError(t, corev1.AddToScheme(scheme))
+	managementClusterClient := fake.NewClientBuilder().WithScheme(scheme).WithObjects(&corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{Name: "kmc-test-kubeconfig", Namespace: "default"},
+		Data:       map[string][]byte{"value": []byte(workloadKubeconfig)},
+	}).Build()
+
+	scope := &kmcScope{client: managementClusterClient}
+	cm, k0sConfig, err := scope.generateConfig(kmc, []string{"1.2.3.4"})
+	require.NoError(t, err)
+	require.NoError(t, reconcileDynamicConfig(t.Context(), kmc, k0sConfig, managementClusterClient))
+
+	assert.Equal(t, wantK0sConfig, kmc.Spec.K0sConfig)
+	assert.Contains(t, cm.Data["K0SMOTRON_K0S_YAML"], "datastore-max-open-connections")
+}
