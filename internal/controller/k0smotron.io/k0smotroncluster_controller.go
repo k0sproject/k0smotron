@@ -267,6 +267,12 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (re
 				logger.Error(err, "Error ensuring external owner")
 				return ctrl.Result{}, err
 			}
+
+			// Secrets referenced by the Cluster live in the management cluster, but the workloads run in the remote host cluster.
+			if err := kutil.SyncReferencedSecrets(ctx, r.Client, kmcScope.client, kmc, kmcScope.externalOwner); err != nil {
+				logger.Error(err, "Error syncing referenced secrets to remote cluster")
+				return ctrl.Result{}, err
+			}
 		}
 
 	}
