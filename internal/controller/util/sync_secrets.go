@@ -87,7 +87,11 @@ func syncSecret(ctx context.Context, dst client.Client, srcSecret *corev1.Secret
 			Type: srcSecret.Type,
 		}
 	}
-	dstSecret.Data = srcSecret.Data
+	dstSecret.Data = maps.Clone(srcSecret.Data)
+	// The management cluster is the source of truth for metadata, so whatever is on an existing copy is replaced.
+	dstSecret.Labels = maps.Clone(srcSecret.Labels)
+	dstSecret.Annotations = maps.Clone(srcSecret.Annotations)
+	// dst.Scheme() must have corev1 registered, which is the case for all manager-managed clients.
 	if err := SetExternalOwnerReference(kmc, dstSecret, dst.Scheme(), externalOwner); err != nil {
 		return err
 	}
