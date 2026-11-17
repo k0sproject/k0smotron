@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -88,8 +89,9 @@ func InstallK0smotronOperator(ctx context.Context, kc *kubernetes.Clientset, rc 
 	return nil
 }
 
-// InstallStableK0smotronOperator installs the stable version of the k0smotron operator to the cluster.
-func InstallStableK0smotronOperator(ctx context.Context, kc *kubernetes.Clientset, rc *rest.Config) error {
+// InstallReleasedK0smotronOperator installs a published release of the k0smotron operator
+// (e.g. "stable" or "v1.5.0", as served by docs.k0smotron.io) to the cluster.
+func InstallReleasedK0smotronOperator(ctx context.Context, kc *kubernetes.Clientset, rc *rest.Config, version string) error {
 	err := InstallLocalPathStorage(ctx, kc, rc)
 	if err != nil {
 		return err
@@ -105,7 +107,7 @@ func InstallStableK0smotronOperator(ctx context.Context, kc *kubernetes.Clientse
 		return err
 	}
 
-	installFileName, err := downloadStableStandaloneInstall()
+	installFileName, err := downloadStandaloneInstall(version)
 	if err != nil {
 		return err
 	}
@@ -475,10 +477,13 @@ func GetControlPlaneMachinesByKcpName(ctx context.Context, kcpName string, names
 	return result, nil
 }
 
-func downloadStableStandaloneInstall() (string, error) {
-	url := "https://docs.k0smotron.io/stable/install-standalone.yaml"
+func downloadStandaloneInstall(version string) (string, error) {
+	u, err := url.JoinPath("https://docs.k0smotron.io", version, "install-standalone.yaml")
+	if err != nil {
+		return "", err
+	}
 
-	response, err := http.Get(url)
+	response, err := http.Get(u)
 	if err != nil {
 		return "", fmt.Errorf("failed to download k0smotron install file: %v", err)
 	}
