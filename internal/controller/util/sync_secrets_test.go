@@ -12,6 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
 )
 
 func TestSyncReferencedSecrets(t *testing.T) {
@@ -52,6 +53,8 @@ func TestSyncReferencedSecrets(t *testing.T) {
 		got := &corev1.Secret{}
 		require.NoError(t, dst.Get(context.Background(), client.ObjectKey{Namespace: "ns", Name: "mounted"}, got))
 		require.Equal(t, []byte("a"), got.Data["key"])
+		require.Len(t, got.OwnerReferences, 1)
+		require.Equal(t, owner.UID, got.OwnerReferences[0].UID)
 		require.NoError(t, dst.Get(context.Background(), client.ObjectKey{Namespace: "ns", Name: "kine"}, got))
 		require.Equal(t, []byte("b"), got.Data["key"])
 		require.Len(t, got.OwnerReferences, 1)
@@ -71,6 +74,45 @@ func TestSyncReferencedSecrets(t *testing.T) {
 		require.Equal(t, []byte("new"), got.Data["key"])
 		require.Len(t, got.OwnerReferences, 1)
 		require.Equal(t, owner.UID, got.OwnerReferences[0].UID)
+	})
+
+	t.Run("copies labels and annotations, replacing those on an existing copy", func(t *testing.T) {
+		srcSecret := secret("kine", "v")
+		srcSecret.Labels = map[string]string{"from": "src"}
+		srcSecret.Annotations = map[string]string{"note": "src"}
+		dstSecret := secret("kine", "v")
+		dstSecret.Labels = map[string]string{"stale": "label"}
+		dstSecret.Annotations = map[string]string{"stale": "annotation"}
+		src := fake.NewClientBuilder().WithScheme(scheme).WithObjects(srcSecret).Build()
+		dst := fake.NewClientBuilder().WithScheme(scheme).WithObjects(dstSecret).Build()
+
+		require.NoError(t, SyncReferencedSecrets(context.Background(), src, dst, newKmc(nil, "kine"), owner))
+
+		got := &corev1.Secret{}
+		require.NoError(t, dst.Get(context.Background(), client.ObjectKey{Namespace: "ns", Name: "kine"}, got))
+		require.Equal(t, map[string]string{"from": "src"}, got.Labels)
+		require.Equal(t, map[string]string{"note": "src"}, got.Annotations)
+	})
+
+	t.Run("secret referenced twice is synced once", func(t *testing.T) {
+		src := fake.NewClientBuilder().WithScheme(scheme).WithObjects(secret("shared", "x")).Build()
+		creates := 0
+		dst := fake.NewClientBuilder().WithScheme(scheme).WithInterceptorFuncs(interceptor.Funcs{
+			Create: func(ctx context.Context, c client.WithWatch, obj client.Object, opts ...client.CreateOption) error {
+				creates++
+				return c.Create(ctx, obj, opts...)
+			},
+		}).Build()
+
+		require.NoError(t, SyncReferencedSecrets(context.Background(), src, dst, newKmc([]km.Mount{secretMount("shared", false)}, "shared"), owner))
+		require.Equal(t, 1, creates)
+	})
+
+	t.Run("secret referenced as optional and required is required", func(t *testing.T) {
+		src := fake.NewClientBuilder().WithScheme(scheme).Build()
+		dst := fake.NewClientBuilder().WithScheme(scheme).Build()
+
+		require.Error(t, SyncReferencedSecrets(context.Background(), src, dst, newKmc([]km.Mount{secretMount("shared", true)}, "shared"), owner))
 	})
 
 	t.Run("missing required secret fails", func(t *testing.T) {
