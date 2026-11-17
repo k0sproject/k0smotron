@@ -29,13 +29,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// SyncReferencedSecrets copies the Secrets referenced by the Cluster (secret mounts and the kine
-// datasource Secret) from the management cluster (src) to the remote host cluster (dst), in the
-// namespace of the Cluster. Secrets are created if missing and their data is updated otherwise.
-//
-// The synced Secrets are owned by externalOwner (see EnsureExternalOwner), so they are garbage collected
-// in the remote host cluster when the Cluster is deleted. The Cluster itself can't be the owner because
-// it lives in a different cluster.
+// SyncReferencedSecrets mirrors Secrets referenced by kmc (mounts and kine datasource) from src
+// to dst, creating or updating as needed. Synced Secrets are owned by externalOwner for GC on deletion.
 func SyncReferencedSecrets(ctx context.Context, src, dst client.Client, kmc *km.Cluster, externalOwner client.Object) error {
 	// name -> whether the Secret is optional; a Secret is optional only if every reference to it is.
 	optional := map[string]bool{}
