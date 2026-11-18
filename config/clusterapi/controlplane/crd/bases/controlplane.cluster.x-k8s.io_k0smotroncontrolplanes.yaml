@@ -9673,9 +9673,8 @@ spec:
                     default: false
                     description: |-
                       When true, Secrets and ConfigMaps referenced by spec.mounts, spec.manifests,
-                      and spec.storage.kine.dataSourceSecretName are copied from the management cluster
-                      to the remote host cluster on each reconciliation and deleted with the Cluster.
-                      Objects referenced by spec.certificateRefs must already exist on the remote host.
+                      spec.certificateRefs, and spec.storage.kine.dataSourceSecretName are copied from the
+                      management cluster to the remote host cluster on each reconciliation and deleted with the Cluster.
                     type: boolean
                 type: object
               replicas:
