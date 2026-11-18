@@ -238,6 +238,13 @@ type RemoteHostClusterSpec struct {
 	// This kubeconfig will be used to deploy the k0s control plane.
 	//+kubebuilder:validation:Optional
 	KubeconfigRef *KubeconfigRef `json:"kubeconfigRef,omitempty"`
+	// When true, Secrets and ConfigMaps referenced by spec.mounts, spec.manifests,
+	// and spec.storage.kine.dataSourceSecretName are copied from the management cluster
+	// to the remote host cluster on each reconciliation and deleted with the Cluster.
+	// Objects referenced by spec.certificateRefs must already exist on the remote host.
+	//+kubebuilder:default=false
+	//+kubebuilder:validation:Optional
+	SyncReferencedObjects bool `json:"syncReferencedObjects,omitempty"`
 }
 
 // ComponentPatch defines a patch to apply to a generated resource.

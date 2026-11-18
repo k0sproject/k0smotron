@@ -65,7 +65,7 @@ func (kmc *Cluster) ConvertTo(dstRaw conversion.Hub) error {
 }
 
 // ConvertFrom converts from the hub version (v1beta2) to this Cluster (v1beta1).
-// NATS storage type, Patches and Certificates have no equivalent in v1beta1 and are
+// NATS storage type, Patches, Certificates and RemoteHostCluster.SyncReferencedObjects have no equivalent in v1beta1 and are
 // silently dropped. spec.certificates is pure tuning with safe defaults (8760h/720h),
 // so a v1beta1 round trip reverts it to those defaults rather than breaking renewal.
 func (kmc *Cluster) ConvertFrom(srcRaw conversion.Hub) error {
