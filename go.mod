@@ -2,7 +2,7 @@ module github.com/k0sproject/k0smotron/v2
 
 go 1.26.0
 
-toolchain go1.26.5
+toolchain go1.27.4
 
 require (
 	github.com/cloudflare/cfssl v1.6.4
