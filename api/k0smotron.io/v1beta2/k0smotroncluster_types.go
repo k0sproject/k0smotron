@@ -239,9 +239,8 @@ type RemoteHostClusterSpec struct {
 	//+kubebuilder:validation:Optional
 	KubeconfigRef *KubeconfigRef `json:"kubeconfigRef,omitempty"`
 	// When true, Secrets and ConfigMaps referenced by spec.mounts, spec.manifests,
-	// and spec.storage.kine.dataSourceSecretName are copied from the management cluster
-	// to the remote host cluster on each reconciliation and deleted with the Cluster.
-	// Objects referenced by spec.certificateRefs must already exist on the remote host.
+	// spec.certificateRefs, and spec.storage.kine.dataSourceSecretName are copied from the
+	// management cluster to the remote host cluster on each reconciliation and deleted with the Cluster.
 	//+kubebuilder:default=false
 	//+kubebuilder:validation:Optional
 	SyncReferencedObjects bool `json:"syncReferencedObjects,omitempty"`
