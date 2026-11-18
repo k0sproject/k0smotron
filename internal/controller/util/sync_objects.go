@@ -72,11 +72,16 @@ func collectReferencedObjects(kmc *km.Cluster) *referencedObjects {
 	if name := kmc.Spec.Storage.Kine.DataSourceSecretName; name != "" {
 		refs.addSecret(name, false)
 	}
+	for _, certRef := range kmc.Spec.CertificateRefs {
+		if certRef.Name != "" {
+			refs.addSecret(certRef.Name, false)
+		}
+	}
 	return refs
 }
 
-// SyncReferencedObjects mirrors the Secrets and ConfigMaps referenced by kmc (mounts, manifests and kine
-// datasource) from src to dst, creating or updating as needed. It does nothing unless
+// SyncReferencedObjects mirrors the Secrets and ConfigMaps referenced by kmc (mounts, manifests, certificate
+// references and kine datasource) from src to dst, creating or updating as needed. It does nothing unless
 // spec.remoteHostCluster.syncReferencedObjects is enabled. Synced objects are owned by externalOwner
 // for GC on deletion.
 func SyncReferencedObjects(ctx context.Context, src, dst client.Client, kmc *km.Cluster, externalOwner client.Object) error {
