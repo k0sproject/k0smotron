@@ -29,7 +29,6 @@ import (
 	"golang.org/x/tools/go/packages"
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
@@ -178,7 +177,7 @@ func newEnvironment(setupSecretCachingClient setupSecretCachingClientFn) *Enviro
 	if kubeconfigPath := os.Getenv("TEST_ENV_KUBECONFIG"); kubeconfigPath != "" {
 		klog.Infof("Writing test env kubeconfig to %q", kubeconfigPath)
 		config := kubeconfig.FromEnvTestConfig(env.Config, &clusterv1.Cluster{
-			ObjectMeta: metav1.ObjectMeta{Name: "test"},
+			Name: "test",
 		})
 		if err := os.WriteFile(kubeconfigPath, config, 0o600); err != nil {
 			panic(errors.Wrapf(err, "failed to write the test env kubeconfig"))
@@ -263,11 +262,9 @@ func getFilePathToCAPICoreCRDs() string {
 // CreateNamespace creates a new namespace with a generated name.
 func (e *Environment) CreateNamespace(ctx context.Context, generateName string) (*v1.Namespace, error) {
 	ns := &v1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: fmt.Sprintf("%s-", generateName),
-			Labels: map[string]string{
-				"testenv/original-name": generateName,
-			},
+		GenerateName: fmt.Sprintf("%s-", generateName),
+		Labels: map[string]string{
+			"testenv/original-name": generateName,
 		},
 	}
 	if err := e.Client.Create(ctx, ns); err != nil {

@@ -115,9 +115,7 @@ func (s *HAControllerSecretSuite) prepareCerts(kc *kubernetes.Clientset) {
 
 func (s *HAControllerSecretSuite) createK0smotronClusterWithSecretRef(ctx context.Context, kc *kubernetes.Clientset) {
 	_, err := kc.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "kmc-test",
-		},
+		Name: "kmc-test",
 	}, metav1.CreateOptions{})
 	s.Require().NoError(err)
 
@@ -125,14 +123,10 @@ func (s *HAControllerSecretSuite) createK0smotronClusterWithSecretRef(ctx contex
 
 	// create K0smotron namespace
 	_, err = kc.CoreV1().Secrets("kmc-test").Create(ctx, &corev1.Secret{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Secret",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "postgres-dsn",
-			Namespace: "kmc-test",
-		},
+		Kind:       "Secret",
+		APIVersion: "v1",
+		Name:       "postgres-dsn",
+		Namespace:  "kmc-test",
 		StringData: map[string]string{
 			"K0SMOTRON_KINE_DATASOURCE_URL": "postgres://postgres:postgres@postgres.default:5432/kine?sslmode=disable",
 		},

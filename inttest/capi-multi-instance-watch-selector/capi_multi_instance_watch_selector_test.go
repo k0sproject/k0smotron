@@ -202,7 +202,7 @@ func (s *CAPIMultiInstanceWatchSelectorSuite) verifyReplicaCountingIsNamespaceSc
 
 func (s *CAPIMultiInstanceWatchSelectorSuite) ensureNamespace(ctx context.Context, name string) error {
 	_, err := s.client.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{Name: name},
+		Name: name,
 	}, metav1.CreateOptions{})
 	if apierrors.IsAlreadyExists(err) {
 		return nil
@@ -242,13 +242,11 @@ func (s *CAPIMultiInstanceWatchSelectorSuite) countControlPlanePods(ctx context.
 // include it in the test cluster's status.
 func (s *CAPIMultiInstanceWatchSelectorSuite) createControlPlaneDecoyPod(ctx context.Context, name, namespace string) error {
 	pod := &corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-			Labels: map[string]string{
-				"cluster.x-k8s.io/cluster-name":  testClusterName,
-				"cluster.x-k8s.io/control-plane": "true",
-			},
+		Name:      name,
+		Namespace: namespace,
+		Labels: map[string]string{
+			"cluster.x-k8s.io/cluster-name":  testClusterName,
+			"cluster.x-k8s.io/control-plane": "true",
 		},
 		Spec: corev1.PodSpec{
 			Containers: []corev1.Container{{

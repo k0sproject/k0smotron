@@ -46,13 +46,11 @@ func TestListControlPlanePods_IsNamespaceScoped(t *testing.T) {
 	// control plane pods. Counting must not leak pods across namespaces.
 	newPod := func(name, namespace string) *corev1.Pod {
 		return &corev1.Pod{
-			ObjectMeta: v1.ObjectMeta{
-				Name:      name,
-				Namespace: namespace,
-				Labels: map[string]string{
-					"cluster.x-k8s.io/cluster-name":  clusterName,
-					"cluster.x-k8s.io/control-plane": "true",
-				},
+			Name:      name,
+			Namespace: namespace,
+			Labels: map[string]string{
+				"cluster.x-k8s.io/cluster-name":  clusterName,
+				"cluster.x-k8s.io/control-plane": "true",
 			},
 		}
 	}
@@ -75,7 +73,7 @@ func TestListControlPlanePods_IsNamespaceScoped(t *testing.T) {
 	for _, ns := range []string{"ns-foo", "ns-bar"} {
 		t.Run(ns, func(t *testing.T) {
 			cluster := &clusterv1.Cluster{
-				ObjectMeta: v1.ObjectMeta{Name: clusterName, Namespace: ns},
+				Name: clusterName, Namespace: ns,
 			}
 			pods, err := listControlPlanePods(context.Background(), cl, cluster)
 			require.NoError(t, err)
@@ -94,11 +92,9 @@ func TestIsClusterSpecSynced(t *testing.T) {
 	)
 
 	kmc := kapi.Cluster{
-		ObjectMeta: v1.ObjectMeta{
-			Name: "test",
-			Annotations: map[string]string{
-				kapi.AnnotationKeyClusterSpecHash: "86c6b5f8df",
-			},
+		Name: "test",
+		Annotations: map[string]string{
+			kapi.AnnotationKeyClusterSpecHash: "86c6b5f8df",
 		},
 	}
 	testCases := []struct {
@@ -113,23 +109,15 @@ func TestIsClusterSpecSynced(t *testing.T) {
 				Manifests: []corev1.Volume{
 					{
 						Name: "manifest-1",
-						VolumeSource: corev1.VolumeSource{
-							ConfigMap: &corev1.ConfigMapVolumeSource{
-								LocalObjectReference: corev1.LocalObjectReference{
-									Name: "manifest-configmap-1",
-								},
-							},
+						ConfigMap: &corev1.ConfigMapVolumeSource{
+							Name: "manifest-configmap-1",
 						},
 					},
 					// Simulate the manifest volume created by the controller.
 					{
 						Name: kmc.GetEndpointConfigMapName(),
-						VolumeSource: corev1.VolumeSource{
-							ConfigMap: &corev1.ConfigMapVolumeSource{
-								LocalObjectReference: corev1.LocalObjectReference{
-									Name: kmc.GetEndpointConfigMapName(),
-								},
-							},
+						ConfigMap: &corev1.ConfigMapVolumeSource{
+							Name: kmc.GetEndpointConfigMapName(),
 						},
 					},
 				},
@@ -195,12 +183,8 @@ func TestIsClusterSpecSynced(t *testing.T) {
 				Manifests: []corev1.Volume{
 					{
 						Name: "manifest-1",
-						VolumeSource: corev1.VolumeSource{
-							ConfigMap: &corev1.ConfigMapVolumeSource{
-								LocalObjectReference: corev1.LocalObjectReference{
-									Name: "manifest-configmap-1",
-								},
-							},
+						ConfigMap: &corev1.ConfigMapVolumeSource{
+							Name: "manifest-configmap-1",
 						},
 					},
 				},
@@ -434,10 +418,8 @@ func Test_patchInfrastructureStatus(t *testing.T) {
 			// CRD contract label maps the contract version to the served apiVersions; GetObjectFromContractVersionedRef
 			// resolves the InfrastructureRef to that served version and stamps it onto the returned object.
 			crd := &apiextensionsv1.CustomResourceDefinition{
-				ObjectMeta: v1.ObjectMeta{
-					Name:   contract.CalculateCRDName(infraGroup, infraKind),
-					Labels: map[string]string{"cluster.x-k8s.io/" + tt.apiVer: tt.apiVer},
-				},
+				Name:   contract.CalculateCRDName(infraGroup, infraKind),
+				Labels: map[string]string{"cluster.x-k8s.io/" + tt.apiVer: tt.apiVer},
 			}
 
 			infra := &unstructured.Unstructured{}
@@ -455,7 +437,7 @@ func Test_patchInfrastructureStatus(t *testing.T) {
 
 			c := &K0smotronController{Client: fc, Scheme: scheme}
 			cluster := &clusterv1.Cluster{
-				ObjectMeta: v1.ObjectMeta{Name: clusterName, Namespace: clusterNs},
+				Name: clusterName, Namespace: clusterNs,
 				Spec: clusterv1.ClusterSpec{
 					ControlPlaneEndpoint: tt.endpoint,
 					InfrastructureRef: clusterv1.ContractVersionedObjectReference{
@@ -513,9 +495,9 @@ func TestSetHostedScalingConditions(t *testing.T) {
 // TestHostedComputeStatusSetsScalingConditions covers the conditions coming from the
 // status path, not only from their own function.
 func TestHostedComputeStatusSetsScalingConditions(t *testing.T) {
-	cluster := &clusterv1.Cluster{ObjectMeta: v1.ObjectMeta{Name: "test", Namespace: "default"}}
+	cluster := &clusterv1.Cluster{Name: "test", Namespace: "default"}
 	kcp := &cpv1beta2.K0smotronControlPlane{
-		ObjectMeta: v1.ObjectMeta{Name: "test", Namespace: "default", UID: "hosted-uid"},
+		Name: "test", Namespace: "default", UID: "hosted-uid",
 	}
 	kcp.Spec.Version = "v1.30.0+k0s.0"
 	kcp.Spec.Replicas = 3
@@ -523,7 +505,7 @@ func TestHostedComputeStatusSetsScalingConditions(t *testing.T) {
 	// Two pods against three wanted, so this is a scale up.
 	cl := fake.NewClientBuilder().WithScheme(hostedStatusScheme(t)).
 		WithObjects(
-			&kapi.Cluster{ObjectMeta: v1.ObjectMeta{Name: "test", Namespace: "default"}},
+			&kapi.Cluster{Name: "test", Namespace: "default"},
 			controlPlanePod("cp-0", false),
 			controlPlanePod("cp-1", false),
 		).Build()
@@ -537,8 +519,8 @@ func TestHostedComputeStatusSetsScalingConditions(t *testing.T) {
 }
 
 func TestHostedComputeStatusReportsNotDeleting(t *testing.T) {
-	cluster := &clusterv1.Cluster{ObjectMeta: v1.ObjectMeta{Name: "test", Namespace: "default"}}
-	kcp := &cpv1beta2.K0smotronControlPlane{ObjectMeta: v1.ObjectMeta{Name: "test", Namespace: "default", UID: "hosted-uid"}}
+	cluster := &clusterv1.Cluster{Name: "test", Namespace: "default"}
+	kcp := &cpv1beta2.K0smotronControlPlane{Name: "test", Namespace: "default", UID: "hosted-uid"}
 	cl := fake.NewClientBuilder().WithScheme(hostedStatusScheme(t)).Build()
 	c := &K0smotronController{Client: cl, ClusterCache: stubClusterCache{err: fmt.Errorf("connection refused")}}
 
@@ -561,12 +543,11 @@ func TestHostedReconcileDeleteReportsDeleting(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			kcp := &cpv1beta2.K0smotronControlPlane{ObjectMeta: v1.ObjectMeta{
-				Name: "test", Namespace: "default", Finalizers: []string{cpv1beta2.K0smotronControlPlaneFinalizer},
-			}}
+			kcp := &cpv1beta2.K0smotronControlPlane{
+				Name: "test", Namespace: "default", Finalizers: []string{cpv1beta2.K0smotronControlPlaneFinalizer}}
 			builder := fake.NewClientBuilder().WithScheme(hostedStatusScheme(t))
 			if tt.kmcExists {
-				builder = builder.WithObjects(&kapi.Cluster{ObjectMeta: v1.ObjectMeta{Name: "test", Namespace: "default"}})
+				builder = builder.WithObjects(&kapi.Cluster{Name: "test", Namespace: "default"})
 			}
 			if tt.getErr != nil {
 				builder = builder.WithInterceptorFuncs(interceptor.Funcs{

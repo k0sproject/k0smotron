@@ -43,8 +43,8 @@ const testTokenID = "abcdef"
 
 func newTokenSecret(expiration time.Time) *corev1.Secret {
 	return &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{Name: "bootstrap-token-" + testTokenID, Namespace: metav1.NamespaceSystem},
-		Type:       corev1.SecretTypeBootstrapToken,
+		Name: "bootstrap-token-" + testTokenID, Namespace: metav1.NamespaceSystem,
+		Type: corev1.SecretTypeBootstrapToken,
 		Data: map[string][]byte{
 			bootstrapapi.BootstrapTokenIDKey:         []byte(testTokenID),
 			bootstrapapi.BootstrapTokenExpirationKey: []byte(expiration.UTC().Format(time.RFC3339)),
@@ -100,12 +100,10 @@ func newConfigOwner(t *testing.T, obj client.Object) *bsutil.ConfigOwner {
 func TestWorkerReconcileBootstrapToken(t *testing.T) {
 	ttl := 15 * time.Minute
 	config := &bootstrapv2.K0sWorkerConfig{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        "worker",
-			Annotations: map[string]string{bootstrapTokenIDAnnotation: testTokenID},
-		},
+		Name:        "worker",
+		Annotations: map[string]string{bootstrapTokenIDAnnotation: testTokenID},
 	}
-	machine := &clusterv1.Machine{TypeMeta: metav1.TypeMeta{APIVersion: clusterv1.GroupVersion.String(), Kind: "Machine"}}
+	machine := &clusterv1.Machine{APIVersion: clusterv1.GroupVersion.String(), Kind: "Machine"}
 	joinedMachine := machine.DeepCopy()
 	joinedMachine.Status.NodeRef = clusterv1.MachineNodeReference{Name: "node"}
 
@@ -140,8 +138,8 @@ func TestWorkerReconcileBootstrapToken(t *testing.T) {
 	})
 
 	pool := &clusterv1.MachinePool{
-		TypeMeta: metav1.TypeMeta{APIVersion: clusterv1.GroupVersion.String(), Kind: "MachinePool"},
-		Spec:     clusterv1.MachinePoolSpec{Replicas: new(int32(1))},
+		APIVersion: clusterv1.GroupVersion.String(), Kind: "MachinePool",
+		Spec: clusterv1.MachinePoolSpec{Replicas: new(int32(1))},
 	}
 	joinedPool := pool.DeepCopy()
 	joinedPool.Status.NodeRefs = []corev1.ObjectReference{{Name: "node"}}
@@ -181,14 +179,12 @@ func TestWorkerReconcileBootstrapToken(t *testing.T) {
 func TestControllerReconcileBootstrapToken(t *testing.T) {
 	ttl := 15 * time.Minute
 	config := &bootstrapv2.K0sControllerConfig{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        "controller",
-			Annotations: map[string]string{bootstrapTokenIDAnnotation: testTokenID},
-		},
+		Name:        "controller",
+		Annotations: map[string]string{bootstrapTokenIDAnnotation: testTokenID},
 	}
 	machine := &clusterv1.Machine{
-		TypeMeta:   metav1.TypeMeta{APIVersion: clusterv1.GroupVersion.String(), Kind: "Machine"},
-		ObjectMeta: metav1.ObjectMeta{Name: "controller-0"},
+		APIVersion: clusterv1.GroupVersion.String(), Kind: "Machine",
+		Name: "controller-0",
 	}
 	joinedMachine := machine.DeepCopy()
 	joinedMachine.Status.NodeRef = clusterv1.MachineNodeReference{Name: "node"}

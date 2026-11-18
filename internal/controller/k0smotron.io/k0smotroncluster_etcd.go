@@ -77,16 +77,12 @@ func (scope *kmcScope) reconcileEtcdSvc(ctx context.Context, kmc *km.Cluster) er
 	metadataLabels[kcontrollerutil.ComponentLabel] = kcontrollerutil.ComponentEtcd
 
 	svc := v1.Service{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v1",
-			Kind:       "Service",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        kmc.GetEtcdServiceName(),
-			Namespace:   kmc.Namespace,
-			Labels:      metadataLabels,
-			Annotations: kcontrollerutil.AnnotationsForK0smotronCluster(kmc),
-		},
+		APIVersion:  "v1",
+		Kind:        "Service",
+		Name:        kmc.GetEtcdServiceName(),
+		Namespace:   kmc.Namespace,
+		Labels:      metadataLabels,
+		Annotations: kcontrollerutil.AnnotationsForK0smotronCluster(kmc),
 		Spec: v1.ServiceSpec{
 			Type:                     v1.ServiceTypeClusterIP,
 			ClusterIP:                v1.ClusterIPNone,
@@ -120,16 +116,12 @@ func (scope *kmcScope) reconcileEtcdDefragJob(ctx context.Context, kmc *km.Clust
 	metadataLabels[kcontrollerutil.ComponentLabel] = kcontrollerutil.ComponentEtcd
 
 	cronJob := batchv1.CronJob{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "batch/v1",
-			Kind:       "CronJob",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        kmc.GetEtcdDefragJobName(),
-			Namespace:   kmc.Namespace,
-			Labels:      metadataLabels,
-			Annotations: kcontrollerutil.AnnotationsForK0smotronCluster(kmc),
-		},
+		APIVersion:  "batch/v1",
+		Kind:        "CronJob",
+		Name:        kmc.GetEtcdDefragJobName(),
+		Namespace:   kmc.Namespace,
+		Labels:      metadataLabels,
+		Annotations: kcontrollerutil.AnnotationsForK0smotronCluster(kmc),
 		Spec: batchv1.CronJobSpec{
 			Schedule:          kmc.Spec.Storage.Etcd.DefragJob.Schedule,
 			ConcurrencyPolicy: batchv1.ForbidConcurrent,
@@ -162,24 +154,22 @@ func (scope *kmcScope) reconcileEtcdDefragJob(ctx context.Context, kmc *km.Clust
 							},
 							Volumes: []v1.Volume{{
 								Name: "certs",
-								VolumeSource: v1.VolumeSource{
-									Projected: &v1.ProjectedVolumeSource{
-										Sources: []v1.VolumeProjection{
-											{
-												Secret: &v1.SecretProjection{
-													LocalObjectReference: v1.LocalObjectReference{Name: secret.Name(kmc.Name, secret.EtcdCA)},
-													Items: []v1.KeyToPath{
-														{Key: "tls.crt", Path: "ca.crt"},
-														{Key: "tls.key", Path: "ca.key"},
-													},
+								Projected: &v1.ProjectedVolumeSource{
+									Sources: []v1.VolumeProjection{
+										{
+											Secret: &v1.SecretProjection{
+												Name: secret.Name(kmc.Name, secret.EtcdCA),
+												Items: []v1.KeyToPath{
+													{Key: "tls.crt", Path: "ca.crt"},
+													{Key: "tls.key", Path: "ca.key"},
 												},
-											}, {
-												Secret: &v1.SecretProjection{
-													LocalObjectReference: v1.LocalObjectReference{Name: secret.Name(kmc.Name, "etcd-server")},
-													Items: []v1.KeyToPath{
-														{Key: "tls.crt", Path: "client.crt"},
-														{Key: "tls.key", Path: "client.key"},
-													},
+											},
+										}, {
+											Secret: &v1.SecretProjection{
+												Name: secret.Name(kmc.Name, "etcd-server"),
+												Items: []v1.KeyToPath{
+													{Key: "tls.crt", Path: "client.crt"},
+													{Key: "tls.key", Path: "client.key"},
 												},
 											},
 										},
@@ -244,9 +234,7 @@ func generateEtcdStatefulSet(kmc *km.Cluster, existingSts *apps.StatefulSet, rep
 		size = resource.MustParse("1Gi")
 	}
 	pvc := v1.PersistentVolumeClaim{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "etcd-data",
-		},
+		Name: "etcd-data",
 		Spec: v1.PersistentVolumeClaimSpec{
 			AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
 			Resources: v1.VolumeResourceRequirements{
@@ -268,16 +256,12 @@ func generateEtcdStatefulSet(kmc *km.Cluster, existingSts *apps.StatefulSet, rep
 	})
 
 	statefulSet := apps.StatefulSet{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "apps/v1",
-			Kind:       "StatefulSet",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        kmc.GetEtcdStatefulSetName(),
-			Namespace:   kmc.Namespace,
-			Labels:      labels,
-			Annotations: kcontrollerutil.AnnotationsForK0smotronCluster(kmc),
-		},
+		APIVersion:  "apps/v1",
+		Kind:        "StatefulSet",
+		Name:        kmc.GetEtcdStatefulSetName(),
+		Namespace:   kmc.Namespace,
+		Labels:      labels,
+		Annotations: kcontrollerutil.AnnotationsForK0smotronCluster(kmc),
 		Spec: apps.StatefulSetSpec{
 			ServiceName: kmc.GetEtcdServiceName(),
 			Selector: &metav1.LabelSelector{
@@ -316,32 +300,30 @@ func generateEtcdStatefulSet(kmc *km.Cluster, existingSts *apps.StatefulSet, rep
 					}},
 					Volumes: []v1.Volume{{
 						Name: "certs",
-						VolumeSource: v1.VolumeSource{
-							Projected: &v1.ProjectedVolumeSource{
-								Sources: []v1.VolumeProjection{
-									{
-										Secret: &v1.SecretProjection{
-											LocalObjectReference: v1.LocalObjectReference{Name: secret.Name(kmc.Name, secret.EtcdCA)},
-											Items: []v1.KeyToPath{
-												{Key: "tls.crt", Path: "ca.crt"},
-												{Key: "tls.key", Path: "ca.key"},
-											},
+						Projected: &v1.ProjectedVolumeSource{
+							Sources: []v1.VolumeProjection{
+								{
+									Secret: &v1.SecretProjection{
+										Name: secret.Name(kmc.Name, secret.EtcdCA),
+										Items: []v1.KeyToPath{
+											{Key: "tls.crt", Path: "ca.crt"},
+											{Key: "tls.key", Path: "ca.key"},
 										},
-									}, {
-										Secret: &v1.SecretProjection{
-											LocalObjectReference: v1.LocalObjectReference{Name: secret.Name(kmc.Name, "etcd-server")},
-											Items: []v1.KeyToPath{
-												{Key: "tls.crt", Path: "server.crt"},
-												{Key: "tls.key", Path: "server.key"},
-											},
+									},
+								}, {
+									Secret: &v1.SecretProjection{
+										Name: secret.Name(kmc.Name, "etcd-server"),
+										Items: []v1.KeyToPath{
+											{Key: "tls.crt", Path: "server.crt"},
+											{Key: "tls.key", Path: "server.key"},
 										},
-									}, {
-										Secret: &v1.SecretProjection{
-											LocalObjectReference: v1.LocalObjectReference{Name: secret.Name(kmc.Name, "etcd-peer")},
-											Items: []v1.KeyToPath{
-												{Key: "tls.crt", Path: "peer.crt"},
-												{Key: "tls.key", Path: "peer.key"},
-											},
+									},
+								}, {
+									Secret: &v1.SecretProjection{
+										Name: secret.Name(kmc.Name, "etcd-peer"),
+										Items: []v1.KeyToPath{
+											{Key: "tls.crt", Path: "peer.crt"},
+											{Key: "tls.key", Path: "peer.key"},
 										},
 									},
 								},
@@ -368,10 +350,8 @@ func generateEtcdStatefulSet(kmc *km.Cluster, existingSts *apps.StatefulSet, rep
 						},
 						Resources: kmc.Spec.Storage.Etcd.Resources,
 						ReadinessProbe: &v1.Probe{
-							ProbeHandler: v1.ProbeHandler{
-								Exec: &v1.ExecAction{
-									Command: []string{"etcdctl", "endpoint", "health"},
-								},
+							Exec: &v1.ExecAction{
+								Command: []string{"etcdctl", "endpoint", "health"},
 							},
 						},
 						Ports: []v1.ContainerPort{

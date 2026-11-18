@@ -28,7 +28,7 @@ import (
 // file is a minimal entry, since only the path and the append flag decide whether a
 // later entry conflicts with an earlier one.
 func file(path string, appends bool) File {
-	return File{File: provisioner.File{Path: path, Content: "x", Append: appends}}
+	return File{Path: path, Content: "x", Append: appends}
 }
 
 // TestValidateFilesPathClaims covers which entries take a path over and which add to

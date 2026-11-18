@@ -394,22 +394,18 @@ func (c *K0sController) reconcileKubeconfig(ctx context.Context, controlplane *c
 func (c *K0sController) createBootstrapConfig(ctx context.Context, name string, k0sConfigSpec *bootstrapv2.K0sConfigSpec, kcp *cpv1beta2.K0sControlPlane, clusterName string) error {
 
 	controllerConfig := bootstrapv2.K0sControllerConfig{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "bootstrap.cluster.x-k8s.io/v1beta2",
-			Kind:       "K0sControllerConfig",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        name,
-			Namespace:   kcp.Namespace,
-			Labels:      controlPlaneCommonLabelsForCluster(kcp, clusterName),
-			Annotations: kcp.Spec.MachineTemplate.ObjectMeta.Annotations,
-			OwnerReferences: []metav1.OwnerReference{{
-				APIVersion: cpv1beta2.GroupVersion.String(),
-				Kind:       "K0sControlPlane",
-				Name:       kcp.GetName(),
-				UID:        kcp.GetUID(),
-			}},
-		},
+		APIVersion:  "bootstrap.cluster.x-k8s.io/v1beta2",
+		Kind:        "K0sControllerConfig",
+		Name:        name,
+		Namespace:   kcp.Namespace,
+		Labels:      controlPlaneCommonLabelsForCluster(kcp, clusterName),
+		Annotations: kcp.Spec.MachineTemplate.ObjectMeta.Annotations,
+		OwnerReferences: []metav1.OwnerReference{{
+			APIVersion: cpv1beta2.GroupVersion.String(),
+			Kind:       "K0sControlPlane",
+			Name:       kcp.GetName(),
+			UID:        kcp.GetUID(),
+		}},
 		Spec: bootstrapv2.K0sControllerConfigSpec{
 			K0sConfigSpec: k0sConfigSpec,
 		},
@@ -610,16 +606,12 @@ token = ` + frpToken + `
 
 	frpsCMName := fmt.Sprintf(FRPConfigMapNameTemplate, controlplane.kcp.GetName())
 	cm := corev1.ConfigMap{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "ConfigMap",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      frpsCMName,
-			Namespace: controlplane.kcp.GetNamespace(),
-			Labels: map[string]string{
-				util.ComponentLabel: util.ComponentTunneling,
-			},
+		Kind:       "ConfigMap",
+		APIVersion: "v1",
+		Name:       frpsCMName,
+		Namespace:  controlplane.kcp.GetNamespace(),
+		Labels: map[string]string{
+			util.ComponentLabel: util.ComponentTunneling,
 		},
 		Data: map[string]string{
 			"frps.ini": frpsConfig,
@@ -638,18 +630,14 @@ token = ` + frpToken + `
 		"app":               "frps",
 	}
 	frpsDeployment := appsv1.Deployment{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "apps/v1",
-			Kind:       "Deployment",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf(FRPDeploymentNameTemplate, controlplane.kcp.GetName()),
-			Namespace: controlplane.kcp.GetNamespace(),
-			Labels: map[string]string{
-				"k0smotron_cluster": controlplane.kcp.GetName(),
-				"app":               "frps",
-				util.ComponentLabel: util.ComponentTunneling,
-			},
+		APIVersion: "apps/v1",
+		Kind:       "Deployment",
+		Name:       fmt.Sprintf(FRPDeploymentNameTemplate, controlplane.kcp.GetName()),
+		Namespace:  controlplane.kcp.GetNamespace(),
+		Labels: map[string]string{
+			"k0smotron_cluster": controlplane.kcp.GetName(),
+			"app":               "frps",
+			util.ComponentLabel: util.ComponentTunneling,
 		},
 		Spec: appsv1.DeploymentSpec{
 			Selector: &metav1.LabelSelector{
@@ -666,16 +654,12 @@ token = ` + frpToken + `
 				Spec: corev1.PodSpec{
 					Volumes: []corev1.Volume{{
 						Name: frpsCMName,
-						VolumeSource: corev1.VolumeSource{
-							ConfigMap: &corev1.ConfigMapVolumeSource{
-								LocalObjectReference: corev1.LocalObjectReference{
-									Name: frpsCMName,
-								},
-								Items: []corev1.KeyToPath{{
-									Key:  "frps.ini",
-									Path: "frps.ini",
-								}},
-							},
+						ConfigMap: &corev1.ConfigMapVolumeSource{
+							Name: frpsCMName,
+							Items: []corev1.KeyToPath{{
+								Key:  "frps.ini",
+								Path: "frps.ini",
+							}},
 						},
 					}},
 					Containers: []corev1.Container{{
@@ -710,18 +694,14 @@ token = ` + frpToken + `
 	}
 
 	frpsService := corev1.Service{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v1",
-			Kind:       "Service",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf(FRPServiceNameTemplate, controlplane.kcp.GetName()),
-			Namespace: controlplane.kcp.GetNamespace(),
-			Labels: map[string]string{
-				"k0smotron_cluster": controlplane.kcp.GetName(),
-				"app":               "frps",
-				util.ComponentLabel: util.ComponentTunneling,
-			},
+		APIVersion: "v1",
+		Kind:       "Service",
+		Name:       fmt.Sprintf(FRPServiceNameTemplate, controlplane.kcp.GetName()),
+		Namespace:  controlplane.kcp.GetNamespace(),
+		Labels: map[string]string{
+			"k0smotron_cluster": controlplane.kcp.GetName(),
+			"app":               "frps",
+			util.ComponentLabel: util.ComponentTunneling,
 		},
 		Spec: corev1.ServiceSpec{
 			Selector: frpsSelectorLabels,
@@ -819,16 +799,12 @@ func (c *K0sController) createFRPToken(ctx context.Context, cluster *clusterv1.C
 
 	frpToken := uuid.New().String()
 	frpSecret := &corev1.Secret{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v1",
-			Kind:       "Secret",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      secretName,
-			Namespace: cluster.Namespace,
-			Labels: map[string]string{
-				clusterv1.ClusterNameLabel: cluster.Name,
-			},
+		APIVersion: "v1",
+		Kind:       "Secret",
+		Name:       secretName,
+		Namespace:  cluster.Namespace,
+		Labels: map[string]string{
+			clusterv1.ClusterNameLabel: cluster.Name,
 		},
 		Data: map[string][]byte{
 			"value": []byte(frpToken),
@@ -981,7 +957,7 @@ func clusterToK0sControlPlane(_ context.Context, o client.Object) []ctrl.Request
 	}
 
 	return []ctrl.Request{{
-		NamespacedName: client.ObjectKey{Namespace: cluster.Namespace, Name: ref.Name},
+		Namespace: cluster.Namespace, Name: ref.Name,
 	}}
 }
 

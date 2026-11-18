@@ -39,7 +39,7 @@ func TestWatcher(t *testing.T) {
 		return ctx
 	}()
 
-	someConfigMap := corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{ResourceVersion: "someConfigMap"}}
+	someConfigMap := corev1.ConfigMap{ResourceVersion: "someConfigMap"}
 
 	t.Run("Cancelation", func(t *testing.T) {
 		t.Run("ContextInitiallyCanceled", func(t *testing.T) {
@@ -342,9 +342,7 @@ func TestWatcher(t *testing.T) {
 		t.Parallel()
 
 		bogusSecret := corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				ResourceVersion: "bogusSecret",
-			},
+			ResourceVersion: "bogusSecret",
 		}
 
 		provider, underTest := newTestWatcher()
@@ -388,9 +386,7 @@ func TestWatcher(t *testing.T) {
 		t.Parallel()
 
 		invalidConfigMap := corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{
-				ResourceVersion: "0",
-			},
+			ResourceVersion: "0",
 		}
 
 		t.Run("InList", func(t *testing.T) {

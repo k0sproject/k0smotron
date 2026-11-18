@@ -169,7 +169,7 @@ func TestReconcileDynamicConfig_kineDataSourceSecretNotRequired(t *testing.T) {
 	defer workload.Close()
 
 	kmc := &km.Cluster{
-		ObjectMeta: metav1.ObjectMeta{Name: "kmc-test", Namespace: "default"},
+		Name: "kmc-test", Namespace: "default",
 		Spec: km.ClusterSpec{
 			RemoteHostCluster: &km.RemoteHostClusterSpec{
 				KubeconfigRef: &km.KubeconfigRef{Name: "host-kubeconfig", Namespace: "default", Key: "value"},
@@ -198,8 +198,8 @@ current-context: workload
 	require.NoError(t, corev1.AddToScheme(scheme))
 	// The management cluster holds the workload kubeconfig, but not the kine data source secret.
 	managementClusterClient := fake.NewClientBuilder().WithScheme(scheme).WithObjects(&corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{Name: "kmc-test-kubeconfig", Namespace: "default"},
-		Data:       map[string][]byte{"value": []byte(workloadKubeconfig)},
+		Name: "kmc-test-kubeconfig", Namespace: "default",
+		Data: map[string][]byte{"value": []byte(workloadKubeconfig)},
 	}).Build()
 
 	k0sConfig := map[string]any{

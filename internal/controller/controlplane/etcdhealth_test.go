@@ -254,7 +254,7 @@ func TestEtcdMemberListWireContract(t *testing.T) {
 
 func etcdMemberNamed(name, joined string) etcdMember {
 	return etcdMember{
-		ObjectMeta: metav1.ObjectMeta{Name: name},
+		Name: name,
 		Status: etcdMemberStatus{Conditions: []etcdMemberCondition{
 			{Type: etcdMemberConditionTypeJoined, Status: joined},
 		}},
@@ -266,10 +266,8 @@ func etcdReader(t *testing.T, frt *etcdMemberRoundTripper) *K0sController {
 	t.Helper()
 
 	restClient, err := rest.RESTClientFor(&rest.Config{
-		ContentConfig: rest.ContentConfig{
-			NegotiatedSerializer: scheme.Codecs,
-			GroupVersion:         &metav1.SchemeGroupVersion,
-		},
+		NegotiatedSerializer: scheme.Codecs,
+		GroupVersion:         &metav1.SchemeGroupVersion,
 	})
 	require.NoError(t, err)
 	restClient.Client = restfake.CreateHTTPClient(frt.run)
@@ -279,13 +277,13 @@ func etcdReader(t *testing.T, frt *etcdMemberRoundTripper) *K0sController {
 
 func TestEtcdMemberHealth(t *testing.T) {
 	machine := func(name string) *clusterv1.Machine {
-		return &clusterv1.Machine{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"}}
+		return &clusterv1.Machine{Name: name, Namespace: "default"}
 	}
 	member := etcdMemberNamed
 	controller := func(frt *etcdMemberRoundTripper) *K0sController { return etcdReader(t, frt) }
 
 	machines := collections.FromMachines(machine("cp-0"), machine("cp-1"), machine("cp-2"))
-	cluster := &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "c", Namespace: "default"}}
+	cluster := &clusterv1.Cluster{Name: "c", Namespace: "default"}
 
 	t.Run("each machine gets the state of its own member", func(t *testing.T) {
 		frt := &etcdMemberRoundTripper{members: []etcdMember{
@@ -327,7 +325,7 @@ func TestEtcdMemberHealth(t *testing.T) {
 	})
 
 	t.Run("a member with no conditions at all is left out", func(t *testing.T) {
-		bare := etcdMember{ObjectMeta: metav1.ObjectMeta{Name: "cp-1"}}
+		bare := etcdMember{Name: "cp-1"}
 		frt := &etcdMemberRoundTripper{members: []etcdMember{member("cp-0", "True"), bare}}
 
 		got := controller(frt).etcdMemberHealth(context.Background(), cluster, machines)
@@ -364,8 +362,8 @@ func TestEtcdMemberHealth(t *testing.T) {
 
 	t.Run("a failed reconcile is unhealthy too", func(t *testing.T) {
 		failed := etcdMember{
-			ObjectMeta: metav1.ObjectMeta{Name: "cp-0"},
-			Status:     etcdMemberStatus{ReconcileStatus: "Failed"},
+			Name:   "cp-0",
+			Status: etcdMemberStatus{ReconcileStatus: "Failed"},
 		}
 		frt := &etcdMemberRoundTripper{members: []etcdMember{failed}}
 
@@ -377,7 +375,7 @@ func TestEtcdMemberHealth(t *testing.T) {
 	// Only k0s v1.31.1 and above names the member after the machine, so an older cluster
 	// has to be matched through the node.
 	t.Run("a member named after the node is still matched", func(t *testing.T) {
-		old := &clusterv1.Machine{ObjectMeta: metav1.ObjectMeta{Name: "cp-9", Namespace: "default"}}
+		old := &clusterv1.Machine{Name: "cp-9", Namespace: "default"}
 		old.Status.NodeRef = clusterv1.MachineNodeReference{Name: "ip-10-0-0-9"}
 		frt := &etcdMemberRoundTripper{members: []etcdMember{member("ip-10-0-0-9", "False")}}
 
@@ -391,11 +389,10 @@ func TestEtcdMemberHealth(t *testing.T) {
 // member list read off the workload cluster deciding which machine the election picks.
 func TestElectionRunsOnTheDerivedMemberHealth(t *testing.T) {
 	machine := func(name string, age time.Duration) *clusterv1.Machine {
-		return &clusterv1.Machine{ObjectMeta: metav1.ObjectMeta{
+		return &clusterv1.Machine{
 			Name:              name,
 			Namespace:         "default",
-			CreationTimestamp: metav1.NewTime(time.Now().Add(-age)),
-		}}
+			CreationTimestamp: metav1.NewTime(time.Now().Add(-age))}
 	}
 
 	// The broken member is neither the oldest nor the newest, so electing it can only

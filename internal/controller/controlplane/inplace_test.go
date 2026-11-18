@@ -99,7 +99,7 @@ func TestReconcileInplaceK0sVersionUpdateWhenUnavailable(t *testing.T) {
 func TestReconcileInplaceK0sVersionUpdateHoldsOnlyTheRollout(t *testing.T) {
 	newScope := func(active int, replicas int32) *controlplane {
 		kcp := &cpv1beta2.K0sControlPlane{
-			ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default"},
+			Name: "test", Namespace: "default",
 			Spec: cpv1beta2.K0sControlPlaneSpec{
 				UpdateStrategy: cpv1beta2.UpdateInPlace,
 				Replicas:       replicas,
@@ -113,10 +113,9 @@ func TestReconcileInplaceK0sVersionUpdateHoldsOnlyTheRollout(t *testing.T) {
 
 		machines := collections.Machines{}
 		for i := range active {
-			machines.Insert(&clusterv1.Machine{ObjectMeta: metav1.ObjectMeta{
+			machines.Insert(&clusterv1.Machine{
 				Name:      fmt.Sprintf("cp-%d", i),
-				Namespace: "default",
-			}})
+				Namespace: "default"})
 		}
 
 		return &controlplane{
@@ -164,11 +163,11 @@ func TestTriggerCAPIInplaceVersionUpdateOrdering(t *testing.T) {
 	require.NoError(t, bootstrapv2.AddToScheme(scheme))
 
 	machine := &clusterv1.Machine{
-		ObjectMeta: metav1.ObjectMeta{Name: "cp-0", Namespace: "default"},
-		Spec:       clusterv1.MachineSpec{Version: "v1.31.0+k0s.0", ClusterName: "c"},
+		Name: "cp-0", Namespace: "default",
+		Spec: clusterv1.MachineSpec{Version: "v1.31.0+k0s.0", ClusterName: "c"},
 	}
 	bootstrapConfig := &bootstrapv2.K0sControllerConfig{
-		ObjectMeta: metav1.ObjectMeta{Name: "cp-0", Namespace: "default"},
+		Name: "cp-0", Namespace: "default",
 	}
 	infraMachine := &unstructured.Unstructured{Object: map[string]any{
 		"apiVersion": "infrastructure.cluster.x-k8s.io/v1beta2",
@@ -259,7 +258,7 @@ func TestPendingHookList(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := &clusterv1.Machine{ObjectMeta: metav1.ObjectMeta{Name: "cp-0", Annotations: tt.start}}
+			m := &clusterv1.Machine{Name: "cp-0", Annotations: tt.start}
 
 			require.Equal(t, tt.wantHas, hasPendingHook(m, updateMachineHook()))
 
@@ -278,7 +277,7 @@ func TestPendingHookList(t *testing.T) {
 // The states either side of it matter as much as the state itself.
 func TestMachinesToCompleteTrigger(t *testing.T) {
 	machine := func(name string, latched, hooked bool) *clusterv1.Machine {
-		m := &clusterv1.Machine{ObjectMeta: metav1.ObjectMeta{Name: name, Annotations: map[string]string{}}}
+		m := &clusterv1.Machine{Name: name, Annotations: map[string]string{}}
 		if latched {
 			m.Annotations[clusterv1.UpdateInProgressAnnotation] = ""
 		}
@@ -322,14 +321,12 @@ func TestTriggerCAPIInplaceVersionUpdateCompletesAfterTheLatch(t *testing.T) {
 	require.NoError(t, bootstrapv2.AddToScheme(scheme))
 
 	machine := &clusterv1.Machine{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "cp-0", Namespace: "default",
-			Annotations: map[string]string{clusterv1.UpdateInProgressAnnotation: ""},
-		},
-		Spec: clusterv1.MachineSpec{Version: "v1.31.0+k0s.0", ClusterName: "c"},
+		Name: "cp-0", Namespace: "default",
+		Annotations: map[string]string{clusterv1.UpdateInProgressAnnotation: ""},
+		Spec:        clusterv1.MachineSpec{Version: "v1.31.0+k0s.0", ClusterName: "c"},
 	}
 	bootstrapConfig := &bootstrapv2.K0sControllerConfig{
-		ObjectMeta: metav1.ObjectMeta{Name: "cp-0", Namespace: "default"},
+		Name: "cp-0", Namespace: "default",
 	}
 	infraMachine := &unstructured.Unstructured{Object: map[string]any{
 		"apiVersion": "infrastructure.cluster.x-k8s.io/v1beta2",
@@ -374,11 +371,11 @@ func TestTriggerCAPIInplaceVersionUpdateHoldsTheVersionUntilTheHook(t *testing.T
 	require.NoError(t, bootstrapv2.AddToScheme(scheme))
 
 	machine := &clusterv1.Machine{
-		ObjectMeta: metav1.ObjectMeta{Name: "cp-0", Namespace: "default"},
-		Spec:       clusterv1.MachineSpec{Version: "v1.31.0+k0s.0", ClusterName: "c"},
+		Name: "cp-0", Namespace: "default",
+		Spec: clusterv1.MachineSpec{Version: "v1.31.0+k0s.0", ClusterName: "c"},
 	}
 	bootstrapConfig := &bootstrapv2.K0sControllerConfig{
-		ObjectMeta: metav1.ObjectMeta{Name: "cp-0", Namespace: "default"},
+		Name: "cp-0", Namespace: "default",
 	}
 	infraMachine := &unstructured.Unstructured{Object: map[string]any{
 		"apiVersion": "infrastructure.cluster.x-k8s.io/v1beta2",

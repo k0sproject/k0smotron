@@ -42,8 +42,8 @@ import (
 
 func remediationMachine(name string, healthy bool, deleting bool) *clusterv1.Machine {
 	m := &clusterv1.Machine{
-		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"},
-		Status:     clusterv1.MachineStatus{NodeRef: clusterv1.MachineNodeReference{Name: name}},
+		Name: name, Namespace: "default",
+		Status: clusterv1.MachineStatus{NodeRef: clusterv1.MachineNodeReference{Name: name}},
 	}
 
 	if healthy {
@@ -86,12 +86,12 @@ func TestReconcileUnhealthyMachinesWaitsForDeletions(t *testing.T) {
 	goingAway := remediationMachine("cp-2", true, true)
 
 	kcp := &cpv1beta2.K0sControlPlane{
-		ObjectMeta: metav1.ObjectMeta{Name: "kcp", Namespace: "default"},
+		Name: "kcp", Namespace: "default",
 	}
 	kcp.Status.Initialization.ControlPlaneInitialized = new(true)
 
 	scope := &controlplane{
-		cluster:        &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "c", Namespace: "default"}},
+		cluster:        &clusterv1.Cluster{Name: "c", Namespace: "default"},
 		kcp:            kcp,
 		activeMachines: collections.FromMachines(unhealthy, healthy),
 		// retrieveControlPlaneState splits these two sets by deletion timestamp, so
@@ -130,12 +130,12 @@ func TestReconcileUnhealthyMachinesRemediatesWhenNothingIsDeleting(t *testing.T)
 	healthy := remediationMachine("cp-1", true, false)
 
 	kcp := &cpv1beta2.K0sControlPlane{
-		ObjectMeta: metav1.ObjectMeta{Name: "kcp", Namespace: "default"},
+		Name: "kcp", Namespace: "default",
 	}
 	kcp.Status.Initialization.ControlPlaneInitialized = new(true)
 
 	scope := &controlplane{
-		cluster:         &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "c", Namespace: "default"}},
+		cluster:         &clusterv1.Cluster{Name: "c", Namespace: "default"},
 		kcp:             kcp,
 		activeMachines:  collections.FromMachines(unhealthy, healthy),
 		deletedMachines: collections.Machines{},
@@ -171,7 +171,7 @@ func TestReconcileUnhealthyMachinesReportsAFailedConditionPatch(t *testing.T) {
 
 	unhealthy := remediationMachine("cp-0", false, false)
 
-	kcp := &cpv1beta2.K0sControlPlane{ObjectMeta: metav1.ObjectMeta{Name: "kcp", Namespace: "default"}}
+	kcp := &cpv1beta2.K0sControlPlane{Name: "kcp", Namespace: "default"}
 	kcp.Status.Initialization.ControlPlaneInitialized = new(true)
 
 	c := &K0sController{
@@ -188,7 +188,7 @@ func TestReconcileUnhealthyMachinesReportsAFailedConditionPatch(t *testing.T) {
 	// A single replica is one of the preflight refusals, so the condition carrying the reason is
 	// all this reconcile produces and the patch is what delivers it.
 	err := remediate(context.Background(), c, &controlplane{
-		cluster:         &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "c", Namespace: "default"}},
+		cluster:         &clusterv1.Cluster{Name: "c", Namespace: "default"},
 		kcp:             kcp,
 		activeMachines:  collections.FromMachines(unhealthy),
 		deletedMachines: collections.Machines{},
@@ -209,7 +209,7 @@ func TestReconcileUnhealthyMachinesToleratesTheRemediatedMachineBeingGone(t *tes
 	unhealthy := remediationMachine("cp-0", false, false)
 	healthy := remediationMachine("cp-1", true, false)
 
-	kcp := &cpv1beta2.K0sControlPlane{ObjectMeta: metav1.ObjectMeta{Name: "kcp", Namespace: "default"}}
+	kcp := &cpv1beta2.K0sControlPlane{Name: "kcp", Namespace: "default"}
 	kcp.Status.Initialization.ControlPlaneInitialized = new(true)
 
 	patched := 0
@@ -227,7 +227,7 @@ func TestReconcileUnhealthyMachinesToleratesTheRemediatedMachineBeingGone(t *tes
 	}
 
 	require.NoError(t, remediate(context.Background(), c, &controlplane{
-		cluster:         &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "c", Namespace: "default"}},
+		cluster:         &clusterv1.Cluster{Name: "c", Namespace: "default"},
 		kcp:             kcp,
 		activeMachines:  collections.FromMachines(unhealthy, healthy),
 		deletedMachines: collections.Machines{},
@@ -251,17 +251,15 @@ func TestReconcileUnhealthyMachinesClearsAStaleMarker(t *testing.T) {
 		active := collections.FromMachines(unhealthy, healthy)
 
 		kcp := &cpv1beta2.K0sControlPlane{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:        "kcp",
-				Namespace:   "default",
-				Annotations: map[string]string{cpv1beta2.RemediationInProgressAnnotation: "true"},
-			},
-			Spec: cpv1beta2.K0sControlPlaneSpec{Replicas: 2},
+			Name:        "kcp",
+			Namespace:   "default",
+			Annotations: map[string]string{cpv1beta2.RemediationInProgressAnnotation: "true"},
+			Spec:        cpv1beta2.K0sControlPlaneSpec{Replicas: 2},
 		}
 		kcp.Status.Initialization.ControlPlaneInitialized = new(true)
 
 		scope := &controlplane{
-			cluster:         &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "c", Namespace: "default"}},
+			cluster:         &clusterv1.Cluster{Name: "c", Namespace: "default"},
 			kcp:             kcp,
 			activeMachines:  active,
 			deletedMachines: collections.Machines{},
@@ -412,10 +410,9 @@ func TestRemediationInProgressFor(t *testing.T) {
 		}
 		value := data.marshal()
 
-		return &clusterv1.Machine{ObjectMeta: metav1.ObjectMeta{
+		return &clusterv1.Machine{
 			Name:        name,
-			Annotations: map[string]string{cpv1beta2.RemediationForAnnotation: value},
-		}}
+			Annotations: map[string]string{cpv1beta2.RemediationForAnnotation: value}}
 	}
 
 	tests := []struct {
@@ -425,7 +422,7 @@ func TestRemediationInProgressFor(t *testing.T) {
 	}{
 		{
 			name: "a machine that replaced nothing starts a sequence",
-			in:   &clusterv1.Machine{ObjectMeta: metav1.ObjectMeta{Name: "cp-0"}},
+			in:   &clusterv1.Machine{Name: "cp-0"},
 			want: 0,
 		},
 		{
@@ -441,10 +438,9 @@ func TestRemediationInProgressFor(t *testing.T) {
 		},
 		{
 			name: "the legacy marker cannot be read, so the sequence starts",
-			in: &clusterv1.Machine{ObjectMeta: metav1.ObjectMeta{
+			in: &clusterv1.Machine{
 				Name:        "cp-3",
-				Annotations: map[string]string{cpv1beta2.RemediationForAnnotation: "true"},
-			}},
+				Annotations: map[string]string{cpv1beta2.RemediationForAnnotation: "true"}},
 			want: 0,
 		},
 	}
@@ -462,16 +458,15 @@ func TestRemediationInProgressFor(t *testing.T) {
 // TestRemediationLineageSurvivesARetry covers the write and read halves agreeing across a cycle.
 // Each is otherwise tested against a hand built annotation rather than against the other's output.
 func TestRemediationLineageSurvivesARetry(t *testing.T) {
-	unhealthy := &clusterv1.Machine{ObjectMeta: metav1.ObjectMeta{Name: "cp-0"}}
+	unhealthy := &clusterv1.Machine{Name: "cp-0"}
 
 	first := remediationInProgressFor(unhealthy, &cpv1beta2.K0sControlPlane{})
 	require.Equal(t, int32(0), first.RetryCount, "a machine that replaced nothing starts a sequence")
 
-	kcp := &cpv1beta2.K0sControlPlane{ObjectMeta: metav1.ObjectMeta{
-		Annotations: map[string]string{cpv1beta2.RemediationInProgressAnnotation: first.marshal()},
-	}}
+	kcp := &cpv1beta2.K0sControlPlane{
+		Annotations: map[string]string{cpv1beta2.RemediationInProgressAnnotation: first.marshal()}}
 
-	replacement := &clusterv1.Machine{ObjectMeta: metav1.ObjectMeta{Name: "cp-1"}}
+	replacement := &clusterv1.Machine{Name: "cp-1"}
 	carryRemediationLineage(kcp, replacement)
 	require.Contains(t, replacement.Annotations, cpv1beta2.RemediationForAnnotation)
 
@@ -482,7 +477,7 @@ func TestRemediationLineageSurvivesARetry(t *testing.T) {
 
 	// A third, to show the count climbs across the wire instead of resetting each hop.
 	kcp.Annotations[cpv1beta2.RemediationInProgressAnnotation] = second.marshal()
-	third := &clusterv1.Machine{ObjectMeta: metav1.ObjectMeta{Name: "cp-2"}}
+	third := &clusterv1.Machine{Name: "cp-2"}
 	carryRemediationLineage(kcp, third)
 	require.Equal(t, int32(2), remediationInProgressFor(third, &cpv1beta2.K0sControlPlane{}).RetryCount)
 }
@@ -501,7 +496,7 @@ func remediationScope(t *testing.T, kcp *cpv1beta2.K0sControlPlane, active, dele
 		WithObjects(objs...).WithStatusSubresource(objs...).Build()}
 
 	return c, &controlplane{
-		cluster:         &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "c", Namespace: "default"}},
+		cluster:         &clusterv1.Cluster{Name: "c", Namespace: "default"},
 		kcp:             kcp,
 		activeMachines:  collections.FromMachines(active...),
 		deletedMachines: collections.FromMachines(deleted...),
@@ -509,7 +504,7 @@ func remediationScope(t *testing.T, kcp *cpv1beta2.K0sControlPlane, active, dele
 }
 
 func initializedControlPlane() *cpv1beta2.K0sControlPlane {
-	kcp := &cpv1beta2.K0sControlPlane{ObjectMeta: metav1.ObjectMeta{Name: "kcp", Namespace: "default"}}
+	kcp := &cpv1beta2.K0sControlPlane{Name: "kcp", Namespace: "default"}
 	kcp.Status.Initialization.ControlPlaneInitialized = new(true)
 	return kcp
 }

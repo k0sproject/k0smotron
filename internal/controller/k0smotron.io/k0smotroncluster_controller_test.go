@@ -22,7 +22,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	km "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
 	kcerts "github.com/k0sproject/k0smotron/v2/internal/certs"
@@ -129,11 +128,9 @@ func TestFingerprintScoping_PerWorkloadIndependence(t *testing.T) {
 func TestClearRenewCertificatesAnnotation(t *testing.T) {
 	t.Run("annotation present", func(t *testing.T) {
 		kmc := &km.Cluster{
-			ObjectMeta: metav1.ObjectMeta{
-				Annotations: map[string]string{
-					km.RenewCertificatesAnnotation: "",
-					"other-annotation":             "keep-me",
-				},
+			Annotations: map[string]string{
+				km.RenewCertificatesAnnotation: "",
+				"other-annotation":             "keep-me",
 			},
 		}
 
@@ -147,9 +144,7 @@ func TestClearRenewCertificatesAnnotation(t *testing.T) {
 
 	t.Run("annotation absent", func(t *testing.T) {
 		kmc := &km.Cluster{
-			ObjectMeta: metav1.ObjectMeta{
-				Annotations: map[string]string{"other-annotation": "keep-me"},
-			},
+			Annotations: map[string]string{"other-annotation": "keep-me"},
 		}
 
 		got := clearRenewCertificatesAnnotation(kmc)

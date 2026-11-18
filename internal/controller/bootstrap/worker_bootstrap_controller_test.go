@@ -24,13 +24,11 @@ import (
 
 	bootstrapv2 "github.com/k0sproject/k0smotron/v2/api/bootstrap/v1beta2"
 	"github.com/stretchr/testify/require"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	bsutil "sigs.k8s.io/cluster-api/bootstrap/util"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -180,17 +178,17 @@ func Test_machineToWorkerBootstrapMapFunc(t *testing.T) {
 		{
 			name: "machine bootstrapped by a K0sWorkerConfig",
 			machine: &clusterv1.Machine{
-				ObjectMeta: metav1.ObjectMeta{Name: "machine-1", Namespace: "default"},
+				Name: "machine-1", Namespace: "default",
 				Spec: clusterv1.MachineSpec{
 					Bootstrap: clusterv1.Bootstrap{ConfigRef: workerConfigRef("worker-config-1")},
 				},
 			},
-			want: []ctrl.Request{{NamespacedName: client.ObjectKey{Namespace: "default", Name: "worker-config-1"}}},
+			want: []ctrl.Request{{Namespace: "default", Name: "worker-config-1"}},
 		},
 		{
 			name: "machine bootstrapped by a different kind is ignored",
 			machine: &clusterv1.Machine{
-				ObjectMeta: metav1.ObjectMeta{Name: "machine-2", Namespace: "default"},
+				Name: "machine-2", Namespace: "default",
 				Spec: clusterv1.MachineSpec{
 					Bootstrap: clusterv1.Bootstrap{ConfigRef: clusterv1.ContractVersionedObjectReference{
 						APIGroup: bootstrapv2.GroupVersion.Group,
@@ -204,7 +202,7 @@ func Test_machineToWorkerBootstrapMapFunc(t *testing.T) {
 		{
 			name: "machine with no bootstrap config ref is ignored",
 			machine: &clusterv1.Machine{
-				ObjectMeta: metav1.ObjectMeta{Name: "machine-3", Namespace: "default"},
+				Name: "machine-3", Namespace: "default",
 			},
 			want: []ctrl.Request{},
 		},
@@ -284,37 +282,31 @@ func Test_clusterToWorkerBootstrapMapFunc(t *testing.T) {
 	require.NoError(t, clusterv1.AddToScheme(scheme))
 
 	cluster := &clusterv1.Cluster{
-		ObjectMeta: metav1.ObjectMeta{Name: "cluster-1", Namespace: "default"},
+		Name: "cluster-1", Namespace: "default",
 	}
 
 	machineForCluster := &clusterv1.Machine{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "machine-1",
-			Namespace: "default",
-			Labels:    map[string]string{clusterv1.ClusterNameLabel: "cluster-1"},
-		},
+		Name:      "machine-1",
+		Namespace: "default",
+		Labels:    map[string]string{clusterv1.ClusterNameLabel: "cluster-1"},
 		Spec: clusterv1.MachineSpec{
 			Bootstrap: clusterv1.Bootstrap{ConfigRef: workerConfigRef("worker-config-1")},
 		},
 	}
 
 	machineForOtherCluster := &clusterv1.Machine{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "machine-2",
-			Namespace: "default",
-			Labels:    map[string]string{clusterv1.ClusterNameLabel: "cluster-2"},
-		},
+		Name:      "machine-2",
+		Namespace: "default",
+		Labels:    map[string]string{clusterv1.ClusterNameLabel: "cluster-2"},
 		Spec: clusterv1.MachineSpec{
 			Bootstrap: clusterv1.Bootstrap{ConfigRef: workerConfigRef("worker-config-2")},
 		},
 	}
 
 	machineWithoutWorkerConfig := &clusterv1.Machine{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "machine-3",
-			Namespace: "default",
-			Labels:    map[string]string{clusterv1.ClusterNameLabel: "cluster-1"},
-		},
+		Name:      "machine-3",
+		Namespace: "default",
+		Labels:    map[string]string{clusterv1.ClusterNameLabel: "cluster-1"},
 	}
 
 	r := &Controller{
@@ -324,5 +316,5 @@ func Test_clusterToWorkerBootstrapMapFunc(t *testing.T) {
 	}
 
 	got := r.clusterToWorkerBootstrapMapFunc(context.Background(), cluster)
-	require.Equal(t, []ctrl.Request{{NamespacedName: client.ObjectKey{Namespace: "default", Name: "worker-config-1"}}}, got)
+	require.Equal(t, []ctrl.Request{{Namespace: "default", Name: "worker-config-1"}}, got)
 }

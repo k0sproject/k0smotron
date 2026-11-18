@@ -98,9 +98,7 @@ func TestHAControllerSuite(t *testing.T) {
 func (s *HAControllerSuite) createK0smotronCluster(ctx context.Context, kc *kubernetes.Clientset) {
 	// create K0smotron namespace
 	_, err := kc.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "kmc-test",
-		},
+		Name: "kmc-test",
 	}, metav1.CreateOptions{})
 	s.Require().NoError(err)
 

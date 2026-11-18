@@ -520,9 +520,9 @@ func availabilityFixture(t *testing.T, serverURL string, everUp bool) (*K0sContr
 	require.NoError(t, corev1.AddToScheme(scheme))
 	require.NoError(t, clusterv1.AddToScheme(scheme))
 
-	cluster := &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default"}}
+	cluster := &clusterv1.Cluster{Name: "test", Namespace: "default"}
 
-	kcp := &cpv1beta2.K0sControlPlane{ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default", UID: "kcp-uid"}}
+	kcp := &cpv1beta2.K0sControlPlane{Name: "test", Namespace: "default", UID: "kcp-uid"}
 	if everUp {
 		kcp.Status.Initialization.ControlPlaneInitialized = new(true)
 		conditions.Set(kcp, metav1.Condition{
@@ -548,8 +548,8 @@ users:
   user: {}
 `, serverURL)
 		builder = builder.WithObjects(&corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{Name: "test-kubeconfig", Namespace: "default"},
-			Data:       map[string][]byte{secret.KubeconfigDataName: []byte(kubeconfig)},
+			Name: "test-kubeconfig", Namespace: "default",
+			Data: map[string][]byte{secret.KubeconfigDataName: []byte(kubeconfig)},
 		})
 	}
 
@@ -796,7 +796,7 @@ func writeKubeconfig(t *testing.T, c *K0sController, name, serverURL string) {
 	t.Helper()
 
 	require.NoError(t, c.Create(context.Background(), &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"},
+		Name: name, Namespace: "default",
 		Data: map[string][]byte{secret.KubeconfigDataName: []byte(fmt.Sprintf(`apiVersion: v1
 kind: Config
 clusters:
@@ -870,7 +870,7 @@ func TestComputeAvailabilityTunneled(t *testing.T) {
 // reconcile back to notice a control plane that went away. Replicas are not its concern.
 func TestAvailabilityRequeueAfter(t *testing.T) {
 	newKCP := func(available bool) *cpv1beta2.K0sControlPlane {
-		kcp := &cpv1beta2.K0sControlPlane{ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default"}}
+		kcp := &cpv1beta2.K0sControlPlane{Name: "test", Namespace: "default"}
 		if available {
 			conditions.Set(kcp, metav1.Condition{
 				Type:   string(cpv1beta2.ControlPlaneAvailableCondition),
@@ -1142,8 +1142,8 @@ func TestComputeAvailabilityRecoversOnOneGoodRead(t *testing.T) {
 // having when it describes the endpoint that actually failed.
 func TestClusterCacheConnectionDown(t *testing.T) {
 	scope := &controlplane{
-		cluster: &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "c", Namespace: "default"}},
-		kcp:     &cpv1beta2.K0sControlPlane{ObjectMeta: metav1.ObjectMeta{Name: "c", Namespace: "default"}},
+		cluster: &clusterv1.Cluster{Name: "c", Namespace: "default"},
+		kcp:     &cpv1beta2.K0sControlPlane{Name: "c", Namespace: "default"},
 	}
 
 	for _, tc := range []struct {
@@ -1223,7 +1223,7 @@ func TestComputeAvailabilityTunneledDoesNotAskTheCache(t *testing.T) {
 // TestRequeueResult covers the result never going back alongside an error, since
 // controller-runtime drops it in that case and the requeue would be lost.
 func TestRequeueResult(t *testing.T) {
-	kcp := &cpv1beta2.K0sControlPlane{ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default"}}
+	kcp := &cpv1beta2.K0sControlPlane{Name: "test", Namespace: "default"}
 	conditions.Set(kcp, metav1.Condition{
 		Type:   string(cpv1beta2.ControlPlaneAvailableCondition),
 		Status: metav1.ConditionTrue,
@@ -1303,9 +1303,9 @@ func TestHostedComputeAvailability(t *testing.T) {
 	require.NoError(t, corev1.AddToScheme(scheme))
 
 	newScope := func(everUp bool) (*K0smotronController, *clusterv1.Cluster, *cpv1beta2.K0smotronControlPlane) {
-		cluster := &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default"}}
+		cluster := &clusterv1.Cluster{Name: "test", Namespace: "default"}
 		kcp := &cpv1beta2.K0smotronControlPlane{
-			ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default", UID: "hosted-uid"},
+			Name: "test", Namespace: "default", UID: "hosted-uid",
 		}
 		if everUp {
 			// The bring up guard reads this latch, as the other flavour does.
@@ -1389,7 +1389,7 @@ func TestHostedComputeAvailability(t *testing.T) {
 		require.True(t, ok, "the failure has to have been counted")
 
 		c.ClusterCache = stubClusterCache{workloadClient: fake.NewClientBuilder().WithScheme(scheme).
-			WithObjects(&corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "kube-system", UID: "8f1c"}}).Build()}
+			WithObjects(&corev1.Namespace{Name: "kube-system", UID: "8f1c"}).Build()}
 		c.computeAvailability(context.Background(), cluster, kcp)
 
 		require.True(t, conditions.IsTrue(kcp, string(cpv1beta2.ControlPlaneAvailableCondition)))
@@ -1414,10 +1414,8 @@ func TestHostedComputeAvailability(t *testing.T) {
 func TestAvailabilityAnchorIgnoresTheCrdDefault(t *testing.T) {
 	newKCP := func() *cpv1beta2.K0smotronControlPlane {
 		kcp := &cpv1beta2.K0smotronControlPlane{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "test", Namespace: "default", UID: "hosted-uid",
-				CreationTimestamp: metav1.NewTime(time.Now().Add(-time.Minute)),
-			},
+			Name: "test", Namespace: "default", UID: "hosted-uid",
+			CreationTimestamp: metav1.NewTime(time.Now().Add(-time.Minute)),
 		}
 		// Exactly what the CRD default puts there.
 		conditions.Set(kcp, metav1.Condition{
@@ -1447,10 +1445,8 @@ func TestAvailabilityAnchorIgnoresTheCrdDefault(t *testing.T) {
 // what was persisted, which is what stops a restart from restarting the grace period.
 func TestAvailabilityAnchorResumesAfterARestart(t *testing.T) {
 	kcp := &cpv1beta2.K0smotronControlPlane{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "test", Namespace: "default", UID: "hosted-uid",
-			CreationTimestamp: metav1.NewTime(time.Now().Add(-10 * time.Minute)),
-		},
+		Name: "test", Namespace: "default", UID: "hosted-uid",
+		CreationTimestamp: metav1.NewTime(time.Now().Add(-10 * time.Minute)),
 	}
 
 	// What the process that went away left behind, already old enough to report.
@@ -1487,10 +1483,8 @@ func TestAvailabilityAnchorResumesAfterARestart(t *testing.T) {
 // carried over, since a long available one dates the outage to before it started.
 func TestAvailabilityAnchorIgnoresAnAvailableCondition(t *testing.T) {
 	kcp := &cpv1beta2.K0smotronControlPlane{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "test", Namespace: "default", UID: "hosted-uid",
-			CreationTimestamp: metav1.NewTime(time.Now().Add(-2 * time.Hour)),
-		},
+		Name: "test", Namespace: "default", UID: "hosted-uid",
+		CreationTimestamp: metav1.NewTime(time.Now().Add(-2 * time.Hour)),
 	}
 
 	// Available for an hour, which is how long conditions.Set has left this stamp
@@ -1517,10 +1511,8 @@ func TestAvailabilityAnchorIgnoresAnAvailableCondition(t *testing.T) {
 // carried over, since bring up leaves an Unknown of its own behind to be mistaken for one.
 func TestAvailabilityAnchorIgnoresABringUpCondition(t *testing.T) {
 	kcp := &cpv1beta2.K0sControlPlane{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "test", Namespace: "default", UID: "test-uid",
-			CreationTimestamp: metav1.NewTime(time.Now().Add(-3 * time.Hour)),
-		},
+		Name: "test", Namespace: "default", UID: "test-uid",
+		CreationTimestamp: metav1.NewTime(time.Now().Add(-3 * time.Hour)),
 	}
 
 	// Exactly what computeAvailability writes while the control plane has never been
@@ -1550,10 +1542,9 @@ func TestAvailabilityCountsPerObject(t *testing.T) {
 	failures := &sync.Map{}
 
 	newKCP := func(uid string) *cpv1beta2.K0sControlPlane {
-		return &cpv1beta2.K0sControlPlane{ObjectMeta: metav1.ObjectMeta{
+		return &cpv1beta2.K0sControlPlane{
 			Name: "test", Namespace: "default", UID: types.UID(uid),
-			CreationTimestamp: metav1.NewTime(time.Now().Add(-time.Hour)),
-		}}
+			CreationTimestamp: metav1.NewTime(time.Now().Add(-time.Hour))}
 	}
 
 	dead := newKCP("first")
@@ -1581,9 +1572,9 @@ func TestHostedAvailabilityDuringBringUp(t *testing.T) {
 
 	// Never up, and no condition at all so anything written here is a report.
 	newScope := func() (*clusterv1.Cluster, *cpv1beta2.K0smotronControlPlane) {
-		return &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default"}},
+		return &clusterv1.Cluster{Name: "test", Namespace: "default"},
 			&cpv1beta2.K0smotronControlPlane{
-				ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default", UID: "hosted-uid"},
+				Name: "test", Namespace: "default", UID: "hosted-uid",
 			}
 	}
 
@@ -1624,7 +1615,7 @@ func TestHostedAvailabilityDuringBringUp(t *testing.T) {
 		c := &K0smotronController{ClusterCache: stubClusterCache{
 			workloadClient: fake.NewClientBuilder().WithScheme(scheme).
 				WithObjects(&corev1.Namespace{
-					ObjectMeta: metav1.ObjectMeta{Name: "kube-system", UID: "8f1c"},
+					Name: "kube-system", UID: "8f1c",
 				}).Build(),
 		}}
 
@@ -1646,12 +1637,10 @@ func TestHostedComputeStatusAlwaysComputesAvailability(t *testing.T) {
 	require.NoError(t, cpv1beta2.AddToScheme(scheme))
 	require.NoError(t, kapi.AddToScheme(scheme))
 
-	cluster := &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default"}}
+	cluster := &clusterv1.Cluster{Name: "test", Namespace: "default"}
 	kcp := &cpv1beta2.K0smotronControlPlane{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "test", Namespace: "default", UID: "hosted-uid",
-			CreationTimestamp: metav1.NewTime(time.Now().Add(-time.Hour)),
-		},
+		Name: "test", Namespace: "default", UID: "hosted-uid",
+		CreationTimestamp: metav1.NewTime(time.Now().Add(-time.Hour)),
 	}
 	kcp.Status.Initialization.ControlPlaneInitialized = new(true)
 
@@ -1683,12 +1672,10 @@ func hostedStatusScheme(t *testing.T) *runtime.Scheme {
 // TestHostedComputeStatusDoesNotHalfWriteTheCounters covers the counters moving as one,
 // since one of them written against three stale ones reports negative replicas.
 func TestHostedComputeStatusDoesNotHalfWriteTheCounters(t *testing.T) {
-	cluster := &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default"}}
+	cluster := &clusterv1.Cluster{Name: "test", Namespace: "default"}
 	kcp := &cpv1beta2.K0smotronControlPlane{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "test", Namespace: "default", UID: "hosted-uid",
-			CreationTimestamp: metav1.NewTime(time.Now().Add(-time.Hour)),
-		},
+		Name: "test", Namespace: "default", UID: "hosted-uid",
+		CreationTimestamp: metav1.NewTime(time.Now().Add(-time.Hour)),
 	}
 	// Rejected by version.NewVersion, which is the cheapest way to fail after the
 	// pods have been listed and before the rest of the counters are known.
@@ -1701,7 +1688,7 @@ func TestHostedComputeStatusDoesNotHalfWriteTheCounters(t *testing.T) {
 	kcp.Status.UpToDateReplicas = new(int32(3))
 
 	cl := fake.NewClientBuilder().WithScheme(hostedStatusScheme(t)).
-		WithObjects(&kapi.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default"}}).
+		WithObjects(&kapi.Cluster{Name: "test", Namespace: "default"}).
 		Build()
 	c := &K0smotronController{
 		Client:       cl,
@@ -1729,13 +1716,11 @@ func controlPlanePod(name string, ready bool) *corev1.Pod {
 	}
 
 	return &corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: "default",
-			Labels: map[string]string{
-				"cluster.x-k8s.io/cluster-name":  "test",
-				"cluster.x-k8s.io/control-plane": "true",
-			},
+		Name:      name,
+		Namespace: "default",
+		Labels: map[string]string{
+			"cluster.x-k8s.io/cluster-name":  "test",
+			"cluster.x-k8s.io/control-plane": "true",
 		},
 		Status: corev1.PodStatus{
 			Conditions: []corev1.PodCondition{{Type: corev1.PodReady, Status: status}},
@@ -1746,12 +1731,10 @@ func controlPlanePod(name string, ready bool) *corev1.Pod {
 // TestHostedComputeStatusCounters covers the values the counters take, since holding
 // them back only proves they move together and not that any of them is right.
 func TestHostedComputeStatusCounters(t *testing.T) {
-	cluster := &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default"}}
+	cluster := &clusterv1.Cluster{Name: "test", Namespace: "default"}
 	kcp := &cpv1beta2.K0smotronControlPlane{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "test", Namespace: "default", UID: "hosted-uid",
-			CreationTimestamp: metav1.NewTime(time.Now().Add(-time.Hour)),
-		},
+		Name: "test", Namespace: "default", UID: "hosted-uid",
+		CreationTimestamp: metav1.NewTime(time.Now().Add(-time.Hour)),
 	}
 	kcp.Spec.Version = "v1.30.0+k0s.0"
 
@@ -1759,7 +1742,7 @@ func TestHostedComputeStatusCounters(t *testing.T) {
 	// no fake client can serve. Unready pods reach every counter without it.
 	cl := fake.NewClientBuilder().WithScheme(hostedStatusScheme(t)).
 		WithObjects(
-			&kapi.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default"}},
+			&kapi.Cluster{Name: "test", Namespace: "default"},
 			controlPlanePod("cp-0", false),
 			controlPlanePod("cp-1", false),
 			controlPlanePod("cp-2", false),
@@ -1785,16 +1768,15 @@ func TestHostedComputeStatusCounters(t *testing.T) {
 // hostedReconcileFixture is a hosted control plane a reconcile can be driven all the
 // way through, so only the injected failures decide what comes back.
 func hostedReconcileFixture() (*clusterv1.Cluster, *cpv1beta2.K0smotronControlPlane, *kapi.Cluster) {
-	cluster := &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{
-		Name: "test", Namespace: "default", UID: "cluster-uid",
-	}}
+	cluster := &clusterv1.Cluster{
+		Name: "test", Namespace: "default", UID: "cluster-uid"}
 	// The infrastructure ref is set, or the patch at the tail of the deferred block
 	// fails on its own and stands in for the error under test.
 	cluster.Spec.InfrastructureRef = clusterv1.ContractVersionedObjectReference{
 		APIGroup: "infrastructure.cluster.x-k8s.io", Kind: "DockerCluster", Name: "test",
 	}
 
-	kcp := &cpv1beta2.K0smotronControlPlane{ObjectMeta: metav1.ObjectMeta{
+	kcp := &cpv1beta2.K0smotronControlPlane{
 		Name:      "test",
 		Namespace: "default",
 		UID:       "hosted-uid",
@@ -1805,8 +1787,7 @@ func hostedReconcileFixture() (*clusterv1.Cluster, *cpv1beta2.K0smotronControlPl
 			Kind:       "Cluster",
 			Name:       cluster.Name,
 			UID:        cluster.UID,
-		}},
-	}}
+		}}}
 	// Valid, so the reconcile body gets all the way through. A malformed one fails both
 	// the body and the status and proves neither.
 	kcp.Spec.Version = "v1.30.0+k0s.0"
@@ -1815,8 +1796,8 @@ func hostedReconcileFixture() (*clusterv1.Cluster, *cpv1beta2.K0smotronControlPl
 
 	// The address is set, or ensureExternalAddress polls for it for three minutes.
 	kmc := &kapi.Cluster{
-		ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default"},
-		Spec:       kapi.ClusterSpec{ExternalAddress: "203.0.113.7"},
+		Name: "test", Namespace: "default",
+		Spec: kapi.ClusterSpec{ExternalAddress: "203.0.113.7"},
 	}
 
 	return cluster, kcp, kmc
@@ -1832,14 +1813,14 @@ func scalingScope(desired int32, active, deleting, upToDate int) *controlplane {
 		upToDateMachines: collections.New(),
 	}
 	for i := range active {
-		m := &clusterv1.Machine{ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("active%d", i)}}
+		m := &clusterv1.Machine{Name: fmt.Sprintf("active%d", i)}
 		scope.activeMachines.Insert(m)
 		if i < upToDate {
 			scope.upToDateMachines.Insert(m)
 		}
 	}
 	for i := range deleting {
-		scope.deletedMachines.Insert(&clusterv1.Machine{ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("deleting%d", i)}})
+		scope.deletedMachines.Insert(&clusterv1.Machine{Name: fmt.Sprintf("deleting%d", i)})
 	}
 	scope.notUpToDateMachines = scope.activeMachines.Difference(scope.upToDateMachines)
 
@@ -1980,7 +1961,7 @@ func TestHostedReconcileKeepsBothErrors(t *testing.T) {
 		ClusterCache: stubClusterCache{err: errors.New("connection refused")},
 	}
 
-	req := ctrl.Request{NamespacedName: client.ObjectKey{Namespace: "default", Name: "test"}}
+	req := ctrl.Request{Namespace: "default", Name: "test"}
 
 	// The first pass records the paused condition and asks to be called again, so the
 	// body it is meant to reach runs on the second one.
@@ -2009,7 +1990,7 @@ func TestHostedReconcilePersistsAvailabilityOnAStatusError(t *testing.T) {
 		ClusterCache: stubClusterCache{err: errors.New("connection refused")},
 	}
 
-	req := ctrl.Request{NamespacedName: client.ObjectKey{Namespace: "default", Name: "test"}}
+	req := ctrl.Request{Namespace: "default", Name: "test"}
 
 	// The first pass records the paused condition and asks to be called again.
 	_, err := c.Reconcile(context.Background(), req)
@@ -2041,10 +2022,9 @@ func TestHostedReconcileDeletePersistsFinalizerRemoval(t *testing.T) {
 	require.NoError(t, cpv1beta2.AddToScheme(scheme))
 	require.NoError(t, kapi.AddToScheme(scheme))
 
-	cluster := &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{
-		Name: "test", Namespace: "default", UID: "cluster-uid",
-	}}
-	kcp := &cpv1beta2.K0smotronControlPlane{ObjectMeta: metav1.ObjectMeta{
+	cluster := &clusterv1.Cluster{
+		Name: "test", Namespace: "default", UID: "cluster-uid"}
+	kcp := &cpv1beta2.K0smotronControlPlane{
 		Name:              "test",
 		Namespace:         "default",
 		UID:               "hosted-uid",
@@ -2055,8 +2035,7 @@ func TestHostedReconcileDeletePersistsFinalizerRemoval(t *testing.T) {
 			Kind:       "Cluster",
 			Name:       cluster.Name,
 			UID:        cluster.UID,
-		}},
-	}}
+		}}}
 
 	// No k0smotron Cluster, so reconcileDelete takes its already gone path and drops
 	// the finalizer.
@@ -2070,7 +2049,7 @@ func TestHostedReconcileDeletePersistsFinalizerRemoval(t *testing.T) {
 	// map that was empty all along.
 	c.availabilityFailures.Store(availabilityKey(kcp), availabilityFailures{since: time.Now(), seen: 1})
 
-	req := ctrl.Request{NamespacedName: client.ObjectKey{Namespace: "default", Name: "test"}}
+	req := ctrl.Request{Namespace: "default", Name: "test"}
 
 	// The first pass records the paused condition and asks to be called again, which
 	// happens for a deleting object too.
@@ -2099,7 +2078,7 @@ func TestHostedReconcileDeletePersistsFinalizerRemoval(t *testing.T) {
 // readyMachine builds a machine reporting the given Ready state, or reporting nothing about it
 // when the status is empty, which is how a machine looks before the machine controller gets to it.
 func readyMachine(name string, status metav1.ConditionStatus, reason, message string) *clusterv1.Machine {
-	m := &clusterv1.Machine{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"}}
+	m := &clusterv1.Machine{Name: name, Namespace: "default"}
 	if status != "" {
 		conditions.Set(m, metav1.Condition{
 			Type:    clusterv1.MachineReadyCondition,
@@ -2164,7 +2143,7 @@ func TestSetMachinesReadyCondition(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			kcp := &cpv1beta2.K0sControlPlane{ObjectMeta: metav1.ObjectMeta{Name: "kcp", Namespace: "default"}}
+			kcp := &cpv1beta2.K0sControlPlane{Name: "kcp", Namespace: "default"}
 
 			setMachinesReadyCondition(t.Context(), &controlplane{
 				kcp:             kcp,
@@ -2191,11 +2170,11 @@ func TestUpdateStatusReportsMachinesReadyWhenReplicasFail(t *testing.T) {
 	broken := readyMachine("cp-0", metav1.ConditionFalse, "NodeNotReady", "Node cp-0 is not ready")
 	broken.Spec.Version = "not-a-version"
 
-	kcp := &cpv1beta2.K0sControlPlane{ObjectMeta: metav1.ObjectMeta{Name: "kcp", Namespace: "default"}}
+	kcp := &cpv1beta2.K0sControlPlane{Name: "kcp", Namespace: "default"}
 	c := &K0sController{Client: fake.NewClientBuilder().WithScheme(scheme).Build()}
 
 	err := c.updateStatus(t.Context(), &controlplane{
-		cluster:          &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "cluster", Namespace: "default"}},
+		cluster:          &clusterv1.Cluster{Name: "cluster", Namespace: "default"},
 		kcp:              kcp,
 		activeMachines:   collections.FromMachines(broken),
 		deletedMachines:  collections.Machines{},
@@ -2214,11 +2193,10 @@ func TestUpdateStatusReportsMachinesReadyWhenReplicasFail(t *testing.T) {
 // upToDateMachine builds a machine of the given age reporting the given UpToDate state, or
 // reporting nothing about it when the status is empty. The age is what the grace period reads.
 func upToDateMachine(name string, age time.Duration, status metav1.ConditionStatus, reason, message string) *clusterv1.Machine {
-	m := &clusterv1.Machine{ObjectMeta: metav1.ObjectMeta{
+	m := &clusterv1.Machine{
 		Name:              name,
 		Namespace:         "default",
-		CreationTimestamp: metav1.NewTime(time.Now().Add(-age)),
-	}}
+		CreationTimestamp: metav1.NewTime(time.Now().Add(-age))}
 	if status != "" {
 		conditions.Set(m, metav1.Condition{
 			Type:    clusterv1.MachineUpToDateCondition,
@@ -2303,7 +2281,7 @@ func TestSetMachinesUpToDateCondition(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			kcp := &cpv1beta2.K0sControlPlane{ObjectMeta: metav1.ObjectMeta{Name: "kcp", Namespace: "default"}}
+			kcp := &cpv1beta2.K0sControlPlane{Name: "kcp", Namespace: "default"}
 
 			setMachinesUpToDateCondition(t.Context(), &controlplane{
 				kcp:             kcp,
@@ -2330,11 +2308,11 @@ func TestUpdateStatusReportsMachinesUpToDateWhenReplicasFail(t *testing.T) {
 	broken := upToDateMachine("cp-0", time.Hour, metav1.ConditionFalse, clusterv1.MachineNotUpToDateReason, "Version v1.30.0, v1.31.0 required")
 	broken.Spec.Version = "not-a-version"
 
-	kcp := &cpv1beta2.K0sControlPlane{ObjectMeta: metav1.ObjectMeta{Name: "kcp", Namespace: "default"}}
+	kcp := &cpv1beta2.K0sControlPlane{Name: "kcp", Namespace: "default"}
 	c := &K0sController{Client: fake.NewClientBuilder().WithScheme(scheme).Build()}
 
 	err := c.updateStatus(t.Context(), &controlplane{
-		cluster:          &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "cluster", Namespace: "default"}},
+		cluster:          &clusterv1.Cluster{Name: "cluster", Namespace: "default"},
 		kcp:              kcp,
 		activeMachines:   collections.FromMachines(broken),
 		deletedMachines:  collections.Machines{},
@@ -2423,7 +2401,7 @@ func TestSetRemediatingCondition(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			kcp := &cpv1beta2.K0sControlPlane{ObjectMeta: metav1.ObjectMeta{Name: "kcp", Namespace: "default"}}
+			kcp := &cpv1beta2.K0sControlPlane{Name: "kcp", Namespace: "default"}
 
 			setRemediatingCondition(t.Context(), &controlplane{
 				kcp:             kcp,
@@ -2450,11 +2428,11 @@ func TestUpdateStatusReportsRemediationWhenReplicasFail(t *testing.T) {
 	broken := waitingForRemediation("cp-0", "waiting for the replacement", false)
 	broken.Spec.Version = "not-a-version"
 
-	kcp := &cpv1beta2.K0sControlPlane{ObjectMeta: metav1.ObjectMeta{Name: "kcp", Namespace: "default"}}
+	kcp := &cpv1beta2.K0sControlPlane{Name: "kcp", Namespace: "default"}
 	c := &K0sController{Client: fake.NewClientBuilder().WithScheme(scheme).Build()}
 
 	err := c.updateStatus(t.Context(), &controlplane{
-		cluster:          &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "cluster", Namespace: "default"}},
+		cluster:          &clusterv1.Cluster{Name: "cluster", Namespace: "default"},
 		kcp:              kcp,
 		activeMachines:   collections.FromMachines(broken),
 		deletedMachines:  collections.Machines{},
@@ -2486,7 +2464,7 @@ func TestHostedReconcileHoldsObservedGenerationOnAStatusError(t *testing.T) {
 		ClusterCache: stubClusterCache{err: errors.New("connection refused")},
 	}
 
-	req := ctrl.Request{NamespacedName: client.ObjectKey{Namespace: "default", Name: "test"}}
+	req := ctrl.Request{Namespace: "default", Name: "test"}
 
 	// The first pass records the paused condition and asks to be called again, so the
 	// status computation that fails runs on the second one.
@@ -2517,10 +2495,9 @@ func TestSetLastRemediation(t *testing.T) {
 		return value
 	}
 	replacement := func(name, value string, deleting bool) *clusterv1.Machine {
-		m := &clusterv1.Machine{ObjectMeta: metav1.ObjectMeta{
+		m := &clusterv1.Machine{
 			Name:        name,
-			Annotations: map[string]string{cpv1beta2.RemediationForAnnotation: value},
-		}}
+			Annotations: map[string]string{cpv1beta2.RemediationForAnnotation: value}}
 		if deleting {
 			m.DeletionTimestamp = new(metav1.NewTime(time.Unix(1, 0)))
 			m.Finalizers = []string{"test"}
@@ -2566,13 +2543,13 @@ func TestSetLastRemediation(t *testing.T) {
 		{
 			name:   "the legacy marker reports nothing rather than failing",
 			kcp:    map[string]string{cpv1beta2.RemediationInProgressAnnotation: "true"},
-			active: []*clusterv1.Machine{{ObjectMeta: metav1.ObjectMeta{Name: "cp-1"}}},
+			active: []*clusterv1.Machine{{Name: "cp-1"}},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			kcp := &cpv1beta2.K0sControlPlane{ObjectMeta: metav1.ObjectMeta{Name: "kcp", Annotations: tt.kcp}}
+			kcp := &cpv1beta2.K0sControlPlane{Name: "kcp", Annotations: tt.kcp}
 
 			setLastRemediation(&controlplane{
 				kcp:             kcp,
@@ -2608,14 +2585,13 @@ func TestUpdateStatusReportsLastRemediation(t *testing.T) {
 		RetryCount: 1,
 	}.marshal()
 
-	kcp := &cpv1beta2.K0sControlPlane{ObjectMeta: metav1.ObjectMeta{
+	kcp := &cpv1beta2.K0sControlPlane{
 		Name: "kcp", Namespace: "default",
-		Annotations: map[string]string{cpv1beta2.RemediationInProgressAnnotation: marker},
-	}}
+		Annotations: map[string]string{cpv1beta2.RemediationInProgressAnnotation: marker}}
 	c := &K0sController{Client: fake.NewClientBuilder().WithScheme(scheme).Build()}
 
 	require.NoError(t, c.updateStatus(t.Context(), &controlplane{
-		cluster:          &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "cluster", Namespace: "default"}},
+		cluster:          &clusterv1.Cluster{Name: "cluster", Namespace: "default"},
 		kcp:              kcp,
 		activeMachines:   collections.Machines{},
 		deletedMachines:  collections.Machines{},
@@ -2674,14 +2650,14 @@ func TestUpdateStatusReportsEtcdClusterHealthy(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			kcp := &cpv1beta2.K0sControlPlane{ObjectMeta: metav1.ObjectMeta{Name: "kcp", Namespace: "default"}}
+			kcp := &cpv1beta2.K0sControlPlane{Name: "kcp", Namespace: "default"}
 			conditions.Set(kcp, metav1.Condition{
 				Type: cpv1beta2.K0sControlPlaneEtcdClusterHealthyCondition, Status: metav1.ConditionTrue, Reason: "Stale",
 			})
 			c := &K0sController{Client: fake.NewClientBuilder().WithScheme(scheme).Build()}
 
 			_ = c.updateStatus(t.Context(), &controlplane{
-				cluster:          &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "cluster", Namespace: "default"}},
+				cluster:          &clusterv1.Cluster{Name: "cluster", Namespace: "default"},
 				kcp:              kcp,
 				activeMachines:   collections.FromMachines(tt.machines...),
 				deletedMachines:  collections.FromMachines(tt.deleted...),
@@ -2711,11 +2687,11 @@ func TestEtcdClusterHealthyNamesTheMembers(t *testing.T) {
 		m.Spec.ProviderID = "test://" + m.Name
 	}
 
-	kcp := &cpv1beta2.K0sControlPlane{ObjectMeta: metav1.ObjectMeta{Name: "kcp", Namespace: "default"}}
+	kcp := &cpv1beta2.K0sControlPlane{Name: "kcp", Namespace: "default"}
 	c := &K0sController{Client: fake.NewClientBuilder().WithScheme(scheme).
 		WithObjects(healthy, failed, silent).WithStatusSubresource(healthy, failed, silent).Build()}
 	scope := &controlplane{
-		cluster:          &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "cluster", Namespace: "default"}},
+		cluster:          &clusterv1.Cluster{Name: "cluster", Namespace: "default"},
 		kcp:              kcp,
 		activeMachines:   collections.FromMachines(healthy, failed, silent),
 		deletedMachines:  collections.Machines{},
@@ -2810,7 +2786,7 @@ func TestScalingConditionsReportWhatPreflightIsWaitingFor(t *testing.T) {
 				}
 			}
 
-			kcp := &cpv1beta2.K0sControlPlane{ObjectMeta: metav1.ObjectMeta{Name: "kcp", Namespace: "default"}}
+			kcp := &cpv1beta2.K0sControlPlane{Name: "kcp", Namespace: "default"}
 			kcp.Spec.Replicas = 3
 			kcp.Status.Initialization.ControlPlaneInitialized = new(tt.initialized)
 			c := &K0sController{Client: fake.NewClientBuilder().WithScheme(scheme).Build()}
@@ -2819,7 +2795,7 @@ func TestScalingConditionsReportWhatPreflightIsWaitingFor(t *testing.T) {
 				infra[m.Name] = &unstructured.Unstructured{}
 			}
 			scope := &controlplane{
-				cluster:           &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "c", Namespace: "default"}},
+				cluster:           &clusterv1.Cluster{Name: "c", Namespace: "default"},
 				kcp:               kcp,
 				activeMachines:    collections.FromMachines(tt.active...),
 				deletedMachines:   collections.FromMachines(tt.deleted...),
