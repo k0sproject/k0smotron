@@ -19,6 +19,7 @@ package k0smotronio
 import (
 	"context"
 	"fmt"
+	"maps"
 	"net"
 	"sort"
 	"strconv"
@@ -132,17 +133,18 @@ func (scope *kmcScope) reconcileK0sConfig(ctx context.Context, kmc *km.Cluster, 
 		return fmt.Errorf("failed to generate SANs: %w", err)
 	}
 
-	cm, unstructuredConfig, err := scope.generateConfig(kmc, sans)
+	cm, uPopulatedConfig, err := scope.generateConfig(kmc, sans)
 	if err != nil {
 		return err
 	}
+	maps.Copy(kmc.Spec.K0sConfig.Object, uPopulatedConfig)
 
 	// We need to wait until workload cluster is functional before reconciling the dynamic config, meaning the kubeconfig secret is
 	// created and we can create a workload cluster client.
 	if conditions.IsTrue(kmc, km.ClusterControlPlaneFunctionalCondition) {
 		// managementClusterClient is used because in order to instantiate a workload cluster client is need to check the workload kubeconfig secret,
 		// which is stored in mothership cluster. This becomes importante when hosted control planes run on an external cluster.
-		err = reconcileDynamicConfig(ctx, kmc, unstructuredConfig, managementClusterClient)
+		err = reconcileDynamicConfig(ctx, kmc, uPopulatedConfig, managementClusterClient)
 		if err != nil {
 			// Don't return error from dynamic config reconciliation, as it may not be created yet
 			logger.Error(err, "failed to reconcile dynamic config, kubeconfig may not be available yet")
