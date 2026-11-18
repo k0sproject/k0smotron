@@ -57,7 +57,7 @@ func (scope *kmcScope) generateConfig(kmc *km.Cluster, sans []string) (v1.Config
 		k0smotronValues["kind"] = "ClusterConfig"
 		k0smotronValues["spec"] = getV1Beta1Spec(kmc, sans)
 	} else {
-		unstructuredConfig = kmc.Spec.K0sConfig.UnstructuredContent()
+		unstructuredConfig = kmc.Spec.K0sConfig.DeepCopy().UnstructuredContent()
 
 		switch kmc.Spec.K0sConfig.GetAPIVersion() {
 		case "k0s.k0sproject.io/v1beta1":
