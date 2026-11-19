@@ -381,13 +381,18 @@ hack/lint/.golangci-lint.stamp: hack/lint/Dockerfile Makefile.variables
 	touch -- '$@'
 
 .PHONY: lint
+# Some files have the build contstaint //go:build !envtest, therefore we need to do
+# two separate runs, one for envtest and one for !envtest. 
+GO_LINT_ENVTEST_TAGS ?= hack,e2e,extension,envtest
 lint: GOLANGCI_LINT_FLAGS ?= --verbose --max-issues-per-linter=0 --max-same-issues=0
 lint: hack/lint/.golangci-lint.stamp
 	docker run \
 	  --rm \
 	  -v "$(CURDIR):/go/src/github.com/k0sproject/k0smotron:ro" \
 	  -w /go/src/github.com/k0sproject/k0smotron \
-	  k0smotron.golangci-lint golangci-lint run --config .golangci.yml $(GOLANGCI_LINT_FLAGS) $(GO_LINT_DIRS)
+	  k0smotron.golangci-lint sh -c ' \
+	    golangci-lint run --config .golangci.yml $(GOLANGCI_LINT_FLAGS) $(GO_LINT_DIRS) && \
+	    golangci-lint run --config .golangci.yml --build-tags $(GO_LINT_ENVTEST_TAGS) $(GOLANGCI_LINT_FLAGS) $(GO_LINT_DIRS)'
 
 # KinD helpers
 .PHONY: kind-cluster

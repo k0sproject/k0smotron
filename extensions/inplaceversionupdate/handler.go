@@ -38,16 +38,19 @@ import (
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-type InPlaceVersionUpdateHandler struct {
+// Handler implements the runtime hooks that perform in-place version updates.
+type Handler struct {
 	client ctrlclient.Client
 }
 
-func NewInPlaceVersionUpdateHandler(client ctrlclient.Client) *InPlaceVersionUpdateHandler {
-	return &InPlaceVersionUpdateHandler{
+// NewHandler returns a Handler that uses the given client.
+func NewHandler(client ctrlclient.Client) *Handler {
+	return &Handler{
 		client: client,
 	}
 }
 
+// DoCanUpdateMachine is the CanUpdateMachine runtime hook.
 func DoCanUpdateMachine(ctx context.Context, req *runtimehooksv1.CanUpdateMachineRequest, resp *runtimehooksv1.CanUpdateMachineResponse) {
 	log := ctrl.LoggerFrom(ctx).WithValues("Machine", klog.KObj(&req.Desired.Machine))
 	log.Info("CanUpdateMachine for version update handler is called")
@@ -70,6 +73,7 @@ func DoCanUpdateMachine(ctx context.Context, req *runtimehooksv1.CanUpdateMachin
 	resp.Status = runtimehooksv1.ResponseStatusSuccess
 }
 
+// DoCanUpdateMachineSet is the CanUpdateMachineSet runtime hook.
 func DoCanUpdateMachineSet(ctx context.Context, req *runtimehooksv1.CanUpdateMachineSetRequest, resp *runtimehooksv1.CanUpdateMachineSetResponse) {
 	log := ctrl.LoggerFrom(ctx).WithValues("MachineSet", klog.KObj(&req.Desired.MachineSet))
 	log.Info("CanUpdateMachineSet for version update handler is called")
@@ -92,7 +96,8 @@ func DoCanUpdateMachineSet(ctx context.Context, req *runtimehooksv1.CanUpdateMac
 	resp.Status = runtimehooksv1.ResponseStatusSuccess
 }
 
-func (ipuv *InPlaceVersionUpdateHandler) DoUpdateMachine(ctx context.Context, req *runtimehooksv1.UpdateMachineRequest, resp *runtimehooksv1.UpdateMachineResponse) {
+// DoUpdateMachine is the UpdateMachine runtime hook.
+func (ipuv *Handler) DoUpdateMachine(ctx context.Context, req *runtimehooksv1.UpdateMachineRequest, resp *runtimehooksv1.UpdateMachineResponse) {
 	log := ctrl.LoggerFrom(ctx).WithValues("Machine", klog.KObj(&req.Desired.Machine))
 	log.Info("UpdateMachine for version update handler is called")
 

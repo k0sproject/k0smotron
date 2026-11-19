@@ -42,7 +42,6 @@ import (
 	"k8s.io/client-go/rest"
 	restfake "k8s.io/client-go/rest/fake"
 	"k8s.io/kubectl/pkg/scheme"
-	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util/collections"
 	"sigs.k8s.io/cluster-api/util/conditions"
@@ -112,8 +111,8 @@ func TestReconcileMachinesScaleUp(t *testing.T) {
 				Kind:               "Machine",
 				Name:               firstMachineRelatedToControlPlane.GetName(),
 				UID:                firstMachineRelatedToControlPlane.GetUID(),
-				BlockOwnerDeletion: ptr.To(true),
-				Controller:         ptr.To(true),
+				BlockOwnerDeletion: new(true),
+				Controller:         new(true),
 			}},
 		},
 	}
@@ -164,8 +163,8 @@ func TestReconcileMachinesScaleUp(t *testing.T) {
 				Kind:               "Machine",
 				Name:               secondMachineRelatedToControlPlane.GetName(),
 				UID:                secondMachineRelatedToControlPlane.GetUID(),
-				BlockOwnerDeletion: ptr.To(true),
-				Controller:         ptr.To(true),
+				BlockOwnerDeletion: new(true),
+				Controller:         new(true),
 			}},
 		},
 	}
@@ -322,8 +321,8 @@ func TestReconcileMachinesScaleDown(t *testing.T) {
 				Kind:               "Machine",
 				Name:               firstMachineRelatedToControlPlane.GetName(),
 				UID:                firstMachineRelatedToControlPlane.GetUID(),
-				BlockOwnerDeletion: ptr.To(true),
-				Controller:         ptr.To(true),
+				BlockOwnerDeletion: new(true),
+				Controller:         new(true),
 			}},
 		},
 	}
@@ -374,8 +373,8 @@ func TestReconcileMachinesScaleDown(t *testing.T) {
 				Kind:               "Machine",
 				Name:               secondMachineRelatedToControlPlane.GetName(),
 				UID:                secondMachineRelatedToControlPlane.GetUID(),
-				BlockOwnerDeletion: ptr.To(true),
-				Controller:         ptr.To(true),
+				BlockOwnerDeletion: new(true),
+				Controller:         new(true),
 			}},
 		},
 	}
@@ -426,8 +425,8 @@ func TestReconcileMachinesScaleDown(t *testing.T) {
 				Kind:               "Machine",
 				Name:               thirdMachineRelatedToControlPlane.GetName(),
 				UID:                thirdMachineRelatedToControlPlane.GetUID(),
-				BlockOwnerDeletion: ptr.To(true),
-				Controller:         ptr.To(true),
+				BlockOwnerDeletion: new(true),
+				Controller:         new(true),
 			}},
 		},
 	}
@@ -468,8 +467,8 @@ func TestReconcileMachinesScaleDown(t *testing.T) {
 				Kind:               "Machine",
 				Name:               machineNotRelatedToControlPlane.GetName(),
 				UID:                machineNotRelatedToControlPlane.GetUID(),
-				BlockOwnerDeletion: ptr.To(true),
-				Controller:         ptr.To(true),
+				BlockOwnerDeletion: new(true),
+				Controller:         new(true),
 			}},
 		},
 	}
@@ -619,8 +618,8 @@ func TestReconcileMachinesSyncOldMachines(t *testing.T) {
 				Kind:               "Machine",
 				Name:               firstMachineRelatedToControlPlane.GetName(),
 				UID:                firstMachineRelatedToControlPlane.GetUID(),
-				BlockOwnerDeletion: ptr.To(true),
-				Controller:         ptr.To(true),
+				BlockOwnerDeletion: new(true),
+				Controller:         new(true),
 			}},
 		},
 	}
@@ -670,8 +669,8 @@ func TestReconcileMachinesSyncOldMachines(t *testing.T) {
 				Kind:               "Machine",
 				Name:               secondMachineRelatedToControlPlane.GetName(),
 				UID:                secondMachineRelatedToControlPlane.GetUID(),
-				BlockOwnerDeletion: ptr.To(true),
-				Controller:         ptr.To(true),
+				BlockOwnerDeletion: new(true),
+				Controller:         new(true),
 			}},
 		},
 	}
@@ -721,8 +720,8 @@ func TestReconcileMachinesSyncOldMachines(t *testing.T) {
 				Kind:               "Machine",
 				Name:               thirdMachineRelatedToControlPlane.GetName(),
 				UID:                thirdMachineRelatedToControlPlane.GetUID(),
-				BlockOwnerDeletion: ptr.To(true),
-				Controller:         ptr.To(true),
+				BlockOwnerDeletion: new(true),
+				Controller:         new(true),
 			}},
 		},
 	}
@@ -1204,8 +1203,8 @@ func createControlPlaneMachine(t *testing.T, name, namespace string, cluster *cl
 				Kind:               "Machine",
 				Name:               machine.GetName(),
 				UID:                machine.GetUID(),
-				BlockOwnerDeletion: ptr.To(true),
-				Controller:         ptr.To(true),
+				BlockOwnerDeletion: new(true),
+				Controller:         new(true),
 			}},
 		},
 	}

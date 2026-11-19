@@ -21,6 +21,7 @@ package util
 import (
 	"context"
 	"fmt"
+	"maps"
 	"reflect"
 	"time"
 
@@ -32,6 +33,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+// WaitForMachinesInput is the input for waiting until the expected machines exist.
 type WaitForMachinesInput struct {
 	Lister                   framework.Lister
 	Namespace                string
@@ -70,9 +72,7 @@ func WaitForMachines(ctx context.Context, input WaitForMachinesInput) ([]string,
 
 		// Compute new machines (all - old - to be deleted)
 		newMachines = make(map[string]string)
-		for k, v := range allMachines {
-			newMachines[k] = v
-		}
+		maps.Copy(newMachines, allMachines)
 		for k := range input.ExpectedOldMachines {
 			delete(newMachines, k)
 		}
@@ -142,6 +142,7 @@ func WaitForMachines(ctx context.Context, input WaitForMachinesInput) ([]string,
 	return allMachinesNames, newMachinesNames, nil
 }
 
+// WaitForWorkersMachineInput is the input for waiting until the expected worker machines exist.
 type WaitForWorkersMachineInput struct {
 	Lister                   framework.Lister
 	ExpectedWorkers          int

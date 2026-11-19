@@ -103,7 +103,7 @@ func clusterctlMoveSpec(t *testing.T) {
 		if moved {
 			cleanupProxy = targetProxy
 		}
-		util.DumpSpecResourcesAndCleanup(ctx, testName, cleanupProxy, artifactFolder, namespace, cancelNamespaceWatches, cluster,
+		util.DumpSpecResourcesAndCleanup(ctx, cleanupProxy, artifactFolder, namespace, cancelNamespaceWatches, cluster,
 			util.GetInterval(e2eConfig, testName, "wait-delete-cluster"), skipCleanup, clusterctlConfigPath)
 		if moved && !skipCleanup {
 			// The namespace in the source cluster is left behind by clusterctl move.

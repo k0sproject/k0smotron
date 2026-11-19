@@ -1,7 +1,11 @@
 version: "2"
 run:
+  # envtest and !envtest files are mutually exclusive, so this set covers the
+  # !envtest files plus e2e and extension. `make lint` runs a second pass that
+  # adds the envtest tag.
   build-tags:
-    - hack
+    - e2e
+    - extension
   modules-download-mode: readonly
   tests: true
   allow-parallel-runners: true

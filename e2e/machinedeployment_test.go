@@ -83,7 +83,6 @@ func TestMachineDeployment(t *testing.T) {
 		t.Cleanup(func() {
 			util.DumpSpecResourcesAndCleanup(
 				ctx,
-				testName,
 				bootstrapClusterProxy,
 				artifactFolder,
 				namespace,
@@ -98,7 +97,7 @@ func TestMachineDeployment(t *testing.T) {
 		err = util.DiscoveryAndWaitForK0smotronControlPlaneInitialized(ctx, capiframework.DiscoveryAndWaitForControlPlaneInitializedInput{
 			Lister:  bootstrapClusterProxy.GetClient(),
 			Cluster: cluster,
-		}, util.GetInterval(e2eConfig, testName, "wait-control-plane"))
+		})
 		require.NoError(t, err)
 
 		err = util.WaitForK0smotronControlPlaneToBeReady(ctx, bootstrapClusterProxy.GetClient(), clusterName, namespace.Name, util.GetInterval(e2eConfig, testName, "wait-control-plane"))

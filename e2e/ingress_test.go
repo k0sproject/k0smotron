@@ -128,7 +128,6 @@ func ingressSupportSpec(flavor string) func(t *testing.T) {
 		t.Cleanup(func() {
 			e2eutil.DumpSpecResourcesAndCleanup(
 				ctx,
-				testName,
 				bootstrapClusterProxy,
 				artifactFolder,
 				testNamespace,

@@ -87,7 +87,6 @@ func controlplaneConditionsSpec(t *testing.T) {
 	t.Cleanup(func() {
 		e2eutil.DumpSpecResourcesAndCleanup(
 			ctx,
-			testName,
 			bootstrapClusterProxy,
 			artifactFolder,
 			testNamespace,
