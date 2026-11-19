@@ -25,7 +25,6 @@ import (
 	km "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -91,104 +90,89 @@ func SyncReferencedObjects(ctx context.Context, src, dst client.Client, kmc *km.
 
 	refs := collectReferencedObjects(kmc)
 
-	for _, name := range slices.Sorted(maps.Keys(refs.secrets)) {
-		srcSecret := &corev1.Secret{}
-		found, err := getReferenced(ctx, src, kmc.Namespace, name, refs.secrets[name], srcSecret)
-		if err != nil {
-			return fmt.Errorf("failed to get secret %s/%s from the management cluster: %w", kmc.Namespace, name, err)
-		}
-		if !found {
-			continue
-		}
-		if err := syncSecret(ctx, dst, srcSecret, kmc, externalOwner); err != nil {
-			return fmt.Errorf("failed to sync secret %s/%s to the remote host cluster: %w", kmc.Namespace, name, err)
-		}
+	err := syncObjects(ctx, src, dst, kmc, externalOwner, "secret", refs.secrets,
+		func() *corev1.Secret { return &corev1.Secret{} },
+		func(dstSecret, srcSecret *corev1.Secret, creating bool) {
+			if creating {
+				// The Secret type is immutable, so it is only set on creation.
+				dstSecret.Type = srcSecret.Type
+			}
+			dstSecret.Data = maps.Clone(srcSecret.Data)
+		})
+	if err != nil {
+		return err
 	}
 
-	for _, name := range slices.Sorted(maps.Keys(refs.configMaps)) {
-		srcConfigMap := &corev1.ConfigMap{}
-		found, err := getReferenced(ctx, src, kmc.Namespace, name, refs.configMaps[name], srcConfigMap)
-		if err != nil {
-			return fmt.Errorf("failed to get configmap %s/%s from the management cluster: %w", kmc.Namespace, name, err)
+	return syncObjects(ctx, src, dst, kmc, externalOwner, "configmap", refs.configMaps,
+		func() *corev1.ConfigMap { return &corev1.ConfigMap{} },
+		func(dstConfigMap, srcConfigMap *corev1.ConfigMap, _ bool) {
+			dstConfigMap.Data = maps.Clone(srcConfigMap.Data)
+			dstConfigMap.BinaryData = maps.Clone(srcConfigMap.BinaryData)
+		})
+}
+
+// A missing optional object is skipped, any other failure is returned. copyContent copies the
+// kind-specific content of the source object to the destination one; creating is true when the
+// destination object does not exist yet.
+func syncObjects[T client.Object](
+	ctx context.Context,
+	src, dst client.Client,
+	kmc *km.Cluster,
+	externalOwner client.Object,
+	kind string,
+	refs map[string]bool,
+	newObject func() T,
+	copyContent func(dstObj, srcObj T, creating bool),
+) error {
+	for _, name := range slices.Sorted(maps.Keys(refs)) {
+		srcObj := newObject()
+		if err := src.Get(ctx, client.ObjectKey{Namespace: kmc.Namespace, Name: name}, srcObj); err != nil {
+			if apierrors.IsNotFound(err) && refs[name] {
+				continue
+			}
+			return fmt.Errorf("failed to get %s %s/%s from the management cluster: %w", kind, kmc.Namespace, name, err)
 		}
-		if !found {
-			continue
-		}
-		if err := syncConfigMap(ctx, dst, srcConfigMap, kmc, externalOwner); err != nil {
-			return fmt.Errorf("failed to sync configmap %s/%s to the remote host cluster: %w", kmc.Namespace, name, err)
+
+		if err := syncObject(ctx, dst, srcObj, newObject, copyContent, kmc, externalOwner); err != nil {
+			return fmt.Errorf("failed to sync %s %s/%s to the remote host cluster: %w", kind, kmc.Namespace, name, err)
 		}
 	}
 
 	return nil
 }
 
-// getReferenced gets the object from src. A missing optional object is not an error, it is reported as not found.
-func getReferenced(ctx context.Context, src client.Client, namespace, name string, optional bool, obj client.Object) (found bool, err error) {
-	if err := src.Get(ctx, client.ObjectKey{Namespace: namespace, Name: name}, obj); err != nil {
-		if apierrors.IsNotFound(err) && optional {
-			return false, nil
-		}
-		return false, err
-	}
-	return true, nil
-}
-
-// syncMetadata makes dst carry the labels and annotations of src, which is the source of truth, and
-// the external owner reference.
-func syncMetadata(dst, src client.Object, kmc *km.Cluster, externalOwner client.Object, dstClient client.Client) error {
-	dst.SetLabels(maps.Clone(src.GetLabels()))
-	dst.SetAnnotations(maps.Clone(src.GetAnnotations()))
-	// dstClient.Scheme() must have corev1 registered, which is the case for all manager-managed clients.
-	return SetExternalOwnerReference(kmc, dst, dstClient.Scheme(), externalOwner)
-}
-
-func syncSecret(ctx context.Context, dst client.Client, srcSecret *corev1.Secret, kmc *km.Cluster, externalOwner client.Object) error {
-	dstSecret := &corev1.Secret{}
-	err := dst.Get(ctx, client.ObjectKeyFromObject(srcSecret), dstSecret)
+func syncObject[T client.Object](
+	ctx context.Context,
+	dst client.Client,
+	srcObj T,
+	newObject func() T,
+	copyContent func(dstObj, srcObj T, creating bool),
+	kmc *km.Cluster,
+	externalOwner client.Object,
+) error {
+	dstObj := newObject()
+	err := dst.Get(ctx, client.ObjectKeyFromObject(srcObj), dstObj)
 	if err != nil && !apierrors.IsNotFound(err) {
 		return err
 	}
 	exists := err == nil
 
 	if !exists {
-		dstSecret = &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{Name: srcSecret.Name, Namespace: srcSecret.Namespace},
-			// The Secret type is immutable, so it is only set on creation.
-			Type: srcSecret.Type,
-		}
+		dstObj.SetName(srcObj.GetName())
+		dstObj.SetNamespace(srcObj.GetNamespace())
 	}
-	dstSecret.Data = maps.Clone(srcSecret.Data)
-	if err := syncMetadata(dstSecret, srcSecret, kmc, externalOwner, dst); err != nil {
+	copyContent(dstObj, srcObj, !exists)
+
+	// The management cluster is the source of truth for metadata, so whatever is on an existing copy is replaced.
+	dstObj.SetLabels(maps.Clone(srcObj.GetLabels()))
+	dstObj.SetAnnotations(maps.Clone(srcObj.GetAnnotations()))
+	// dst.Scheme() must have corev1 registered, which is the case for all manager-managed clients.
+	if err := SetExternalOwnerReference(kmc, dstObj, dst.Scheme(), externalOwner); err != nil {
 		return err
 	}
 
 	if !exists {
-		return dst.Create(ctx, dstSecret)
+		return dst.Create(ctx, dstObj)
 	}
-	return dst.Update(ctx, dstSecret)
-}
-
-func syncConfigMap(ctx context.Context, dst client.Client, srcConfigMap *corev1.ConfigMap, kmc *km.Cluster, externalOwner client.Object) error {
-	dstConfigMap := &corev1.ConfigMap{}
-	err := dst.Get(ctx, client.ObjectKeyFromObject(srcConfigMap), dstConfigMap)
-	if err != nil && !apierrors.IsNotFound(err) {
-		return err
-	}
-	exists := err == nil
-
-	if !exists {
-		dstConfigMap = &corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{Name: srcConfigMap.Name, Namespace: srcConfigMap.Namespace},
-		}
-	}
-	dstConfigMap.Data = maps.Clone(srcConfigMap.Data)
-	dstConfigMap.BinaryData = maps.Clone(srcConfigMap.BinaryData)
-	if err := syncMetadata(dstConfigMap, srcConfigMap, kmc, externalOwner, dst); err != nil {
-		return err
-	}
-
-	if !exists {
-		return dst.Create(ctx, dstConfigMap)
-	}
-	return dst.Update(ctx, dstConfigMap)
+	return dst.Update(ctx, dstObj)
 }
