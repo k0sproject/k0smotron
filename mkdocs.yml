@@ -85,6 +85,7 @@ nav:
       - infrastructure.cluster.x-k8s.io/v1beta2: resource-reference/infrastructure.cluster.x-k8s.io-v1beta2.md
       - k0smotron.io/v1beta2: resource-reference/k0smotron.io-v1beta2.md
       - k0smotron.io/v1beta1: resource-reference/k0smotron.io-v1beta1.md
+    - Reconciliation workflows: reconciliation-workflows.md
     - Terminology: terminology.md
 
 
