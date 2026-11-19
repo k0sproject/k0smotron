@@ -357,14 +357,14 @@ func (g *ReconcileStormGuard) Assert(ctx context.Context, t *testing.T, defaultM
 		require.NoError(t, err)
 		delta := cur.Diff(g.baseline[r.key()])
 		for controller, d := range delta {
-			max := defaultMax
+			limit := defaultMax
 			if v, ok := perControllerMax[controller]; ok {
-				max = v
+				limit = v
 			}
 			rate := d / elapsed
-			t.Logf("reconcile: deployment=%s/%s controller=%s delta=%.0f elapsed=%.1fs rate=%.2f/s threshold=%.2f/s", r.Namespace, r.Name, controller, d, elapsed, rate, max)
-			if rate > max {
-				t.Errorf("reconcile storm: deployment=%s/%s controller=%s delta=%.0f elapsed=%.1fs rate=%.2f/s exceeds %.2f/s", r.Namespace, r.Name, controller, d, elapsed, rate, max)
+			t.Logf("reconcile: deployment=%s/%s controller=%s delta=%.0f elapsed=%.1fs rate=%.2f/s threshold=%.2f/s", r.Namespace, r.Name, controller, d, elapsed, rate, limit)
+			if rate > limit {
+				t.Errorf("reconcile storm: deployment=%s/%s controller=%s delta=%.0f elapsed=%.1fs rate=%.2f/s exceeds %.2f/s", r.Namespace, r.Name, controller, d, elapsed, rate, limit)
 			}
 			total[controller] += d
 		}

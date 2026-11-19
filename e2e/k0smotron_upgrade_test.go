@@ -146,7 +146,6 @@ func k0smotronUpgradeSpec(t *testing.T) {
 	t.Cleanup(func() {
 		e2eutil.DumpSpecResourcesAndCleanup(
 			ctx,
-			testName,
 			managementClusterProxy,
 			artifactFolder,
 			testNamespace,

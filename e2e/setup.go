@@ -107,7 +107,7 @@ func init() {
 	// On the k0smotron side we avoid using Gomega for assertions but since we want to use the
 	// cluster-api framework as much as possible, the framework assertions require registering
 	// a fail handler beforehand.
-	gomega.RegisterFailHandler(func(message string, callerSkip ...int) {
+	gomega.RegisterFailHandler(func(message string, _ ...int) {
 		panic(message)
 	})
 }

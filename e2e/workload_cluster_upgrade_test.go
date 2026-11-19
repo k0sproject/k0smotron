@@ -96,7 +96,6 @@ func workloadClusterUpgradeSpec(t *testing.T) {
 	t.Cleanup(func() {
 		util.DumpSpecResourcesAndCleanup(
 			ctx,
-			testName,
 			bootstrapClusterProxy,
 			artifactFolder,
 			namespace,

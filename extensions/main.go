@@ -152,7 +152,7 @@ func main() {
 // setupInPlaceVersionUpdateHookHandlers sets up In-Place Version Update Hooks.
 func setupInPlaceVersionUpdateHookHandlers(runtimeExtensionWebhookServer *server.Server, client ctrlclient.Client) error {
 
-	ipvu := inplaceversionupdate.NewInPlaceVersionUpdateHandler(client)
+	ipvu := inplaceversionupdate.NewHandler(client)
 
 	if err := runtimeExtensionWebhookServer.AddExtensionHandler(server.ExtensionHandler{
 		Hook:        runtimehooksv1.CanUpdateMachine,

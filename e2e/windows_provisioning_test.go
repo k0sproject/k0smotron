@@ -90,7 +90,6 @@ func windowsProvisioningSpec(t *testing.T) {
 	defer func() {
 		util.DumpSpecResourcesAndCleanup(
 			ctx,
-			testName,
 			bootstrapClusterProxy,
 			artifactFolder,
 			namespace,

@@ -33,24 +33,28 @@ import (
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+// GetK0smotronControlPlaneByClusterInput is the input for getting the K0smotronControlPlane that belongs to a cluster.
 type GetK0smotronControlPlaneByClusterInput struct {
 	Lister      capiframework.Lister
 	ClusterName string
 	Namespace   string
 }
 
+// WaitForOneK0smotronControlPlaneMachineToExistInput is the input for waiting until a K0smotronControlPlane machine exists.
 type WaitForOneK0smotronControlPlaneMachineToExistInput struct {
 	Lister       capiframework.Lister
 	Cluster      *clusterv1.Cluster
 	ControlPlane *cpv1beta2.K0smotronControlPlane
 }
 
+// DiscoveryAndWaitForHCPReadyInput is the input for discovering a hosted control plane and waiting for it to be ready.
 type DiscoveryAndWaitForHCPReadyInput struct {
 	Lister  capiframework.Lister
 	Cluster *clusterv1.Cluster
 	Getter  capiframework.Getter
 }
 
+// DiscoveryAndWaitForHCPToBeReady discovers the K0smotronControlPlane of a cluster and waits until it is ready.
 func DiscoveryAndWaitForHCPToBeReady(ctx context.Context, input DiscoveryAndWaitForHCPReadyInput, interval Interval) (*cpv1beta2.K0smotronControlPlane, error) {
 	var controlPlane *cpv1beta2.K0smotronControlPlane
 	err := wait.PollUntilContextTimeout(ctx, time.Second, time.Minute, true, func(ctx context.Context) (done bool, err error) {
@@ -78,6 +82,7 @@ func DiscoveryAndWaitForHCPToBeReady(ctx context.Context, input DiscoveryAndWait
 	return controlPlane, nil
 }
 
+// WaitForHCPToBeReady waits until the given K0smotronControlPlane reports ready.
 func WaitForHCPToBeReady(ctx context.Context, getter capiframework.Getter, cp *cpv1beta2.K0smotronControlPlane, interval Interval) error {
 	controlplaneObjectKey := crclient.ObjectKey{
 		Name:      cp.Name,
@@ -106,7 +111,7 @@ func WaitForHCPToBeReady(ctx context.Context, getter capiframework.Getter, cp *c
 		return true, nil
 	})
 	if err != nil {
-		return fmt.Errorf("%s\n", capiframework.PrettyPrint(controlplane))
+		return fmt.Errorf("%s", capiframework.PrettyPrint(controlplane))
 	}
 
 	return nil

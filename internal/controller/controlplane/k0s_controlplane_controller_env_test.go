@@ -762,17 +762,17 @@ func TestReconcileK0sConfigWithNLLBEnabled(t *testing.T) {
 	// Enable '.spec.network.nodeLocalLoadBalancing'
 	kcp.Spec.K0sConfigSpec = bootstrapv2.K0sConfigSpec{
 		K0s: &unstructured.Unstructured{
-			Object: map[string]interface{}{
+			Object: map[string]any{
 				"apiVersion": "k0s.k0sproject.io/v1beta1",
 				"kind":       "ClusterConfig",
-				"spec": map[string]interface{}{
-					"api": map[string]interface{}{
-						"sans": []interface{}{
+				"spec": map[string]any{
+					"api": map[string]any{
+						"sans": []any{
 							"test.com",
 						},
 					},
-					"network": map[string]interface{}{
-						"nodeLocalLoadBalancing": map[string]interface{}{
+					"network": map[string]any{
+						"nodeLocalLoadBalancing": map[string]any{
 							"enabled": true,
 						},
 					},
@@ -803,18 +803,18 @@ func TestReconcileK0sConfigWithNLLBEnabled(t *testing.T) {
 	require.NoError(t, err)
 
 	expectedk0sConfig := &unstructured.Unstructured{
-		Object: map[string]interface{}{
+		Object: map[string]any{
 			"apiVersion": "k0s.k0sproject.io/v1beta1",
 			"kind":       "ClusterConfig",
-			"spec": map[string]interface{}{
-				"api": map[string]interface{}{
-					"sans": []interface{}{
+			"spec": map[string]any{
+				"api": map[string]any{
+					"sans": []any{
 						"test.endpoint",
 						"test.com",
 					},
 				},
-				"network": map[string]interface{}{
-					"nodeLocalLoadBalancing": map[string]interface{}{
+				"network": map[string]any{
+					"nodeLocalLoadBalancing": map[string]any{
 						"enabled": true,
 					},
 				},
@@ -834,12 +834,12 @@ func TestReconcileK0sConfigWithNLLBDisabled(t *testing.T) {
 	// Disable '.spec.network.nodeLocalLoadBalancing'
 	kcp.Spec.K0sConfigSpec = bootstrapv2.K0sConfigSpec{
 		K0s: &unstructured.Unstructured{
-			Object: map[string]interface{}{
+			Object: map[string]any{
 				"apiVersion": "k0s.k0sproject.io/v1beta1",
 				"kind":       "ClusterConfig",
-				"spec": map[string]interface{}{
-					"api": map[string]interface{}{
-						"sans": []interface{}{
+				"spec": map[string]any{
+					"api": map[string]any{
+						"sans": []any{
 							"test.com",
 						},
 					},
@@ -870,12 +870,12 @@ func TestReconcileK0sConfigWithNLLBDisabled(t *testing.T) {
 	require.NoError(t, err)
 
 	expectedk0sConfig := &unstructured.Unstructured{
-		Object: map[string]interface{}{
+		Object: map[string]any{
 			"apiVersion": "k0s.k0sproject.io/v1beta1",
 			"kind":       "ClusterConfig",
-			"spec": map[string]interface{}{
-				"api": map[string]interface{}{
-					"sans": []interface{}{
+			"spec": map[string]any{
+				"api": map[string]any{
+					"sans": []any{
 						"test.com",
 					},
 					"externalAddress": "test.endpoint",
@@ -896,12 +896,12 @@ func TestReconcileK0sConfigTunnelingServerAddressToApiSans(t *testing.T) {
 	// With '.spec.k0sConfigSpec.Tunneling.ServerAddress'
 	kcp.Spec.K0sConfigSpec = bootstrapv2.K0sConfigSpec{
 		K0s: &unstructured.Unstructured{
-			Object: map[string]interface{}{
+			Object: map[string]any{
 				"apiVersion": "k0s.k0sproject.io/v1beta1",
 				"kind":       "ClusterConfig",
-				"spec": map[string]interface{}{
-					"api": map[string]interface{}{
-						"sans": []interface{}{
+				"spec": map[string]any{
+					"api": map[string]any{
+						"sans": []any{
 							"test.com",
 						},
 					},
@@ -935,12 +935,12 @@ func TestReconcileK0sConfigTunnelingServerAddressToApiSans(t *testing.T) {
 	require.NoError(t, err)
 
 	expectedk0sConfig := &unstructured.Unstructured{
-		Object: map[string]interface{}{
+		Object: map[string]any{
 			"apiVersion": "k0s.k0sproject.io/v1beta1",
 			"kind":       "ClusterConfig",
-			"spec": map[string]interface{}{
-				"api": map[string]interface{}{
-					"sans": []interface{}{
+			"spec": map[string]any{
+				"api": map[string]any{
+					"sans": []any{
 						"test.com",
 						"my-tunneling-server-address.com",
 					},
@@ -1382,20 +1382,20 @@ func createClusterWithControlPlane(namespace string) (*clusterv1.Cluster, *cpv1b
 	}
 
 	genericMachineTemplate := &unstructured.Unstructured{
-		Object: map[string]interface{}{
+		Object: map[string]any{
 			"kind":       "GenericInfrastructureMachineTemplate",
 			"apiVersion": "infrastructure.cluster.x-k8s.io/v1beta1",
-			"metadata": map[string]interface{}{
+			"metadata": map[string]any{
 				"name":      "infra-foo",
 				"namespace": namespace,
-				"annotations": map[string]interface{}{
+				"annotations": map[string]any{
 					clusterv1.TemplateClonedFromNameAnnotation:      kcp.Spec.MachineTemplate.Spec.InfrastructureRef.Name,
 					clusterv1.TemplateClonedFromGroupKindAnnotation: schema.GroupKind{Group: kcp.Spec.MachineTemplate.Spec.InfrastructureRef.APIGroup, Kind: kcp.Spec.MachineTemplate.Spec.InfrastructureRef.Kind}.String(),
 				},
 			},
-			"spec": map[string]interface{}{
-				"template": map[string]interface{}{
-					"spec": map[string]interface{}{
+			"spec": map[string]any{
+				"template": map[string]any{
+					"spec": map[string]any{
 						"hello": "world",
 					},
 				},
@@ -1418,7 +1418,7 @@ func normalizeUnstructured(obj *unstructured.Unstructured) *unstructured.Unstruc
 
 		sort.Strings(strSans)
 
-		sortedSans := make([]interface{}, len(strSans))
+		sortedSans := make([]any, len(strSans))
 		for i, v := range strSans {
 			sortedSans[i] = v
 		}
