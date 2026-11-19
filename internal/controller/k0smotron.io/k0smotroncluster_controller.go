@@ -125,6 +125,10 @@ type currentReconcileState struct {
 	// schedule. User-supplied certificates and certificates renewal cannot
 	// extend are excluded, since requeueing for them would change nothing.
 	nextCertificateRenewal time.Time
+	// etcdScaleUpPending records whether the etcd StatefulSet has not been
+	// scaled up to the desired replica count yet, because members are added
+	// one at a time once every current member is ready.
+	etcdScaleUpPending bool
 }
 
 // filterPurposes narrows a set of certificate infos to the given purposes, so
@@ -446,7 +450,11 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (re
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, nil
 	}
 
-	kmc.SetReconciliationStatus("Reconciliation successful")
+	if kmcScope.currentReconcileState.etcdScaleUpPending {
+		kmc.SetReconciliationStatus("Waiting for etcd members to be ready before scaling up etcd")
+	} else {
+		kmc.SetReconciliationStatus("Reconciliation successful")
+	}
 
 	// Requeue when the earliest certificate becomes due, rather than relying on
 	// the resync period: an otherwise idle cluster must still renew on time.

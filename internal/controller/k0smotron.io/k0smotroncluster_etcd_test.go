@@ -52,6 +52,35 @@ func TestEtcd_calculateDesiredReplicas(t *testing.T) {
 	}
 }
 
+func TestEtcd_etcdReplicasToApply(t *testing.T) {
+	tests := []struct {
+		name               string
+		desired            int32
+		current            int32
+		ready              int32
+		wantReplicas       int32
+		wantScaleUpPending bool
+	}{
+		{name: "unchanged with all members ready", desired: 3, current: 3, ready: 3, wantReplicas: 3},
+		// Template changes must still be applied, e.g. to fix crash-looping members.
+		{name: "unchanged with no member ready", desired: 3, current: 3, ready: 0, wantReplicas: 3},
+		{name: "unchanged with some members ready", desired: 3, current: 3, ready: 1, wantReplicas: 3},
+		{name: "scale up by one", desired: 3, current: 1, ready: 1, wantReplicas: 2, wantScaleUpPending: true},
+		{name: "scale up last step", desired: 3, current: 2, ready: 2, wantReplicas: 3},
+		{name: "scale up waits for current members", desired: 3, current: 2, ready: 1, wantReplicas: 2, wantScaleUpPending: true},
+		{name: "scale up waits with no member ready", desired: 5, current: 3, ready: 0, wantReplicas: 3, wantScaleUpPending: true},
+		{name: "scale down", desired: 1, current: 3, ready: 0, wantReplicas: 1},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			replicas, scaleUpPending := etcdReplicasToApply(tc.desired, tc.current, tc.ready)
+			assert.Equal(t, tc.wantReplicas, replicas)
+			assert.Equal(t, tc.wantScaleUpPending, scaleUpPending)
+		})
+	}
+}
+
 func TestEtcd_resourceRequirements(t *testing.T) {
 	tests := []struct {
 		name    string
