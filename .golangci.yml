@@ -65,6 +65,7 @@ linters:
         - name: unused-parameter
         - name: unreachable-code
         - name: redefines-builtin-id
+        - name: defer
   exclusions:
     generated: strict
     rules:

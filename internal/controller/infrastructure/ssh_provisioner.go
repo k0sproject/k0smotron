@@ -84,7 +84,8 @@ func (p *SSHProvisioner) Provision(ctx context.Context) error {
 	}
 	defer connection.Disconnect()
 	// Closing the connection is what stops a hung command or filesystem call.
-	defer context.AfterFunc(ctx, connection.Disconnect)()
+	stopDisconnectOnCancel := context.AfterFunc(ctx, connection.Disconnect)
+	defer stopDisconnectOnCancel()
 
 	// If sudo is required, run commands with elevated permissions and use the
 	// sudo-capable filesystem for uploads.
@@ -158,7 +159,8 @@ func (p *SSHProvisioner) Cleanup(ctx context.Context, mode RemoteMachineMode) er
 	}
 	defer connection.Disconnect()
 	// Closing the connection is what stops a hung command or filesystem call.
-	defer context.AfterFunc(ctx, connection.Disconnect)()
+	stopDisconnectOnCancel := context.AfterFunc(ctx, connection.Disconnect)
+	defer stopDisconnectOnCancel()
 
 	// If sudo is required, run commands with elevated permissions.
 	runner := connection
