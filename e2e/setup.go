@@ -55,6 +55,8 @@ const (
 	IPFamily                         = "IP_FAMILY"
 	SSHPublicKey                     = "SSH_PUBLIC_KEY"
 	SSHKeyName                       = "SSH_KEY_NAME"
+	K0SVersionFromUpgradeChain       = "K0S_VERSION_FROM_UPGRADE_CHAIN"
+	K0SVersionToUpgradeChain         = "K0S_VERSION_TO_UPGRADE_CHAIN"
 )
 
 var (

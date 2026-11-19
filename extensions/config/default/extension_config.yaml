@@ -3,7 +3,7 @@ kind: ExtensionConfig
 metadata:
   annotations:
     runtime.cluster.x-k8s.io/inject-ca-from-secret: k0smotron/extension-webhook-server-cert
-  name: inplace-version-update-extensionconfig
+  name: k0smotron-extensionconfig
 spec:
   clientConfig:
     service:
