@@ -455,7 +455,9 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (re
 		// There is still pending work to do, but we need to wait for the statefulset to have a ready replica before trying to
 		// generate the kubeconfig secret.
 		logger.Info("Kubeconfig secret cannot be generated until there is at least one ready replica, requeuing...")
-		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, nil
+		result := ctrl.Result{Requeue: true, RequeueAfter: time.Minute}
+		requeueForReferencedObjectsSync(kmc, &result)
+		return result, nil
 	}
 
 	if kmcScope.currentReconcileState.etcdScaleUpPending {
@@ -481,7 +483,23 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (re
 		}
 	}
 
+	requeueForReferencedObjectsSync(kmc, &result)
+
 	return result, nil
+}
+
+// Nothing watches the objects in the management cluster, so a periodic reconcile is what propagates changes.
+const referencedObjectsSyncInterval = 30 * time.Second
+
+// requeueForReferencedObjectsSync lowers result.RequeueAfter to the sync interval when the cluster syncs
+// referenced objects. It only ever lowers an existing RequeueAfter, never raises it.
+func requeueForReferencedObjectsSync(kmc *km.Cluster, result *ctrl.Result) {
+	if kmc.Spec.RemoteHostCluster == nil || !kmc.Spec.RemoteHostCluster.SyncReferencedObjects {
+		return
+	}
+	if result.RequeueAfter == 0 || referencedObjectsSyncInterval < result.RequeueAfter {
+		result.RequeueAfter = referencedObjectsSyncInterval
+	}
 }
 
 func (r *ClusterReconciler) reconcileDelete(ctx context.Context, scope *kmcScope, kmc *km.Cluster) (ctrl.Result, error) {
