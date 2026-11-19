@@ -238,8 +238,7 @@ type RemoteHostClusterSpec struct {
 	// This kubeconfig will be used to deploy the k0s control plane.
 	//+kubebuilder:validation:Optional
 	KubeconfigRef *KubeconfigRef `json:"kubeconfigRef,omitempty"`
-	// When true, Secrets and ConfigMaps referenced by spec.mounts, spec.manifests,
-	// spec.certificateRefs, and spec.storage.kine.dataSourceSecretName are copied from the
+	// When true, resources consumed by HCP StatefulSet are copied from the
 	// management cluster to the remote host cluster on each reconciliation and deleted with the Cluster.
 	//+kubebuilder:default=false
 	//+kubebuilder:validation:Optional
