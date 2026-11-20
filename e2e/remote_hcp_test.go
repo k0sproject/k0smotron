@@ -55,6 +55,8 @@ var (
 	hostingClusterProxy capiframework.ClusterProxy
 )
 
+const syncTestSecretName = "sync-test"
+
 func TestRemoteHostedControlPlanes(t *testing.T) {
 	deployHostingCluster()
 	// TODO: dump logs from controlplanes pods before deleting the cluster.
@@ -139,6 +141,8 @@ func remoteHCPSpec(t *testing.T) {
 	require.NoError(t, err)
 	fmt.Println("Worker nodes are ready!")
 
+	remoteHCPSyncReferencedObjectsSpec(ctx, t, bootstrapClusterProxy, hostingClusterProxy, namespace, clusterName)
+
 	// Verify that the patches field was applied to generated resources
 	{
 		cpSvcName := fmt.Sprintf("kmc-%s-nodeport", clusterName)
@@ -203,6 +207,7 @@ func remoteHCPSpec(t *testing.T) {
 			secret.Name(clusterName, secret.APIServerEtcdClient),
 			secret.Name(clusterName, "etcd-server"),
 			secret.Name(clusterName, "etcd-peer"),
+			syncTestSecretName,
 		} {
 			require.NoError(t, wait.PollUntilContextTimeout(ctx, 1*time.Second, 2*time.Minute, true, func(ctx context.Context) (bool, error) {
 				sec := &corev1.Secret{}
@@ -282,4 +287,40 @@ func getHostingClusterDefaultScheme() *runtime.Scheme {
 	appsv1.AddToScheme(s)
 	rbacv1.AddToScheme(s)
 	return s
+}
+
+// Its deletion together with the cluster is verified by the garbage collection checks of remoteHCPSpec.
+func remoteHCPSyncReferencedObjectsSpec(ctx context.Context, t *testing.T, mgmtProxy, hostingProxy capiframework.ClusterProxy, namespace *corev1.Namespace, clusterName string) {
+	mgmt := mgmtProxy.GetClient()
+	hosting := hostingProxy.GetClient()
+	ownerName := fmt.Sprintf("%s-root-owner", clusterName)
+	hostingSecretKey := crclient.ObjectKey{Namespace: namespace.Name, Name: syncTestSecretName}
+
+	fmt.Println("Waiting for the referenced Secret to be synced to the hosting cluster")
+	require.NoError(t, wait.PollUntilContextTimeout(ctx, 5*time.Second, 2*time.Minute, true, func(ctx context.Context) (bool, error) {
+		synced := &corev1.Secret{}
+		if err := hosting.Get(ctx, hostingSecretKey, synced); err != nil {
+			return false, nil
+		}
+		for _, or := range synced.OwnerReferences {
+			if or.Kind == "ConfigMap" && or.Name == ownerName {
+				return string(synced.Data["value"]) == "initial", nil
+			}
+		}
+		return false, nil
+	}), "%s should exist on the hosting cluster and be owned by %s", syncTestSecretName, ownerName)
+
+	fmt.Println("Updating the Secret on the management cluster and waiting for the change to be synced")
+	mgmtSecret := &corev1.Secret{}
+	require.NoError(t, mgmt.Get(ctx, hostingSecretKey, mgmtSecret))
+	mgmtSecret.Data["value"] = []byte("updated")
+	require.NoError(t, mgmt.Update(ctx, mgmtSecret))
+
+	require.NoError(t, wait.PollUntilContextTimeout(ctx, 5*time.Second, 60*time.Second, true, func(ctx context.Context) (bool, error) {
+		synced := &corev1.Secret{}
+		if err := hosting.Get(ctx, hostingSecretKey, synced); err != nil {
+			return false, nil
+		}
+		return string(synced.Data["value"]) == "updated", nil
+	}), "updated data of %s should be synced to the hosting cluster", syncTestSecretName)
 }
