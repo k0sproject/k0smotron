@@ -72,7 +72,7 @@ import (
 
 const (
 	defaultK0sSuffix  = "k0s.0"
-	defaultK0sVersion = "v1.27.9+k0s.0"
+	defaultK0sVersion = "v1.37.0+k0s.0"
 )
 
 var (
