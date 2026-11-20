@@ -9336,6 +9336,16 @@ If not specified, k0smotron will deploy the control plane in the management clus
 This kubeconfig will be used to deploy the k0s control plane.<br/>
         </td>
         <td>false</td>
+      </tr><tr>
+        <td><b>syncReferencedObjects</b></td>
+        <td>boolean</td>
+        <td>
+          When true, resources consumed by HCP StatefulSet are copied from the
+management cluster to the remote host cluster on each reconciliation and deleted with the Cluster.<br/>
+          <br/>
+            <i>Default</i>: false<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
