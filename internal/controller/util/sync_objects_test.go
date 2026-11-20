@@ -147,10 +147,10 @@ func TestSyncReferencedObjects(t *testing.T) {
 		kmc := newKmc(nil, "")
 		kmc.Spec.CertificateRefs = []km.CertificateRef{{Type: "ca", Name: "ca"}, {Type: "sa"}}
 
-		refs := collectReferencedObjects(kmc)
+		secrets, configMaps := referencedNames(kmc)
 
-		require.Equal(t, map[string]bool{"ca": false}, refs.secrets)
-		require.Empty(t, refs.configMaps)
+		require.Equal(t, map[string]bool{"ca": false}, secrets)
+		require.Empty(t, configMaps)
 	})
 
 	t.Run("creates mount and kine secrets, ignores other volume types", func(t *testing.T) {
