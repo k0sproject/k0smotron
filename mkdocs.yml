@@ -85,7 +85,21 @@ nav:
       - infrastructure.cluster.x-k8s.io/v1beta2: resource-reference/infrastructure.cluster.x-k8s.io-v1beta2.md
       - k0smotron.io/v1beta2: resource-reference/k0smotron.io-v1beta2.md
       - k0smotron.io/v1beta1: resource-reference/k0smotron.io-v1beta1.md
-    - Reconciliation workflows: reconciliation-workflows.md
+    - Reconciliation workflows:
+      - Overview: reconciliation-workflows/index.md
+      - Hosted control planes:
+        - K0smotronControlPlane: reconciliation-workflows/k0smotroncontrolplane.md
+        - Cluster (k0smotron.io): reconciliation-workflows/k0smotron-cluster.md
+        - JoinTokenRequest: reconciliation-workflows/jointokenrequest.md
+      - Control planes on machines:
+        - K0sControlPlane: reconciliation-workflows/k0scontrolplane.md
+      - Bootstrap providers:
+        - K0sControllerConfig: reconciliation-workflows/k0scontrollerconfig.md
+        - K0sWorkerConfig: reconciliation-workflows/k0sworkerconfig.md
+        - Machine provider ID: reconciliation-workflows/machine-provider-id.md
+      - Infrastructure provider:
+        - RemoteCluster: reconciliation-workflows/remotecluster.md
+        - RemoteMachine: reconciliation-workflows/remotemachine.md
     - Terminology: terminology.md
 
 
