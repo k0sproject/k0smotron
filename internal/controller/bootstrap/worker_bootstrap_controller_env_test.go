@@ -832,7 +832,10 @@ func requireCached(t *testing.T, objs ...client.Object) {
 
 	require.Eventually(t, func() bool {
 		for _, obj := range objs {
-			into := obj.DeepCopyObject().(client.Object)
+			into, ok := obj.DeepCopyObject().(client.Object)
+			if !ok {
+				return false
+			}
 			if err := testEnv.Get(ctx, client.ObjectKeyFromObject(obj), into); err != nil {
 				return false
 			}

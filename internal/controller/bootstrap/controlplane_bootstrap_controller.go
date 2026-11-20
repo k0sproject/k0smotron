@@ -965,12 +965,16 @@ func (c *ControlPlaneController) findFirstControllerIP(ctx context.Context, scop
 		if found {
 			for _, addr := range addresses {
 				addrMap, _ := addr.(map[string]any)
+				address, ok := addrMap["address"].(string)
+				if !ok {
+					continue
+				}
 				if addrMap["type"] == string(corev1.NodeExternalIP) {
-					extAddr = addrMap["address"].(string)
+					extAddr = address
 					break
 				}
 				if addrMap["type"] == string(corev1.NodeInternalIP) {
-					ip, err := netip.ParseAddr(addrMap["address"].(string))
+					ip, err := netip.ParseAddr(address)
 					if err != nil {
 						continue
 					}

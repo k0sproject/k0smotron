@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-//nolint:revive
 package util
 
 import (
@@ -45,7 +44,7 @@ func TestRetryWatchErrors_syscalls(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			ecb := RetryWatchErrors(func(format string, args ...any) {})
+			ecb := RetryWatchErrors(func(string, ...any) {})
 			retryDelay, err := ecb(test.err)
 
 			assert.Equal(t, test.expectedDelay, retryDelay)
