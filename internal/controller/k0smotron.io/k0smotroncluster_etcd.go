@@ -206,19 +206,14 @@ func (scope *kmcScope) reconcileEtcdStatefulSet(ctx context.Context, kmc *km.Clu
 		}
 	}
 	desiredReplicas := calculateDesiredReplicas(kmc, foundStatefulSet)
+	result := ctrl.Result{}
 	// We can't check for nil due to the client_go implementation
 	if foundStatefulSet.GetName() != "" {
-
-		// If we want to scale up existing etcd statefulset, we always scale up by 1 replica at a time and wait for the previous member to be ready
-		// This is to avoid the situation where the new member is not able to join the cluster because the previous member is not ready
-		if desiredReplicas > *foundStatefulSet.Spec.Replicas {
-			// Scale up by 1 replica
-			desiredReplicas = int32(*foundStatefulSet.Spec.Replicas) + 1
-		}
-
-		if desiredReplicas > foundStatefulSet.Status.ReadyReplicas+1 {
-			// Wait for the previous member to be ready. For example, if the desired replicas is 3, we need to wait for the 2nd member to be ready before adding the 3rd member
-			return ctrl.Result{RequeueAfter: time.Second * 10}, nil
+		var scaleUpPending bool
+		desiredReplicas, scaleUpPending = etcdReplicasToApply(desiredReplicas, *foundStatefulSet.Spec.Replicas, foundStatefulSet.Status.ReadyReplicas)
+		if scaleUpPending {
+			scope.currentReconcileState.etcdScaleUpPending = true
+			result = ctrl.Result{RequeueAfter: time.Second * 10}
 		}
 	}
 
@@ -228,7 +223,26 @@ func (scope *kmcScope) reconcileEtcdStatefulSet(ctx context.Context, kmc *km.Clu
 
 	_ = kcontrollerutil.SetExternalOwnerReference(kmc, &statefulSet, scope.client.Scheme(), scope.externalOwner)
 
-	return ctrl.Result{}, scope.reconcileResource(ctx, kmc, &statefulSet)
+	return result, scope.reconcileResource(ctx, kmc, &statefulSet)
+}
+
+// etcdReplicasToApply returns the replica count to write to an existing etcd
+// StatefulSet, given the desired, current and ready replica counts.
+//
+// A scale-up adds one member at a time, and only once every current member is
+// ready, so that a new member never joins a cluster that is not healthy. Until
+// then the current replica count is kept rather than skipping the update, so
+// that other changes, such as a higher memory limit for crash-looping members,
+// still reach the StatefulSet. scaleUpPending reports whether the desired
+// replica count has not been reached by the returned one.
+func etcdReplicasToApply(desired, current, ready int32) (replicas int32, scaleUpPending bool) {
+	if desired <= current {
+		return desired, false
+	}
+	if ready < current {
+		return current, true
+	}
+	return current + 1, current+1 < desired
 }
 
 func generateEtcdStatefulSet(kmc *km.Cluster, existingSts *apps.StatefulSet, replicas int32, certFingerprint string) apps.StatefulSet {
