@@ -11,7 +11,11 @@ Before starting this example, ensure that you have met the [general prerequisite
 To initialize the management cluster with Docker infrastrcture provider you can run:
 
 ```bash
-clusterctl init --core cluster-api --infrastructure docker
+clusterctl init \
+  --core cluster-api:{{{ extra.capi_versions.core }}} \
+  --infrastructure docker:{{{ extra.capi_versions.docker }}} \
+  --bootstrap k0sproject-k0smotron:{{{ extra.k0smotron_version }}} \
+  --control-plane k0sproject-k0smotron:{{{ extra.k0smotron_version }}}
 ```
 
 For more details on Cluster API Provider Docker see it's [docs](https://github.com/kubernetes-sigs/cluster-api/tree/main/test/infrastructure/docker).
