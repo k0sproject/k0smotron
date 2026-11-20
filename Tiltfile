@@ -37,7 +37,7 @@ dockerfile_contents = """
 # Tilt image
 FROM golang:1.27.4 as tilt-helper
 # Install delve. Note this should be kept in step with the Go release minor version.
-RUN go install github.com/go-delve/delve/cmd/dlv@v1.26
+RUN go install github.com/go-delve/delve/cmd/dlv@latest
 
 FROM golang:1.27.4 as tilt
 WORKDIR /
@@ -55,7 +55,7 @@ docker_build(
     only = "manager")
 
 standalone_install_path = './install-standalone.yaml'
-dlv_command = ["/dlv", "exec", "./manager", "--headless", "--listen=:30000", "--api-version=2", "--accept-multiclient"]
+dlv_command = ["/dlv", "exec", "./manager", "--headless", "--listen=:30000", "--api-version=2", "--accept-multiclient", "--check-go-version=false"]
 
 # Modify the install-standalone.yaml to use the development image with delve and remove the securityContext
 # that prevents the container from running as root, which is required for a good integration with Tilt.
