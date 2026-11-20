@@ -5,10 +5,16 @@ metadata:
   namespace: ${NAMESPACE}
 spec:
   remoteHostCluster:
+    syncReferencedObjects: true
     kubeconfigRef:
       name: hosting-cluster-kubeconfig
       namespace: ${NAMESPACE}
       key: value
+  # sync-test only exists in the management cluster, it is synced to the hosting cluster.
+  mounts:
+    - path: /mnt/sync-test
+      secret:
+        secretName: sync-test
   replicas: ${CONTROL_PLANE_MACHINE_COUNT}
   version: v1.30.1-k0s.0
   service:

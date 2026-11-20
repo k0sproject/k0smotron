@@ -30,7 +30,6 @@ import (
 	"github.com/stretchr/testify/require"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/cluster-api/test/framework"
@@ -55,6 +54,8 @@ const (
 var (
 	hostingClusterProxy capiframework.ClusterProxy
 )
+
+const syncTestSecretName = "sync-test"
 
 func TestRemoteHostedControlPlanes(t *testing.T) {
 	deployHostingCluster()
@@ -140,6 +141,8 @@ func remoteHCPSpec(t *testing.T) {
 	require.NoError(t, err)
 	fmt.Println("Worker nodes are ready!")
 
+	remoteHCPSyncReferencedObjectsSpec(ctx, t, bootstrapClusterProxy, hostingClusterProxy, namespace, clusterName)
+
 	// Verify that the patches field was applied to generated resources
 	{
 		cpSvcName := fmt.Sprintf("kmc-%s-nodeport", clusterName)
@@ -204,6 +207,7 @@ func remoteHCPSpec(t *testing.T) {
 			secret.Name(clusterName, secret.APIServerEtcdClient),
 			secret.Name(clusterName, "etcd-server"),
 			secret.Name(clusterName, "etcd-peer"),
+			syncTestSecretName,
 		} {
 			require.NoError(t, wait.PollUntilContextTimeout(ctx, 1*time.Second, 2*time.Minute, true, func(ctx context.Context) (bool, error) {
 				sec := &corev1.Secret{}
@@ -285,108 +289,38 @@ func getHostingClusterDefaultScheme() *runtime.Scheme {
 	return s
 }
 
-func TestRemoteHCPSyncReferencedObjects(t *testing.T) {
-	deployHostingCluster()
-	defer deleteHostingcluster()
-
-	setupAndRun(t, remoteHCPSyncReferencedObjectsSpec)
-}
-
-func remoteHCPSyncReferencedObjectsSpec(t *testing.T) {
-	testName := "remote-hcp-sync"
-	const syncSecretName = "sync-test"
-
-	encodedHostingClusterKubeconfig, err := getEncodedHostingClusterKubeconfig()
-	require.NoError(t, err)
-	hostingClusterKubeconfig, err := base64.StdEncoding.DecodeString(encodedHostingClusterKubeconfig)
-	require.NoError(t, err)
-
-	mgmt := bootstrapClusterProxy.GetClient()
-	hosting := hostingClusterProxy.GetClient()
-
-	// The namespace is created on both clusters, the management one also watches for namespace events.
-	namespace, cancelNamespaceWatches := util.SetupSpecNamespace(ctx, testName, bootstrapClusterProxy, artifactFolder)
-	t.Cleanup(func() {
-		cancelNamespaceWatches()
-		if !skipCleanup {
-			capiframework.DeleteNamespace(ctx, capiframework.DeleteNamespaceInput{Deleter: mgmt, Name: namespace.Name})
-		}
-	})
-	err = hosting.Create(ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace.Name}})
-	require.True(t, err == nil || apierrors.IsAlreadyExists(err), "failed to create the namespace on the hosting cluster: %v", err)
-
-	// Kubeconfig of the hosting cluster, referenced by the Cluster.
-	require.NoError(t, mgmt.Create(ctx, &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{Name: "hosting-cluster-kubeconfig", Namespace: namespace.Name},
-		Data:       map[string][]byte{"value": hostingClusterKubeconfig},
-	}))
-
-	// Secret that only exists on the management cluster and is mounted by the Cluster.
-	syncSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{Name: syncSecretName, Namespace: namespace.Name},
-		Data:       map[string][]byte{"key": []byte("initial")},
-	}
-	require.NoError(t, mgmt.Create(ctx, syncSecret))
-
-	clusterName := fmt.Sprintf("%s-%s", testName, capiutil.RandomString(6))
+// Its deletion together with the cluster is verified by the garbage collection checks of remoteHCPSpec.
+func remoteHCPSyncReferencedObjectsSpec(ctx context.Context, t *testing.T, mgmtProxy, hostingProxy capiframework.ClusterProxy, namespace *corev1.Namespace, clusterName string) {
+	mgmt := mgmtProxy.GetClient()
+	hosting := hostingProxy.GetClient()
 	ownerName := fmt.Sprintf("%s-root-owner", clusterName)
-	kmc := &unstructured.Unstructured{Object: map[string]any{
-		"apiVersion": "k0smotron.io/v1beta2",
-		"kind":       "Cluster",
-		"metadata":   map[string]any{"name": clusterName, "namespace": namespace.Name},
-		"spec": map[string]any{
-			"remoteHostCluster": map[string]any{
-				"syncReferencedObjects": true,
-				"kubeconfigRef": map[string]any{
-					"name":      "hosting-cluster-kubeconfig",
-					"namespace": namespace.Name,
-					"key":       "value",
-				},
-			},
-			"mounts": []any{
-				map[string]any{
-					"path":   "/mnt/sync-test",
-					"secret": map[string]any{"secretName": syncSecretName},
-				},
-			},
-		},
-	}}
-	require.NoError(t, mgmt.Create(ctx, kmc))
-
-	hostingSecretKey := crclient.ObjectKey{Namespace: namespace.Name, Name: syncSecretName}
+	hostingSecretKey := crclient.ObjectKey{Namespace: namespace.Name, Name: syncTestSecretName}
 
 	fmt.Println("Waiting for the referenced Secret to be synced to the hosting cluster")
-	require.NoError(t, wait.PollUntilContextTimeout(ctx, 5*time.Second, 5*time.Minute, true, func(ctx context.Context) (bool, error) {
+	require.NoError(t, wait.PollUntilContextTimeout(ctx, 5*time.Second, 2*time.Minute, true, func(ctx context.Context) (bool, error) {
 		synced := &corev1.Secret{}
 		if err := hosting.Get(ctx, hostingSecretKey, synced); err != nil {
 			return false, nil
 		}
 		for _, or := range synced.OwnerReferences {
 			if or.Kind == "ConfigMap" && or.Name == ownerName {
-				return string(synced.Data["key"]) == "initial", nil
+				return string(synced.Data["value"]) == "initial", nil
 			}
 		}
 		return false, nil
-	}), "synced Secret should exist on the hosting cluster and be owned by %s", ownerName)
+	}), "%s should exist on the hosting cluster and be owned by %s", syncTestSecretName, ownerName)
 
 	fmt.Println("Updating the Secret on the management cluster and waiting for the change to be synced")
-	require.NoError(t, mgmt.Get(ctx, crclient.ObjectKeyFromObject(syncSecret), syncSecret))
-	syncSecret.Data["key"] = []byte("updated")
-	require.NoError(t, mgmt.Update(ctx, syncSecret))
+	mgmtSecret := &corev1.Secret{}
+	require.NoError(t, mgmt.Get(ctx, hostingSecretKey, mgmtSecret))
+	mgmtSecret.Data["value"] = []byte("updated")
+	require.NoError(t, mgmt.Update(ctx, mgmtSecret))
 
 	require.NoError(t, wait.PollUntilContextTimeout(ctx, 5*time.Second, 60*time.Second, true, func(ctx context.Context) (bool, error) {
 		synced := &corev1.Secret{}
 		if err := hosting.Get(ctx, hostingSecretKey, synced); err != nil {
 			return false, nil
 		}
-		return string(synced.Data["key"]) == "updated", nil
-	}), "updated Secret data should be synced to the hosting cluster")
-
-	fmt.Println("Deleting the Cluster and waiting for the synced Secret to be garbage collected")
-	require.NoError(t, mgmt.Delete(ctx, kmc))
-
-	require.NoError(t, wait.PollUntilContextTimeout(ctx, 2*time.Second, 3*time.Minute, true, func(ctx context.Context) (bool, error) {
-		err := hosting.Get(ctx, hostingSecretKey, &corev1.Secret{})
-		return apierrors.IsNotFound(err), nil
-	}), "synced Secret should be deleted from the hosting cluster together with the Cluster")
+		return string(synced.Data["value"]) == "updated", nil
+	}), "updated data of %s should be synced to the hosting cluster", syncTestSecretName)
 }
