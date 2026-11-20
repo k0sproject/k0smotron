@@ -32,7 +32,6 @@ import (
 	"github.com/k0sproject/k0smotron/v2/internal/controller/util"
 	"github.com/k0sproject/version"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -68,14 +67,10 @@ var (
 func (c *K0sController) deleteMachine(ctx context.Context, name string, kcp *cpv1beta2.K0sControlPlane) error {
 	machine := &clusterv1.Machine{
 
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: clusterv1.GroupVersion.String(),
-			Kind:       "Machine",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: kcp.Namespace,
-		},
+		APIVersion: clusterv1.GroupVersion.String(),
+		Kind:       "Machine",
+		Name:       name,
+		Namespace:  kcp.Namespace,
 	}
 
 	err := c.Client.Delete(ctx, machine)
@@ -108,16 +103,12 @@ func (c *K0sController) generateMachine(_ context.Context, name string, cluster 
 	annotations[cpv1beta2.MachineK0sConfigAnnotation] = k0sConfigAnnotationValue
 
 	machine := &clusterv1.Machine{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: clusterv1.GroupVersion.String(),
-			Kind:       "Machine",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        name,
-			Namespace:   kcp.Namespace,
-			Labels:      labels,
-			Annotations: annotations,
-		},
+		APIVersion:  clusterv1.GroupVersion.String(),
+		Kind:        "Machine",
+		Name:        name,
+		Namespace:   kcp.Namespace,
+		Labels:      labels,
+		Annotations: annotations,
 		Spec: clusterv1.MachineSpec{
 			Version:       v,
 			ClusterName:   cluster.Name,

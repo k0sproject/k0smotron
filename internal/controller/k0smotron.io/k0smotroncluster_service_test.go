@@ -27,7 +27,6 @@ import (
 	"github.com/k0sproject/k0smotron/v2/internal/controller/util"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func mustMarshal(v any) string {
@@ -44,9 +43,7 @@ func TestClusterReconciler_serviceLabels(t *testing.T) {
 		{
 			name: "when no labels are set on either Cluster on svc",
 			kmc: &km.Cluster{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test",
-				},
+				Name: "test",
 				Spec: km.ClusterSpec{},
 			},
 			want: map[string]string{
@@ -59,11 +56,9 @@ func TestClusterReconciler_serviceLabels(t *testing.T) {
 		{
 			name: "when labels are set on only Cluster",
 			kmc: &km.Cluster{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test",
-					Labels: map[string]string{
-						"test": "test",
-					},
+				Name: "test",
+				Labels: map[string]string{
+					"test": "test",
 				},
 				Spec: km.ClusterSpec{},
 			},
@@ -78,14 +73,12 @@ func TestClusterReconciler_serviceLabels(t *testing.T) {
 		{
 			name: "when labels are set on both Cluster and svc",
 			kmc: &km.Cluster{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test",
-					Labels: map[string]string{
-						"test": "test",
-					},
-					Annotations: map[string]string{
-						v1beta1km.ServiceAnnotationLabels: mustMarshal(map[string]string{"foo": "bar"}),
-					},
+				Name: "test",
+				Labels: map[string]string{
+					"test": "test",
+				},
+				Annotations: map[string]string{
+					v1beta1km.ServiceAnnotationLabels: mustMarshal(map[string]string{"foo": "bar"}),
 				},
 				Spec: km.ClusterSpec{},
 			},
@@ -101,14 +94,12 @@ func TestClusterReconciler_serviceLabels(t *testing.T) {
 		{
 			name: "when same labels is set on both Cluster and svc the svc labels wins",
 			kmc: &km.Cluster{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test",
-					Labels: map[string]string{
-						"test": "test",
-					},
-					Annotations: map[string]string{
-						v1beta1km.ServiceAnnotationLabels: mustMarshal(map[string]string{"test": "foobar"}),
-					},
+				Name: "test",
+				Labels: map[string]string{
+					"test": "test",
+				},
+				Annotations: map[string]string{
+					v1beta1km.ServiceAnnotationLabels: mustMarshal(map[string]string{"test": "foobar"}),
 				},
 				Spec: km.ClusterSpec{},
 			},
@@ -139,9 +130,7 @@ func TestClusterReconciler_serviceAnnotations(t *testing.T) {
 		{
 			name: "when no annotations are set on either Cluster on svc",
 			kmc: &km.Cluster{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test",
-				},
+				Name: "test",
 				Spec: km.ClusterSpec{},
 			},
 			want: map[string]string{},
@@ -149,11 +138,9 @@ func TestClusterReconciler_serviceAnnotations(t *testing.T) {
 		{
 			name: "when annotations are set on only Cluster",
 			kmc: &km.Cluster{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test",
-					Annotations: map[string]string{
-						"test": "test",
-					},
+				Name: "test",
+				Annotations: map[string]string{
+					"test": "test",
 				},
 				Spec: km.ClusterSpec{},
 			},
@@ -164,12 +151,10 @@ func TestClusterReconciler_serviceAnnotations(t *testing.T) {
 		{
 			name: "when annotations are set on both Cluster and svc",
 			kmc: &km.Cluster{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test",
-					Annotations: map[string]string{
-						"test":                                 "test",
-						v1beta1km.ServiceAnnotationAnnotations: mustMarshal(map[string]string{"foo": "bar"}),
-					},
+				Name: "test",
+				Annotations: map[string]string{
+					"test":                                 "test",
+					v1beta1km.ServiceAnnotationAnnotations: mustMarshal(map[string]string{"foo": "bar"}),
 				},
 				Spec: km.ClusterSpec{},
 			},
@@ -182,12 +167,10 @@ func TestClusterReconciler_serviceAnnotations(t *testing.T) {
 		{
 			name: "when same annotation is set on both Cluster and svc the svc annotation wins",
 			kmc: &km.Cluster{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test",
-					Annotations: map[string]string{
-						"test":                                 "test",
-						v1beta1km.ServiceAnnotationAnnotations: mustMarshal(map[string]string{"test": "foobar"}),
-					},
+				Name: "test",
+				Annotations: map[string]string{
+					"test":                                 "test",
+					v1beta1km.ServiceAnnotationAnnotations: mustMarshal(map[string]string{"test": "foobar"}),
 				},
 				Spec: km.ClusterSpec{},
 			},
@@ -215,9 +198,7 @@ func TestClusterReconciler_serviceLoadBalancerClass(t *testing.T) {
 		{
 			name: "when no loadBalancerClass is set",
 			kmc: &km.Cluster{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test",
-				},
+				Name: "test",
 				Spec: km.ClusterSpec{},
 			},
 			want: nil,
@@ -225,11 +206,9 @@ func TestClusterReconciler_serviceLoadBalancerClass(t *testing.T) {
 		{
 			name: "when loadBalancerClass is set on LoadBalancer service",
 			kmc: &km.Cluster{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test",
-					Annotations: map[string]string{
-						v1beta1km.ServiceAnnotationLoadBalancerClass: mustMarshal("class1"),
-					},
+				Name: "test",
+				Annotations: map[string]string{
+					v1beta1km.ServiceAnnotationLoadBalancerClass: mustMarshal("class1"),
 				},
 				Spec: km.ClusterSpec{
 					Service: km.ServiceSpec{
@@ -242,11 +221,9 @@ func TestClusterReconciler_serviceLoadBalancerClass(t *testing.T) {
 		{
 			name: "when loadBalancerClass is set on non LoadBalancer service",
 			kmc: &km.Cluster{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test",
-					Annotations: map[string]string{
-						v1beta1km.ServiceAnnotationLoadBalancerClass: mustMarshal("class1"),
-					},
+				Name: "test",
+				Annotations: map[string]string{
+					v1beta1km.ServiceAnnotationLoadBalancerClass: mustMarshal("class1"),
 				},
 				Spec: km.ClusterSpec{
 					Service: km.ServiceSpec{

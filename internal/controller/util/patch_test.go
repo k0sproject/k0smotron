@@ -41,11 +41,9 @@ func mustScheme(t *testing.T) *runtime.Scheme {
 func TestApplyComponentPatches_EmptyPatches_NoChange(t *testing.T) {
 	scheme := mustScheme(t)
 	svc := &v1.Service{
-		TypeMeta: metav1.TypeMeta{Kind: "Service", APIVersion: "v1"},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:   "test",
-			Labels: map[string]string{ComponentLabel: "control-plane"},
-		},
+		Kind: "Service", APIVersion: "v1",
+		Name:   "test",
+		Labels: map[string]string{ComponentLabel: "control-plane"},
 	}
 	err := ApplyComponentPatches(scheme, svc, nil)
 	require.NoError(t, err)
@@ -56,12 +54,10 @@ func TestApplyComponentPatches_EmptyPatches_NoChange(t *testing.T) {
 func TestApplyComponentPatches_NoMatchingPatch_NoChange(t *testing.T) {
 	scheme := mustScheme(t)
 	svc := &v1.Service{
-		TypeMeta: metav1.TypeMeta{Kind: "Service", APIVersion: "v1"},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:   "test",
-			Labels: map[string]string{ComponentLabel: "control-plane"},
-		},
-		Spec: v1.ServiceSpec{Type: v1.ServiceTypeClusterIP},
+		Kind: "Service", APIVersion: "v1",
+		Name:   "test",
+		Labels: map[string]string{ComponentLabel: "control-plane"},
+		Spec:   v1.ServiceSpec{Type: v1.ServiceTypeClusterIP},
 	}
 	patches := []km.ComponentPatch{
 		{
@@ -93,11 +89,9 @@ func TestApplyComponentPatches_NoMatchingPatch_NoChange(t *testing.T) {
 func TestApplyComponentPatches_JSONPatch_Applied(t *testing.T) {
 	scheme := mustScheme(t)
 	svc := &v1.Service{
-		TypeMeta: metav1.TypeMeta{Kind: "Service", APIVersion: "v1"},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:   "test",
-			Labels: map[string]string{ComponentLabel: "control-plane"},
-		},
+		Kind: "Service", APIVersion: "v1",
+		Name:   "test",
+		Labels: map[string]string{ComponentLabel: "control-plane"},
 		Spec: v1.ServiceSpec{
 			Type: v1.ServiceTypeClusterIP,
 			Ports: []v1.ServicePort{
@@ -125,12 +119,10 @@ func TestApplyComponentPatches_JSONPatch_Applied(t *testing.T) {
 func TestApplyComponentPatches_MergePatch_Applied(t *testing.T) {
 	scheme := mustScheme(t)
 	cm := &v1.ConfigMap{
-		TypeMeta: metav1.TypeMeta{Kind: "ConfigMap", APIVersion: "v1"},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:   "test",
-			Labels: map[string]string{ComponentLabel: "cluster-config"},
-		},
-		Data: map[string]string{"key": "original"},
+		Kind: "ConfigMap", APIVersion: "v1",
+		Name:   "test",
+		Labels: map[string]string{ComponentLabel: "cluster-config"},
+		Data:   map[string]string{"key": "original"},
 	}
 	patches := []km.ComponentPatch{
 		{
@@ -153,11 +145,9 @@ func TestApplyComponentPatches_MergePatch_Applied(t *testing.T) {
 func TestApplyComponentPatches_StrategicMergePatch_Applied(t *testing.T) {
 	scheme := mustScheme(t)
 	sts := &apps.StatefulSet{
-		TypeMeta: metav1.TypeMeta{Kind: "StatefulSet", APIVersion: "apps/v1"},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:   "test",
-			Labels: map[string]string{ComponentLabel: "control-plane"},
-		},
+		Kind: "StatefulSet", APIVersion: "apps/v1",
+		Name:   "test",
+		Labels: map[string]string{ComponentLabel: "control-plane"},
 		Spec: apps.StatefulSetSpec{
 			Replicas:    new(int32(1)),
 			Selector:    &metav1.LabelSelector{MatchLabels: map[string]string{"app": "k0smotron"}},
@@ -186,11 +176,9 @@ func TestApplyComponentPatches_StrategicMergePatch_Applied(t *testing.T) {
 func TestApplyComponentPatches_InvalidJSONPatch_ReturnsError(t *testing.T) {
 	scheme := mustScheme(t)
 	svc := &v1.Service{
-		TypeMeta: metav1.TypeMeta{Kind: "Service", APIVersion: "v1"},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:   "test",
-			Labels: map[string]string{ComponentLabel: "control-plane"},
-		},
+		Kind: "Service", APIVersion: "v1",
+		Name:   "test",
+		Labels: map[string]string{ComponentLabel: "control-plane"},
 	}
 	patches := []km.ComponentPatch{
 		{
@@ -212,11 +200,9 @@ func TestApplyComponentPatches_InvalidJSONPatch_ReturnsError(t *testing.T) {
 func TestApplyComponentPatches_MergePatch_YAML_Applied(t *testing.T) {
 	scheme := mustScheme(t)
 	svc := &v1.Service{
-		TypeMeta: metav1.TypeMeta{Kind: "Service", APIVersion: "v1"},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:   "test",
-			Labels: map[string]string{ComponentLabel: "control-plane"},
-		},
+		Kind: "Service", APIVersion: "v1",
+		Name:   "test",
+		Labels: map[string]string{ComponentLabel: "control-plane"},
 	}
 	patches := []km.ComponentPatch{
 		{
@@ -241,11 +227,9 @@ func TestApplyComponentPatches_MergePatch_YAML_Applied(t *testing.T) {
 func TestApplyComponentPatches_StrategicMergePatch_YAML_Applied(t *testing.T) {
 	scheme := mustScheme(t)
 	sts := &apps.StatefulSet{
-		TypeMeta: metav1.TypeMeta{Kind: "StatefulSet", APIVersion: "apps/v1"},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:   "test",
-			Labels: map[string]string{ComponentLabel: "control-plane"},
-		},
+		Kind: "StatefulSet", APIVersion: "apps/v1",
+		Name:   "test",
+		Labels: map[string]string{ComponentLabel: "control-plane"},
 		Spec: apps.StatefulSetSpec{
 			Replicas:    new(int32(1)),
 			Selector:    &metav1.LabelSelector{MatchLabels: map[string]string{"app": "k0smotron"}},
@@ -276,11 +260,9 @@ func TestApplyComponentPatches_StrategicMergePatch_YAML_Applied(t *testing.T) {
 func TestApplyComponentPatches_UnknownPatchType_ReturnsError(t *testing.T) {
 	scheme := mustScheme(t)
 	svc := &v1.Service{
-		TypeMeta: metav1.TypeMeta{Kind: "Service", APIVersion: "v1"},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:   "test",
-			Labels: map[string]string{ComponentLabel: "control-plane"},
-		},
+		Kind: "Service", APIVersion: "v1",
+		Name:   "test",
+		Labels: map[string]string{ComponentLabel: "control-plane"},
 	}
 	patches := []km.ComponentPatch{
 		{
@@ -302,12 +284,10 @@ func TestApplyComponentPatches_UnknownPatchType_ReturnsError(t *testing.T) {
 func TestApplyComponentPatches_MultipleMatchingPatches_AllApplied(t *testing.T) {
 	scheme := mustScheme(t)
 	svc := &v1.Service{
-		TypeMeta: metav1.TypeMeta{Kind: "Service", APIVersion: "v1"},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:   "test",
-			Labels: map[string]string{ComponentLabel: "control-plane"},
-		},
-		Spec: v1.ServiceSpec{Type: v1.ServiceTypeClusterIP},
+		Kind: "Service", APIVersion: "v1",
+		Name:   "test",
+		Labels: map[string]string{ComponentLabel: "control-plane"},
+		Spec:   v1.ServiceSpec{Type: v1.ServiceTypeClusterIP},
 	}
 	patches := []km.ComponentPatch{
 		{
@@ -340,14 +320,12 @@ func TestApplyComponentPatches_MultipleMatchingPatches_AllApplied(t *testing.T) 
 func TestApplyComponentPatches_MergePatch_NullDeletesField(t *testing.T) {
 	scheme := mustScheme(t)
 	svc := &v1.Service{
-		TypeMeta: metav1.TypeMeta{Kind: "Service", APIVersion: "v1"},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:   "test",
-			Labels: map[string]string{ComponentLabel: "control-plane"},
-			Annotations: map[string]string{
-				"to-keep":   "value",
-				"to-delete": "value",
-			},
+		Kind: "Service", APIVersion: "v1",
+		Name:   "test",
+		Labels: map[string]string{ComponentLabel: "control-plane"},
+		Annotations: map[string]string{
+			"to-keep":   "value",
+			"to-delete": "value",
 		},
 	}
 	patches := []km.ComponentPatch{

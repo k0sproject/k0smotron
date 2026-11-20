@@ -189,8 +189,8 @@ func (i *IgnitionProvisioner) ToProvisionData(input *InputProvisionData) ([]byte
 		addIgn, addReport, err := config.TranslateBytes(
 			[]byte(i.AdditionalConfig),
 			bcommon.TranslateBytesOptions{
-				TranslateOptions: bcommon.TranslateOptions{NoResourceAutoCompression: true},
-				Pretty:           true,
+				NoResourceAutoCompression: true,
+				Pretty:                    true,
 			},
 		)
 		if err != nil {

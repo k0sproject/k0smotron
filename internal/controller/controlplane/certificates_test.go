@@ -63,7 +63,7 @@ func caSecret(t *testing.T, name string, notAfter time.Time) *corev1.Secret {
 	require.NoError(t, err)
 
 	return &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"},
+		Name: name, Namespace: "default",
 		Data: map[string][]byte{
 			"tls.crt": pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der}),
 		},
@@ -97,8 +97,8 @@ func TestInspectClusterCertificates_unparseableIsReported(t *testing.T) {
 	require.NoError(t, corev1.AddToScheme(scheme))
 	c := fake.NewClientBuilder().WithScheme(scheme).WithObjects(
 		&corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{Name: "kcp-ca", Namespace: "default"},
-			Data:       map[string][]byte{"tls.crt": []byte("garbage")},
+			Name: "kcp-ca", Namespace: "default",
+			Data: map[string][]byte{"tls.crt": []byte("garbage")},
 		},
 	).Build()
 
@@ -131,7 +131,7 @@ func TestReconcileCertificateConditions_MirrorsChildConditions(t *testing.T) {
 	scheme := newCertConditionsScheme(t)
 
 	child := &kapi.Cluster{
-		ObjectMeta: metav1.ObjectMeta{Name: "kcp", Namespace: "default"},
+		Name: "kcp", Namespace: "default",
 	}
 	child.SetConditions([]metav1.Condition{
 		{
@@ -154,8 +154,8 @@ func TestReconcileCertificateConditions_MirrorsChildConditions(t *testing.T) {
 
 	c := &K0smotronController{Client: mgmtClient}
 	scope := &kmcScope{client: remoteClient}
-	cluster := &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "kcp", Namespace: "default"}}
-	kcp := &cpv1beta2.K0smotronControlPlane{ObjectMeta: metav1.ObjectMeta{Name: "kcp", Namespace: "default"}}
+	cluster := &clusterv1.Cluster{Name: "kcp", Namespace: "default"}
+	kcp := &cpv1beta2.K0smotronControlPlane{Name: "kcp", Namespace: "default"}
 
 	c.reconcileCertificateConditions(context.Background(), cluster, kcp, scope)
 
@@ -192,8 +192,8 @@ func TestReconcileCertificateConditions_ReadErrorSetsBothUnknown(t *testing.T) {
 	})
 
 	c := &K0smotronController{Client: mgmtClient}
-	cluster := &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "kcp", Namespace: "default"}}
-	kcp := &cpv1beta2.K0smotronControlPlane{ObjectMeta: metav1.ObjectMeta{Name: "kcp", Namespace: "default"}}
+	cluster := &clusterv1.Cluster{Name: "kcp", Namespace: "default"}
+	kcp := &cpv1beta2.K0smotronControlPlane{Name: "kcp", Namespace: "default"}
 
 	c.reconcileCertificateConditions(context.Background(), cluster, kcp, nil)
 
@@ -218,13 +218,13 @@ func TestReconcileCertificateConditions_ReadErrorSetsBothUnknown(t *testing.T) {
 func TestReconcileCertificateConditions_ChildNotYetReported(t *testing.T) {
 	scheme := newCertConditionsScheme(t)
 	child := &kapi.Cluster{
-		ObjectMeta: metav1.ObjectMeta{Name: "kcp", Namespace: "default"},
+		Name: "kcp", Namespace: "default",
 	}
 	mgmtClient := fake.NewClientBuilder().WithScheme(scheme).WithObjects(child).Build()
 
 	c := &K0smotronController{Client: mgmtClient}
-	cluster := &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "kcp", Namespace: "default"}}
-	kcp := &cpv1beta2.K0smotronControlPlane{ObjectMeta: metav1.ObjectMeta{Name: "kcp", Namespace: "default"}}
+	cluster := &clusterv1.Cluster{Name: "kcp", Namespace: "default"}
+	kcp := &cpv1beta2.K0smotronControlPlane{Name: "kcp", Namespace: "default"}
 
 	c.reconcileCertificateConditions(context.Background(), cluster, kcp, nil)
 
@@ -254,8 +254,8 @@ func TestReconcileCertificateConditions_CAOnlyFallback(t *testing.T) {
 
 	c := &K0smotronController{Client: mgmtClient}
 	scope := &kmcScope{client: scopeClient}
-	cluster := &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "kcp", Namespace: "default"}}
-	kcp := &cpv1beta2.K0smotronControlPlane{ObjectMeta: metav1.ObjectMeta{Name: "kcp", Namespace: "default"}}
+	cluster := &clusterv1.Cluster{Name: "kcp", Namespace: "default"}
+	kcp := &cpv1beta2.K0smotronControlPlane{Name: "kcp", Namespace: "default"}
 
 	c.reconcileCertificateConditions(context.Background(), cluster, kcp, scope)
 

@@ -94,9 +94,7 @@ func TestJoinTokenSuite(t *testing.T) {
 func (s *JoinTokenSuite) createK0smotronCluster(ctx context.Context, kc *kubernetes.Clientset) {
 	// create K0smotron namespace
 	_, err := kc.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "kmc-test",
-		},
+		Name: "kmc-test",
 	}, metav1.CreateOptions{})
 	s.Require().NoError(err)
 	kmc := []byte(`
@@ -126,9 +124,7 @@ func (s *JoinTokenSuite) createK0smotronCluster(ctx context.Context, kc *kuberne
 
 func (s *JoinTokenSuite) createJoinTokenRequest(ctx context.Context, kc *kubernetes.Clientset) {
 	_, err := kc.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "jtr-test",
-		},
+		Name: "jtr-test",
 	}, metav1.CreateOptions{})
 	s.Require().NoError(err)
 

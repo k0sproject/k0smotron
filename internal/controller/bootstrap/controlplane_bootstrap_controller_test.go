@@ -60,9 +60,7 @@ func Test_createCPInstallCmd(t *testing.T) {
 			name: "with default config",
 			scope: &ControllerScope{
 				Config: &bootstrapv2.K0sControllerConfig{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "test",
-					},
+					Name: "test",
 					Spec: bootstrapv2.K0sControllerConfigSpec{
 						K0sConfigSpec: &bootstrapv2.K0sConfigSpec{},
 					},
@@ -77,9 +75,7 @@ func Test_createCPInstallCmd(t *testing.T) {
 			name: "with args",
 			scope: &ControllerScope{
 				Config: &bootstrapv2.K0sControllerConfig{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "test",
-					},
+					Name: "test",
 					Spec: bootstrapv2.K0sControllerConfigSpec{
 						K0sConfigSpec: &bootstrapv2.K0sConfigSpec{
 							Args: []string{"--enable-worker", "--labels=k0sproject.io/foo=bar"},
@@ -112,7 +108,7 @@ func TestController_genK0sCommands(t *testing.T) {
 			scope: &ControllerScope{
 				currentKCPVersion: version.MustParse("v1.31.0"),
 				Config: &bootstrapv2.K0sControllerConfig{
-					ObjectMeta: metav1.ObjectMeta{Name: "test"},
+					Name: "test",
 					Spec: bootstrapv2.K0sControllerConfigSpec{
 						K0sConfigSpec: &bootstrapv2.K0sConfigSpec{
 							DownloadURL: util.DefaultK0sDownloadURL,
@@ -141,7 +137,7 @@ func TestController_genK0sCommands(t *testing.T) {
 			scope: &ControllerScope{
 				currentKCPVersion: version.MustParse("v1.31.6"),
 				Config: &bootstrapv2.K0sControllerConfig{
-					ObjectMeta: metav1.ObjectMeta{Name: "test"},
+					Name: "test",
 					Spec: bootstrapv2.K0sControllerConfigSpec{
 						K0sConfigSpec: &bootstrapv2.K0sConfigSpec{
 							DownloadURL: util.DefaultK0sDownloadURL,
@@ -167,7 +163,7 @@ func TestController_genK0sCommands(t *testing.T) {
 			scope: &ControllerScope{
 				currentKCPVersion: version.MustParse("v1.31.6+k0s.0"),
 				Config: &bootstrapv2.K0sControllerConfig{
-					ObjectMeta: metav1.ObjectMeta{Name: "test"},
+					Name: "test",
 					Spec: bootstrapv2.K0sControllerConfigSpec{
 						K0sConfigSpec: &bootstrapv2.K0sConfigSpec{
 							DownloadURL: util.DefaultK0sDownloadURL,
@@ -247,7 +243,7 @@ func TestControlPlaneController_detectJoinHost(t *testing.T) {
 	}
 
 	scope.machines = collections.FromMachines(&clusterv1.Machine{
-		ObjectMeta: metav1.ObjectMeta{Name: "first-controller"},
+		Name: "first-controller",
 		Status: clusterv1.MachineStatus{
 			Addresses: clusterv1.MachineAddresses{
 				{Type: clusterv1.MachineExternalIP, Address: "203.0.113.10"},
@@ -346,18 +342,16 @@ func selfSignedCertPEM(t *testing.T) []byte {
 func TestFindFirstControllerIPWaitsWithAnError(t *testing.T) {
 	machine := func(name string, age time.Duration, phase clusterv1.MachinePhase) *clusterv1.Machine {
 		return &clusterv1.Machine{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:              name,
-				CreationTimestamp: metav1.NewTime(time.Now().Add(-age)),
-			},
-			Status: clusterv1.MachineStatus{Phase: string(phase)},
+			Name:              name,
+			CreationTimestamp: metav1.NewTime(time.Now().Add(-age)),
+			Status:            clusterv1.MachineStatus{Phase: string(phase)},
 		}
 	}
 
 	// The only other machine is still Pending, so there is no join target yet.
 	scope := &ControllerScope{
 		Config: &bootstrapv2.K0sControllerConfig{
-			ObjectMeta: metav1.ObjectMeta{Name: "cp-1"},
+			Name: "cp-1",
 			Spec: bootstrapv2.K0sControllerConfigSpec{
 				K0sConfigSpec: &bootstrapv2.K0sConfigSpec{},
 			},
@@ -382,11 +376,9 @@ func TestGetFirstRunningMachineIsDeterministic(t *testing.T) {
 	base := time.Now()
 	machine := func(name string, age time.Duration) *clusterv1.Machine {
 		return &clusterv1.Machine{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:              name,
-				CreationTimestamp: metav1.NewTime(base.Add(-age)),
-			},
-			Status: clusterv1.MachineStatus{Phase: string(clusterv1.MachinePhaseRunning)},
+			Name:              name,
+			CreationTimestamp: metav1.NewTime(base.Add(-age)),
+			Status:            clusterv1.MachineStatus{Phase: string(clusterv1.MachinePhaseRunning)},
 		}
 	}
 
@@ -415,7 +407,7 @@ func TestGetFirstRunningMachineIsDeterministic(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			scope := &ControllerScope{
-				Config:   &bootstrapv2.K0sControllerConfig{ObjectMeta: metav1.ObjectMeta{Name: "bootstrapping"}},
+				Config:   &bootstrapv2.K0sControllerConfig{Name: "bootstrapping"},
 				machines: collections.FromMachines(tc.machines...),
 			}
 

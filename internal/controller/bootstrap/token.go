@@ -70,10 +70,9 @@ func getTokenSecret(ctx context.Context, c client.Client, tokenID string) (*core
 
 // deleteBootstrapToken deletes the secret of the given bootstrap token, if it exists.
 func deleteBootstrapToken(ctx context.Context, c client.Client, tokenID string) error {
-	return client.IgnoreNotFound(c.Delete(ctx, &corev1.Secret{ObjectMeta: metav1.ObjectMeta{
+	return client.IgnoreNotFound(c.Delete(ctx, &corev1.Secret{
 		Name:      bootstraputil.BootstrapTokenSecretName(tokenID),
-		Namespace: metav1.NamespaceSystem,
-	}}))
+		Namespace: metav1.NamespaceSystem}))
 }
 
 // revokeBootstrapToken deletes the bootstrap token tracked by the given config once its machine has joined, and

@@ -40,8 +40,8 @@ import (
 
 func failureDomainMachine(name, domain string) *clusterv1.Machine {
 	return &clusterv1.Machine{
-		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"},
-		Spec:       clusterv1.MachineSpec{FailureDomain: domain},
+		Name: name, Namespace: "default",
+		Spec: clusterv1.MachineSpec{FailureDomain: domain},
 	}
 }
 
@@ -49,7 +49,7 @@ func failureDomainMachine(name, domain string) *clusterv1.Machine {
 // signal that matters is how the up to date machines are spread.
 func TestNextFailureDomain(t *testing.T) {
 	clusterWithDomains := func(names ...string) *clusterv1.Cluster {
-		cluster := &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "c", Namespace: "default"}}
+		cluster := &clusterv1.Cluster{Name: "c", Namespace: "default"}
 		for _, name := range names {
 			cluster.Status.FailureDomains = append(cluster.Status.FailureDomains,
 				clusterv1.FailureDomain{Name: name, ControlPlane: new(true)})
@@ -171,7 +171,7 @@ func TestNextFailureDomain(t *testing.T) {
 // all, since scale down used to pick by age alone.
 func TestAnnotatedForDeletion(t *testing.T) {
 	machine := func(name string, annotated bool) *clusterv1.Machine {
-		m := &clusterv1.Machine{ObjectMeta: metav1.ObjectMeta{Name: name}}
+		m := &clusterv1.Machine{Name: name}
 		if annotated {
 			m.Annotations = map[string]string{clusterv1.DeleteMachineAnnotation: ""}
 		}
@@ -214,13 +214,12 @@ func TestAnnotatedForDeletion(t *testing.T) {
 // annotation has to outrank both the outdated and the oldest machine.
 func TestScaleDownPrefersTheAnnotatedMachine(t *testing.T) {
 	kcp := &cpv1beta2.K0sControlPlane{
-		ObjectMeta: metav1.ObjectMeta{Name: "kcp", Namespace: "default"},
+		Name: "kcp", Namespace: "default",
 	}
 	machine := func(name string, age time.Duration, annotated bool) *clusterv1.Machine {
-		m := &clusterv1.Machine{ObjectMeta: metav1.ObjectMeta{
+		m := &clusterv1.Machine{
 			Name: name, Namespace: "default",
-			CreationTimestamp: metav1.NewTime(time.Now().Add(-age)),
-		}}
+			CreationTimestamp: metav1.NewTime(time.Now().Add(-age))}
 		if annotated {
 			m.Annotations = map[string]string{clusterv1.DeleteMachineAnnotation: ""}
 		}
@@ -262,11 +261,9 @@ func TestScaleDownPrefersTheAnnotatedMachine(t *testing.T) {
 func TestOldestInFullestFailureDomain(t *testing.T) {
 	machine := func(name, fd string, age time.Duration) *clusterv1.Machine {
 		return &clusterv1.Machine{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:              name,
-				CreationTimestamp: metav1.NewTime(time.Now().Add(-age)),
-			},
-			Spec: clusterv1.MachineSpec{FailureDomain: fd},
+			Name:              name,
+			CreationTimestamp: metav1.NewTime(time.Now().Add(-age)),
+			Spec:              clusterv1.MachineSpec{FailureDomain: fd},
 		}
 	}
 	cluster := func(names ...string) *clusterv1.Cluster {
@@ -330,9 +327,8 @@ func TestOldestInFullestFailureDomain(t *testing.T) {
 // makes observable.
 func TestSelectMachineToDelete(t *testing.T) {
 	machine := func(name string, age time.Duration, annotated bool) *clusterv1.Machine {
-		m := &clusterv1.Machine{ObjectMeta: metav1.ObjectMeta{
-			Name: name, CreationTimestamp: metav1.NewTime(time.Now().Add(-age)),
-		}}
+		m := &clusterv1.Machine{
+			Name: name, CreationTimestamp: metav1.NewTime(time.Now().Add(-age))}
 		if annotated {
 			m.Annotations = map[string]string{clusterv1.DeleteMachineAnnotation: ""}
 		}
@@ -495,8 +491,8 @@ func TestCarryRemediationLineage(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			kcp := &cpv1beta2.K0sControlPlane{ObjectMeta: metav1.ObjectMeta{Name: "kcp", Annotations: tt.kcp}}
-			machine := &clusterv1.Machine{ObjectMeta: metav1.ObjectMeta{Name: "cp-1", Annotations: tt.machine}}
+			kcp := &cpv1beta2.K0sControlPlane{Name: "kcp", Annotations: tt.kcp}
+			machine := &clusterv1.Machine{Name: "cp-1", Annotations: tt.machine}
 
 			carryRemediationLineage(kcp, machine)
 
@@ -579,7 +575,7 @@ func TestPreflightChecksLetsAReplacementPastAnUnhealthyNewestMachine(t *testing.
 				conditions.Delete(tt.newest, clusterv1.MachineOwnerRemediatedCondition)
 			}
 
-			kcp := &cpv1beta2.K0sControlPlane{ObjectMeta: metav1.ObjectMeta{Name: "kcp", Namespace: "default"}}
+			kcp := &cpv1beta2.K0sControlPlane{Name: "kcp", Namespace: "default"}
 			kcp.Spec.Replicas = 3
 			if tt.replicas != 0 {
 				kcp.Spec.Replicas = tt.replicas
@@ -610,7 +606,7 @@ func TestPreflightChecksLetsAReplacementPastAnUnhealthyNewestMachine(t *testing.
 			c := &K0sController{Client: fake.NewClientBuilder().WithScheme(scheme).
 				WithObjects(objs...).WithStatusSubresource(objs...).Build()}
 			scope := &controlplane{
-				cluster:                            &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "c", Namespace: "default"}},
+				cluster:                            &clusterv1.Cluster{Name: "c", Namespace: "default"},
 				kcp:                                kcp,
 				activeMachines:                     collections.FromMachines(active...),
 				upToDateMachines:                   collections.FromMachines(active...),
@@ -645,12 +641,12 @@ func TestReconcileMachineDeletionsHoldsAfterReleasingAHook(t *testing.T) {
 	})
 	staying := remediationMachine("cp-1", true, false)
 
-	kcp := &cpv1beta2.K0sControlPlane{ObjectMeta: metav1.ObjectMeta{Name: "kcp", Namespace: "default"}}
+	kcp := &cpv1beta2.K0sControlPlane{Name: "kcp", Namespace: "default"}
 	c := &K0sController{Client: fake.NewClientBuilder().WithScheme(scheme).
 		WithObjects(leaving, staying, kcp).WithStatusSubresource(leaving, staying, kcp).Build()}
 
 	res, err := c.reconcileMachineDeletions(t.Context(), &controlplane{
-		cluster:         &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "c", Namespace: "default"}},
+		cluster:         &clusterv1.Cluster{Name: "c", Namespace: "default"},
 		kcp:             kcp,
 		activeMachines:  collections.FromMachines(staying),
 		deletedMachines: collections.FromMachines(leaving),

@@ -102,12 +102,10 @@ func TestCAPIDockerClusterClassSuite(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Log("111cluster objects applied, waiting for cluster to be ready")
 	s := CAPIDockerClusterClassSuite{
-		FootlooseSuite: common.FootlooseSuite{
-			ControllerCount:      0,
-			WorkerCount:          0,
-			K0smotronWorkerCount: 1,
-			K0smotronNetworks:    []string{"kind"},
-		},
+		ControllerCount:       0,
+		WorkerCount:           0,
+		K0smotronWorkerCount:  1,
+		K0smotronNetworks:     []string{"kind"},
 		client:                kubeClient,
 		restConfig:            restCfg,
 		privateKey:            privateKeyPEM,

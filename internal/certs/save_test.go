@@ -49,14 +49,12 @@ func newFakeClientWithWatch(objs ...runtime.Object) client.WithWatch {
 
 func TestSaveRenewed_updatesDataPreservingMetadata(t *testing.T) {
 	existing := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        "kmc-etcd-server",
-			Namespace:   "default",
-			Labels:      map[string]string{"cluster.x-k8s.io/cluster-name": "kmc"},
-			Annotations: map[string]string{"cert.k0smotron.io/renewed": "true"},
-			OwnerReferences: []metav1.OwnerReference{
-				{APIVersion: "k0smotron.io/v1beta2", Kind: "Cluster", Name: "kmc", UID: "abc"},
-			},
+		Name:        "kmc-etcd-server",
+		Namespace:   "default",
+		Labels:      map[string]string{"cluster.x-k8s.io/cluster-name": "kmc"},
+		Annotations: map[string]string{"cert.k0smotron.io/renewed": "true"},
+		OwnerReferences: []metav1.OwnerReference{
+			{APIVersion: "k0smotron.io/v1beta2", Kind: "Cluster", Name: "kmc", UID: "abc"},
 		},
 		Data: map[string][]byte{"tls.crt": []byte("old-crt"), "tls.key": []byte("old-key")},
 	}
@@ -90,11 +88,9 @@ func TestSaveRenewed_missingSecret(t *testing.T) {
 
 func TestSaveRenewed_retriesOnConflict(t *testing.T) {
 	existing := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "kmc-etcd-server",
-			Namespace: "default",
-		},
-		Data: map[string][]byte{"tls.crt": []byte("old-crt"), "tls.key": []byte("old-key")},
+		Name:      "kmc-etcd-server",
+		Namespace: "default",
+		Data:      map[string][]byte{"tls.crt": []byte("old-crt"), "tls.key": []byte("old-key")},
 	}
 	fakeClient := newFakeClientWithWatch(existing)
 

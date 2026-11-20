@@ -318,25 +318,21 @@ func (c *ControlPlaneController) Reconcile(ctx context.Context, req ctrl.Request
 
 	// Create the secret containing the bootstrap data
 	bootstrapSecret := &corev1.Secret{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v1",
-			Kind:       "Secret",
+		APIVersion: "v1",
+		Kind:       "Secret",
+		Name:       config.Name,
+		Namespace:  config.Namespace,
+		Labels: map[string]string{
+			clusterv1.ClusterNameLabel: scope.Cluster.Name,
+			util.ComponentLabel:        util.ComponentBootstrap,
 		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      config.Name,
-			Namespace: config.Namespace,
-			Labels: map[string]string{
-				clusterv1.ClusterNameLabel: scope.Cluster.Name,
-				util.ComponentLabel:        util.ComponentBootstrap,
-			},
-			OwnerReferences: []metav1.OwnerReference{
-				{
-					APIVersion: bootstrapv2.GroupVersion.String(),
-					Kind:       config.Kind,
-					Name:       config.Name,
-					UID:        config.UID,
-					Controller: new(true),
-				},
+		OwnerReferences: []metav1.OwnerReference{
+			{
+				APIVersion: bootstrapv2.GroupVersion.String(),
+				Kind:       config.Kind,
+				Name:       config.Name,
+				UID:        config.UID,
+				Controller: new(true),
 			},
 		},
 		Data: map[string][]byte{
@@ -737,15 +733,11 @@ func (c *ControlPlaneController) getCerts(ctx context.Context, scope *Controller
 
 func createTokenSecret(tokenID, tokenSecret string, ttl time.Duration) *corev1.Secret {
 	return &corev1.Secret{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v1",
-			Kind:       "Secret",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("bootstrap-token-%s", tokenID),
-			Namespace: "kube-system",
-		},
-		Type: corev1.SecretTypeBootstrapToken,
+		APIVersion: "v1",
+		Kind:       "Secret",
+		Name:       fmt.Sprintf("bootstrap-token-%s", tokenID),
+		Namespace:  "kube-system",
+		Type:       corev1.SecretTypeBootstrapToken,
 		StringData: map[string]string{
 			"token-id":                       tokenID,
 			"token-secret":                   tokenSecret,

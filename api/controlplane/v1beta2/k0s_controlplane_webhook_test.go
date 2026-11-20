@@ -35,7 +35,7 @@ func TestValidateK0sControlPlaneChecksFileOwners(t *testing.T) {
 				Version: "v1.30.0+k0s.0",
 				K0sConfigSpec: bootstrapv1.K0sConfigSpec{
 					Files: []bootstrapv1.File{
-						{File: provisioner.File{Path: "/etc/thing", Content: "x", Owner: owner}},
+						{Path: "/etc/thing", Content: "x", Owner: owner},
 					},
 				},
 			},
@@ -72,7 +72,7 @@ func TestValidateK0sControlPlaneChecksFileContents(t *testing.T) {
 		}
 	}
 	file := func(path, content string) bootstrapv1.File {
-		return bootstrapv1.File{File: provisioner.File{Path: path, Content: content}}
+		return bootstrapv1.File{Path: path, Content: content}
 	}
 
 	appendTo := func(path, content string) bootstrapv1.File {
@@ -147,8 +147,8 @@ func TestValidateK0sControlPlaneCollectsEveryProblem(t *testing.T) {
 			K0sConfigSpec: bootstrapv1.K0sConfigSpec{
 				Args: []string{"--single"},
 				Files: []bootstrapv1.File{
-					{File: provisioner.File{Path: "/a", Content: "x"}},
-					{File: provisioner.File{Path: "/a", Content: "y"}},
+					{Path: "/a", Content: "x"},
+					{Path: "/a", Content: "y"},
 				},
 			},
 		},

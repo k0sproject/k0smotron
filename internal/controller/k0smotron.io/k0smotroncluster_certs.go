@@ -140,8 +140,8 @@ func signOne(g *csr.Generator, signr signer.Signer, cn string, hosts []string, o
 // inspectKeyPair reads expiry metadata straight from a PEM certificate.
 func inspectKeyPair(purpose string, crt []byte) (kcerts.Info, error) {
 	s := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{kcerts.PurposeLabel: purpose}},
-		Data:       map[string][]byte{kcerts.TLSCrtDataName: crt},
+		Labels: map[string]string{kcerts.PurposeLabel: purpose},
+		Data:   map[string][]byte{kcerts.TLSCrtDataName: crt},
 	}
 
 	infos, err := kcerts.Inspect(s)

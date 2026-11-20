@@ -83,9 +83,8 @@ func TestShouldRenew(t *testing.T) {
 	caNotAfter := now.Add(10 * 365 * 24 * time.Hour)
 
 	t.Run("forced by annotation regardless of threshold", func(t *testing.T) {
-		kmc := &km.Cluster{ObjectMeta: metav1.ObjectMeta{
-			Annotations: map[string]string{km.RenewCertificatesAnnotation: ""},
-		}}
+		kmc := &km.Cluster{
+			Annotations: map[string]string{km.RenewCertificatesAnnotation: ""}}
 		info := certs.Info{NotAfter: now.Add(365 * 24 * time.Hour)}
 		assert.True(t, shouldRenew(kmc, info, renewBefore, caNotAfter, now))
 	})
@@ -120,9 +119,8 @@ func TestShouldRenew(t *testing.T) {
 	})
 
 	t.Run("forced even when clamped to the CA", func(t *testing.T) {
-		kmc := &km.Cluster{ObjectMeta: metav1.ObjectMeta{
-			Annotations: map[string]string{km.RenewCertificatesAnnotation: ""},
-		}}
+		kmc := &km.Cluster{
+			Annotations: map[string]string{km.RenewCertificatesAnnotation: ""}}
 		shortCA := now.Add(10 * 24 * time.Hour)
 		info := certs.Info{NotAfter: shortCA.Add(-5 * time.Minute)}
 		assert.True(t, shouldRenew(kmc, info, renewBefore, shortCA, now))
@@ -130,19 +128,17 @@ func TestShouldRenew(t *testing.T) {
 }
 
 func TestIsManagedSecret(t *testing.T) {
-	kmc := &km.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "kmc", Namespace: "default", UID: "cluster-uid"}}
-	externalOwner := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{
-		Name: "kmc-root-owner", Namespace: "default", UID: "external-owner-uid",
-	}}
+	kmc := &km.Cluster{Name: "kmc", Namespace: "default", UID: "cluster-uid"}
+	externalOwner := &corev1.ConfigMap{
+		Name: "kmc-root-owner", Namespace: "default", UID: "external-owner-uid"}
 
 	t.Run("nil secret is a first issuance", func(t *testing.T) {
 		assert.True(t, isManagedSecret(nil, kmc, nil))
 	})
 
 	t.Run("owned by this cluster, no external owner in play", func(t *testing.T) {
-		s := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{
-			OwnerReferences: []metav1.OwnerReference{{UID: "cluster-uid"}},
-		}}
+		s := &corev1.Secret{
+			OwnerReferences: []metav1.OwnerReference{{UID: "cluster-uid"}}}
 		assert.True(t, isManagedSecret(s, kmc, nil))
 	})
 
@@ -150,23 +146,20 @@ func TestIsManagedSecret(t *testing.T) {
 		// This is the case a hosted control plane on a remote host cluster hits:
 		// ensureEtcdCertificates stamps the external owner, not the Cluster, so
 		// this must count as managed or renewal never fires.
-		s := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{
-			OwnerReferences: []metav1.OwnerReference{{UID: "external-owner-uid"}},
-		}}
+		s := &corev1.Secret{
+			OwnerReferences: []metav1.OwnerReference{{UID: "external-owner-uid"}}}
 		assert.True(t, isManagedSecret(s, kmc, externalOwner))
 	})
 
 	t.Run("owned by neither the cluster nor the external owner", func(t *testing.T) {
-		s := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{
-			OwnerReferences: []metav1.OwnerReference{{UID: "someone-elses-uid"}},
-		}}
+		s := &corev1.Secret{
+			OwnerReferences: []metav1.OwnerReference{{UID: "someone-elses-uid"}}}
 		assert.False(t, isManagedSecret(s, kmc, externalOwner))
 	})
 
 	t.Run("user supplied, not owned", func(t *testing.T) {
-		s := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{
-			Name: "my-own-cert",
-		}}
+		s := &corev1.Secret{
+			Name: "my-own-cert"}
 		assert.False(t, isManagedSecret(s, kmc, nil),
 			"a certificate the user brought must never be overwritten")
 	})
@@ -245,19 +238,16 @@ func TestSignLeaves_renewsSecretOwnedByExternalOwner(t *testing.T) {
 	now := time.Now()
 	caCertPEM, caKeyPEM := testCA(t, now.Add(10*365*24*time.Hour))
 
-	externalOwner := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{
-		Name: "kmc-root-owner", Namespace: "default", UID: "external-owner-uid",
-	}}
+	externalOwner := &corev1.ConfigMap{
+		Name: "kmc-root-owner", Namespace: "default", UID: "external-owner-uid"}
 
 	oldNotAfter := now.Add(5 * 24 * time.Hour) // inside the default 720h renewal window
 	oldCert := testLeafCertPEM(t, "etcd-server", 1, oldNotAfter)
 	existing := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "kmc-etcd-server",
-			Namespace: "default",
-			OwnerReferences: []metav1.OwnerReference{
-				{APIVersion: "v1", Kind: "ConfigMap", Name: "kmc-root-owner", UID: "external-owner-uid"},
-			},
+		Name:      "kmc-etcd-server",
+		Namespace: "default",
+		OwnerReferences: []metav1.OwnerReference{
+			{APIVersion: "v1", Kind: "ConfigMap", Name: "kmc-root-owner", UID: "external-owner-uid"},
 		},
 		Data: map[string][]byte{"tls.crt": oldCert, "tls.key": []byte("old-key")},
 	}
@@ -265,7 +255,7 @@ func TestSignLeaves_renewsSecretOwnedByExternalOwner(t *testing.T) {
 	scope := newCertTestScope(existing)
 	scope.externalOwner = externalOwner
 
-	kmc := &km.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "kmc", Namespace: "default", UID: "cluster-uid"}}
+	kmc := &km.Cluster{Name: "kmc", Namespace: "default", UID: "cluster-uid"}
 
 	infos, err := scope.signLeaves(context.Background(), kmc, caCertPEM, caKeyPEM,
 		secret.Certificates{&secret.Certificate{Purpose: "etcd-server"}},
@@ -298,12 +288,10 @@ func TestSignLeaves_renewalFailureDoesNotAbort(t *testing.T) {
 	oldNotAfter := now.Add(5 * 24 * time.Hour)
 	oldCert := testLeafCertPEM(t, "etcd-server", 2, oldNotAfter)
 	existing := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "kmc-etcd-server",
-			Namespace: "default",
-			OwnerReferences: []metav1.OwnerReference{
-				{UID: "cluster-uid"},
-			},
+		Name:      "kmc-etcd-server",
+		Namespace: "default",
+		OwnerReferences: []metav1.OwnerReference{
+			{UID: "cluster-uid"},
 		},
 		Data: map[string][]byte{"tls.crt": oldCert, "tls.key": []byte("old-key")},
 	}
@@ -314,7 +302,7 @@ func TestSignLeaves_renewalFailureDoesNotAbort(t *testing.T) {
 		},
 	}, existing)
 
-	kmc := &km.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "kmc", Namespace: "default", UID: "cluster-uid"}}
+	kmc := &km.Cluster{Name: "kmc", Namespace: "default", UID: "cluster-uid"}
 
 	infos, err := scope.signLeaves(context.Background(), kmc, caCertPEM, caKeyPEM,
 		secret.Certificates{&secret.Certificate{Purpose: "etcd-server"}},
@@ -348,7 +336,7 @@ func TestSignLeaves_firstIssuanceFailureIsFatal(t *testing.T) {
 		},
 	})
 
-	kmc := &km.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "kmc", Namespace: "default", UID: "cluster-uid"}}
+	kmc := &km.Cluster{Name: "kmc", Namespace: "default", UID: "cluster-uid"}
 
 	_, err := scope.signLeaves(context.Background(), kmc, caCertPEM, caKeyPEM,
 		secret.Certificates{&secret.Certificate{Purpose: "etcd-server"}},
@@ -382,7 +370,7 @@ func TestSignLeaves_userSuppliedSecretIsNeverRewritten(t *testing.T) {
 	}
 
 	scope := newCertTestScope(userSecret)
-	kmc := &km.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "kmc", Namespace: "default", UID: "cluster-uid"}}
+	kmc := &km.Cluster{Name: "kmc", Namespace: "default", UID: "cluster-uid"}
 
 	infos, err := scope.signLeaves(context.Background(), kmc, caCertPEM, caKeyPEM,
 		secret.Certificates{&secret.Certificate{Purpose: "ingress-haproxy"}},
@@ -415,16 +403,14 @@ func TestSignLeaves_leafClampedToExpiringCAIsNotResigned(t *testing.T) {
 	// few minutes before the CA rather than exactly on it.
 	oldCert := testLeafCertPEM(t, "etcd-server", 3, caNotAfter.Add(-5*time.Minute))
 	existing := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:            "kmc-etcd-server",
-			Namespace:       "default",
-			OwnerReferences: []metav1.OwnerReference{{UID: "cluster-uid"}},
-		},
-		Data: map[string][]byte{"tls.crt": oldCert, "tls.key": []byte("old-key")},
+		Name:            "kmc-etcd-server",
+		Namespace:       "default",
+		OwnerReferences: []metav1.OwnerReference{{UID: "cluster-uid"}},
+		Data:            map[string][]byte{"tls.crt": oldCert, "tls.key": []byte("old-key")},
 	}
 
 	scope := newCertTestScope(existing)
-	kmc := &km.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "kmc", Namespace: "default", UID: "cluster-uid"}}
+	kmc := &km.Cluster{Name: "kmc", Namespace: "default", UID: "cluster-uid"}
 
 	infos, err := scope.signLeaves(context.Background(), kmc, caCertPEM, caKeyPEM,
 		secret.Certificates{&secret.Certificate{Purpose: "etcd-server"}},
@@ -454,16 +440,14 @@ func TestSignLeaves_schedulesNextRenewal(t *testing.T) {
 
 	notAfter := now.Add(200 * 24 * time.Hour).Truncate(time.Second)
 	existing := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:            "kmc-etcd-server",
-			Namespace:       "default",
-			OwnerReferences: []metav1.OwnerReference{{UID: "cluster-uid"}},
-		},
-		Data: map[string][]byte{"tls.crt": testLeafCertPEM(t, "etcd-server", 4, notAfter), "tls.key": []byte("key")},
+		Name:            "kmc-etcd-server",
+		Namespace:       "default",
+		OwnerReferences: []metav1.OwnerReference{{UID: "cluster-uid"}},
+		Data:            map[string][]byte{"tls.crt": testLeafCertPEM(t, "etcd-server", 4, notAfter), "tls.key": []byte("key")},
 	}
 
 	scope := newCertTestScope(existing)
-	kmc := &km.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "kmc", Namespace: "default", UID: "cluster-uid"}}
+	kmc := &km.Cluster{Name: "kmc", Namespace: "default", UID: "cluster-uid"}
 
 	_, err := scope.signLeaves(context.Background(), kmc, caCertPEM, caKeyPEM,
 		secret.Certificates{&secret.Certificate{Purpose: "etcd-server"}},

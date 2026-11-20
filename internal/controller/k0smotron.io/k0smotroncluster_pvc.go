@@ -132,10 +132,8 @@ func resizeStatefulSetAndPVC(ctx context.Context, kmc *km.Cluster, desiredStorag
 
 			// Remove pod to trigger file system resize
 			err = c.Delete(ctx, &corev1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      fmt.Sprintf("%s-%d", stsName, i),
-					Namespace: kmc.Namespace,
-				},
+				Name:      fmt.Sprintf("%s-%d", stsName, i),
+				Namespace: kmc.Namespace,
 			}, &client.DeleteOptions{})
 
 			if err != nil {

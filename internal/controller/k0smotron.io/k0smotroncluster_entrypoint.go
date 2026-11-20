@@ -26,7 +26,6 @@ import (
 	kcontrollerutil "github.com/k0sproject/k0smotron/v2/internal/controller/util"
 	"github.com/k0sproject/version"
 	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
@@ -52,16 +51,12 @@ func (scope *kmcScope) generateEntrypointCM(kmc *km.Cluster) (v1.ConfigMap, erro
 	}
 
 	cm := v1.ConfigMap{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "ConfigMap",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        kmc.GetEntrypointConfigMapName(),
-			Namespace:   kmc.Namespace,
-			Labels:      kcontrollerutil.LabelsForK0smotronComponent(kmc, kcontrollerutil.ComponentEntrypoint),
-			Annotations: kcontrollerutil.AnnotationsForK0smotronCluster(kmc),
-		},
+		Kind:        "ConfigMap",
+		APIVersion:  "v1",
+		Name:        kmc.GetEntrypointConfigMapName(),
+		Namespace:   kmc.Namespace,
+		Labels:      kcontrollerutil.LabelsForK0smotronComponent(kmc, kcontrollerutil.ComponentEntrypoint),
+		Annotations: kcontrollerutil.AnnotationsForK0smotronCluster(kmc),
 		Data: map[string]string{
 			"k0smotron-entrypoint.sh": entrypointBuf.String(),
 		},

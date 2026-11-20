@@ -380,26 +380,22 @@ func (c *K0smotronController) reconcile(ctx context.Context, cluster *clusterv1.
 	}
 
 	desiredK0smotronCluster := kapi.Cluster{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: kapi.GroupVersion.String(),
-			Kind:       "Cluster",
+		APIVersion: kapi.GroupVersion.String(),
+		Kind:       "Cluster",
+		Name:       cluster.Name,
+		Namespace:  cluster.Namespace,
+		Labels: map[string]string{
+			clusterv1.ClusterNameLabel: cluster.Name,
 		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      cluster.Name,
-			Namespace: cluster.Namespace,
-			Labels: map[string]string{
-				clusterv1.ClusterNameLabel: cluster.Name,
-			},
-			Annotations: map[string]string{
-				kapi.AnnotationKeyClusterSpecHash: generateClusterSpecHashWithoutExternalAddress(kcp.Spec),
-			},
-			OwnerReferences: []metav1.OwnerReference{
-				{
-					APIVersion: cpv1beta2.GroupVersion.String(),
-					Kind:       "K0smotronControlPlane",
-					Name:       kcp.Name,
-					UID:        kcp.UID,
-				},
+		Annotations: map[string]string{
+			kapi.AnnotationKeyClusterSpecHash: generateClusterSpecHashWithoutExternalAddress(kcp.Spec),
+		},
+		OwnerReferences: []metav1.OwnerReference{
+			{
+				APIVersion: cpv1beta2.GroupVersion.String(),
+				Kind:       "K0smotronControlPlane",
+				Name:       kcp.Name,
+				UID:        kcp.UID,
 			},
 		},
 		Spec: kcp.Spec,
@@ -494,12 +490,8 @@ func isClusterSpecSynced(kmc kapi.Cluster, kcpSpec kapi.ClusterSpec) (isSynced b
 	if !isEndpointConfigMapInManifests {
 		overridenKmcSpec.Manifests = append(overridenKmcSpec.Manifests, v1.Volume{
 			Name: kmc.GetEndpointConfigMapName(),
-			VolumeSource: v1.VolumeSource{
-				ConfigMap: &v1.ConfigMapVolumeSource{
-					LocalObjectReference: v1.LocalObjectReference{
-						Name: kmc.GetEndpointConfigMapName(),
-					},
-				},
+			ConfigMap: &v1.ConfigMapVolumeSource{
+				Name: kmc.GetEndpointConfigMapName(),
 			},
 		})
 	}
@@ -1126,6 +1118,6 @@ func clusterToK0smotronControlPlane(_ context.Context, o client.Object) []ctrl.R
 	}
 
 	return []ctrl.Request{{
-		NamespacedName: client.ObjectKey{Namespace: cluster.Namespace, Name: ref.Name},
+		Namespace: cluster.Namespace, Name: ref.Name,
 	}}
 }

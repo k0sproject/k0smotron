@@ -27,7 +27,6 @@ import (
 	deprecatedkmc "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta1"
 	km "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
 	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -96,16 +95,12 @@ func generateService(kmc *km.Cluster) v1.Service {
 	maps.Copy(metadataAnnotations, deprecatedkmc.GetServiceAnnotations(kmc.Annotations))
 
 	svc := v1.Service{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v1",
-			Kind:       "Service",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        name,
-			Namespace:   kmc.Namespace,
-			Labels:      metadataLabels,
-			Annotations: metadataAnnotations,
-		},
+		APIVersion:  "v1",
+		Kind:        "Service",
+		Name:        name,
+		Namespace:   kmc.Namespace,
+		Labels:      metadataLabels,
+		Annotations: metadataAnnotations,
 		Spec: v1.ServiceSpec{
 			Type:                  kmc.Spec.Service.Type,
 			Selector:              util.LabelsForK0smotronCluster(kmc),
@@ -208,12 +203,8 @@ func (scope *kmcScope) reconcileEndpointConfigMap(ctx context.Context, kmc *km.C
 	if !found {
 		kmc.Spec.Manifests = append(kmc.Spec.Manifests, v1.Volume{
 			Name: kmc.GetEndpointConfigMapName(),
-			VolumeSource: v1.VolumeSource{
-				ConfigMap: &v1.ConfigMapVolumeSource{
-					LocalObjectReference: v1.LocalObjectReference{
-						Name: kmc.GetEndpointConfigMapName(),
-					},
-				},
+			ConfigMap: &v1.ConfigMapVolumeSource{
+				Name: kmc.GetEndpointConfigMapName(),
 			},
 		})
 	}
@@ -227,16 +218,12 @@ func (scope *kmcScope) reconcileEndpointConfigMap(ctx context.Context, kmc *km.C
 // address without requiring it to be known upfront.
 func generateEndpointConfigMap(kmc *km.Cluster) v1.ConfigMap {
 	return v1.ConfigMap{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "ConfigMap",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        kmc.GetEndpointConfigMapName(),
-			Namespace:   kmc.Namespace,
-			Labels:      util.LabelsForK0smotronComponent(kmc, util.ComponentControlPlane),
-			Annotations: util.AnnotationsForK0smotronCluster(kmc),
-		},
+		Kind:        "ConfigMap",
+		APIVersion:  "v1",
+		Name:        kmc.GetEndpointConfigMapName(),
+		Namespace:   kmc.Namespace,
+		Labels:      util.LabelsForK0smotronComponent(kmc, util.ComponentControlPlane),
+		Annotations: util.AnnotationsForK0smotronCluster(kmc),
 		Data: map[string]string{
 			"endpoint.yaml": fmt.Sprintf(`apiVersion: v1
 kind: ConfigMap
