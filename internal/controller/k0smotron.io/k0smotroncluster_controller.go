@@ -313,7 +313,7 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (re
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}
 
-	if err := kmcScope.reconcileEntrypointCM(ctx, kmc); err != nil {
+	if err := kmcScope.reconcileControlPlaneEntrypoint(ctx, kmc); err != nil {
 		kmc.SetReconciliationStatus(fmt.Sprintf("Failed reconciling entrypoint configmap, %s", err.Error()))
 		return ctrl.Result{Requeue: true, RequeueAfter: time.Minute}, err
 	}

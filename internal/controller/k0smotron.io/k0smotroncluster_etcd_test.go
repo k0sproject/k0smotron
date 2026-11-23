@@ -19,16 +19,18 @@ limitations under the License.
 package k0smotronio
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	km "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
 	apps "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 func TestEtcd_calculateDesiredReplicas(t *testing.T) {
@@ -187,9 +189,14 @@ func TestEtcd_generateEtcdStatefulSet(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run("", func(t *testing.T) {
-			sts := generateEtcdStatefulSet(tc.cluster, nil, 1, "")
+			scheme := runtime.NewScheme()
+			require.NoError(t, km.AddToScheme(scheme))
+			scope := &kmcScope{client: fake.NewClientBuilder().WithScheme(scheme).Build()}
+
+			cm, err := scope.generateEtcdEntrypointCM(tc.cluster, 1)
+			require.NoError(t, err)
 			for _, w := range tc.want {
-				assert.True(t, strings.Contains(sts.Spec.Template.Spec.Containers[0].Args[1], w))
+				assert.Contains(t, cm.Data["etcd-entrypoint.sh"], w)
 			}
 		})
 	}
