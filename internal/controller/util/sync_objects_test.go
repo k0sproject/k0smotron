@@ -143,13 +143,27 @@ func TestSyncReferencedObjects(t *testing.T) {
 		require.NoError(t, SyncReferencedObjects(context.Background(), src, dst, newKmc([]km.Mount{configMapMount("cm", true)}, ""), owner))
 	})
 
-	t.Run("certificateRefs secrets are collected as required", func(t *testing.T) {
+	t.Run("certificateRefs are not synced (they live in the hosting cluster already)", func(t *testing.T) {
 		kmc := newKmc(nil, "")
 		kmc.Spec.CertificateRefs = []km.CertificateRef{{Type: "ca", Name: "ca"}, {Type: "sa"}}
 
 		secrets, configMaps := referencedNames(kmc)
 
-		require.Equal(t, map[string]bool{"ca": false}, secrets)
+		require.Empty(t, secrets)
+		require.Empty(t, configMaps)
+	})
+
+	t.Run("endpoint ConfigMap is not synced (created directly in the hosting cluster)", func(t *testing.T) {
+		kmc := newKmc(nil, "")
+		kmc.Spec.ExternalAddress = "1.2.3.4"
+		// Simulate what reconcileEndpointConfigMap does: add the endpoint CM to Manifests.
+		endpointCMName := kmc.GetEndpointConfigMapName()
+		kmc.Spec.Manifests = []corev1.Volume{
+			{Name: endpointCMName, VolumeSource: corev1.VolumeSource{ConfigMap: &corev1.ConfigMapVolumeSource{LocalObjectReference: corev1.LocalObjectReference{Name: endpointCMName}}}},
+		}
+
+		_, configMaps := referencedNames(kmc)
+
 		require.Empty(t, configMaps)
 	})
 

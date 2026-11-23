@@ -19,10 +19,13 @@ limitations under the License.
 package e2e
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"fmt"
+	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -246,6 +249,10 @@ func deployHostingCluster() {
 				ContainerPort: 31443,
 				HostPort:      31443,
 			},
+			{
+				ContainerPort: 30132,
+				HostPort:      30132,
+			},
 		},
 	})
 	if hostingClusterProvider == nil {
@@ -271,14 +278,36 @@ func deleteHostingcluster() error {
 }
 
 func getEncodedHostingClusterKubeconfig() (string, error) {
-	// kubeconfig value will be used by the management cluster to instantiate a remote cluster client so it is needed to set internal=true
-	// in order to use the internal IP of the cluster.
+	// Get the kubeconfig using internal=true to get the in-cluster address.
 	kubeconfig, err := cluster.NewProvider().KubeConfig(hostingClusterName, true)
 	if err != nil {
-		return "", nil
+		return "", err
 	}
 
+	// The internal kubeconfig server address uses the Kind container hostname
+	// (e.g. hosting-cluster-control-plane:6443), which is not resolvable from
+	// pods inside the management cluster. Replace it with the container's Docker
+	// network IP so it is reachable from within the management cluster pod.
+	containerIP, err := getContainerIP(hostingClusterName + "-control-plane")
+	if err != nil {
+		return "", fmt.Errorf("failed to get hosting cluster container IP: %w", err)
+	}
+	kubeconfig = strings.ReplaceAll(kubeconfig, hostingClusterName+"-control-plane:6443", containerIP+":6443")
+
 	return base64.StdEncoding.EncodeToString([]byte(kubeconfig)), nil
+}
+
+func getContainerIP(containerName string) (string, error) {
+	out, err := exec.Command("docker", "inspect", "-f",
+		"{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}", containerName).Output()
+	if err != nil {
+		return "", err
+	}
+	ip := strings.TrimSpace(string(bytes.TrimSpace(out)))
+	if ip == "" {
+		return "", fmt.Errorf("no IP found for container %s", containerName)
+	}
+	return ip, nil
 }
 
 func getHostingClusterDefaultScheme() *runtime.Scheme {

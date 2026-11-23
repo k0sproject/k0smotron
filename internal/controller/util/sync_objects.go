@@ -65,11 +65,10 @@ func referencedNames(kmc *km.Cluster) (secrets, configMaps map[string]bool) {
 	if name := kmc.Spec.Storage.Kine.DataSourceSecretName; name != "" {
 		add(secrets, name, false)
 	}
-	for _, certRef := range kmc.Spec.CertificateRefs {
-		if certRef.Name != "" {
-			add(secrets, certRef.Name, false)
-		}
-	}
+
+	// The endpoint ConfigMap is created directly in the hosting cluster by reconcileEndpointConfigMap;
+	// it does not exist in the management cluster and must not be synced.
+	delete(configMaps, kmc.GetEndpointConfigMapName())
 
 	return secrets, configMaps
 }
