@@ -2743,12 +2743,12 @@ the required data store resource.</p>
 </li>
 <li>
 <p>Create the database using a custom resource:</p>
-<div class="highlight"><pre><span></span><code>apiVersion: &quot;acid.zalan.do/v1&quot;
+<div class="highlight"><pre><span></span><code>apiVersion: "acid.zalan.do/v1"
 kind: postgresql
 metadata:
   name: acid-minimal-cluster
 spec:
-  teamId: &quot;acid&quot;
+  teamId: "acid"
   volume:
     size: 10Gi
   numberOfInstances: 2
@@ -2761,7 +2761,7 @@ spec:
   databases:
     kine: k0smotron
   postgresql:
-    version: &quot;15&quot;
+    version: "15"
 </code></pre></div>
 </li>
 <li>

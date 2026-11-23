@@ -2903,17 +2903,17 @@ user-data at first boot):</p>
 <span class="nb">Start-Service</span> <span class="n">sshd</span>
 
 <span class="c"># Authorize your SSH public key for the Administrator account</span>
-<span class="nv">$pubKey</span>   <span class="p">=</span> <span class="s2">&quot;ssh-ed25519 AAAA... your public key&quot;</span>
-<span class="nv">$sshDir</span>   <span class="p">=</span> <span class="s2">&quot;C:\ProgramData\ssh&quot;</span>
-<span class="nv">$authKeys</span> <span class="p">=</span> <span class="nb">Join-Path</span> <span class="nv">$sshDir</span> <span class="s2">&quot;administrators_authorized_keys&quot;</span>
+<span class="nv">$pubKey</span>   <span class="p">=</span> <span class="s2">"ssh-ed25519 AAAA... your public key"</span>
+<span class="nv">$sshDir</span>   <span class="p">=</span> <span class="s2">"C:\ProgramData\ssh"</span>
+<span class="nv">$authKeys</span> <span class="p">=</span> <span class="nb">Join-Path</span> <span class="nv">$sshDir</span> <span class="s2">"administrators_authorized_keys"</span>
 <span class="nb">New-Item</span> <span class="n">-ItemType</span> <span class="n">Directory</span> <span class="n">-Force</span> <span class="n">-Path</span> <span class="nv">$sshDir</span> <span class="p">|</span> <span class="nb">Out-Null</span>
 <span class="nb">Set-Content</span> <span class="n">-Path</span> <span class="nv">$authKeys</span> <span class="n">-Value</span> <span class="nv">$pubKey</span> <span class="n">-Encoding</span> <span class="n">ascii</span>
 <span class="c"># Admin authorized_keys MUST be locked to Administrators+SYSTEM, or sshd ignores it</span>
 <span class="n">icacls</span> <span class="nv">$authKeys</span> <span class="p">/</span><span class="n">inheritance</span><span class="p">:</span><span class="nb">r </span><span class="p">|</span> <span class="nb">Out-Null</span>
-<span class="n">icacls</span> <span class="nv">$authKeys</span> <span class="p">/</span><span class="n">grant</span> <span class="s2">&quot;Administrators:F&quot;</span> <span class="s2">&quot;SYSTEM:F&quot;</span> <span class="p">|</span> <span class="nb">Out-Null</span>
+<span class="n">icacls</span> <span class="nv">$authKeys</span> <span class="p">/</span><span class="n">grant</span> <span class="s2">"Administrators:F"</span> <span class="s2">"SYSTEM:F"</span> <span class="p">|</span> <span class="nb">Out-Null</span>
 
 <span class="c"># Allow inbound SSH</span>
-<span class="nb">New-NetFirewallRule</span> <span class="n">-Name</span> <span class="n">sshd</span> <span class="n">-DisplayName</span> <span class="s1">&#39;OpenSSH Server (sshd)&#39;</span> <span class="p">`</span>
+<span class="nb">New-NetFirewallRule</span> <span class="n">-Name</span> <span class="n">sshd</span> <span class="n">-DisplayName</span> <span class="s1">'OpenSSH Server (sshd)'</span> <span class="p">`</span>
   <span class="n">-Enabled</span> <span class="n">True</span> <span class="n">-Direction</span> <span class="n">Inbound</span> <span class="n">-Protocol</span> <span class="n">TCP</span> <span class="n">-Action</span> <span class="n">Allow</span> <span class="n">-LocalPort</span> <span class="n">22</span>
 </code></pre></div>
 <div class="admonition warning">
@@ -3060,7 +3060,7 @@ differences from Linux:</p>
 <span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">win-remote-worker-0</span>
 <span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
 <span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">k0sInstallDir</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;C:\k0s&#39;</span><span class="w">    </span><span class="c1"># must be a Windows path</span>
+<span class="w">  </span><span class="nt">k0sInstallDir</span><span class="p">:</span><span class="w"> </span><span class="s">'C:\k0s'</span><span class="w">    </span><span class="c1"># must be a Windows path</span>
 <span class="w">  </span><span class="nt">provisioner</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">platform</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">windows</span>
 <span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cloud-config</span><span class="w">       </span><span class="c1"># Remote Machine (SSH) path; not powershell-xml</span>

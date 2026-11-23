@@ -2970,8 +2970,8 @@ cat<span class="w"> </span>my-cluster.yaml<span class="w"> </span><span class="p
 <h3 id="build-from-source">Build from source<a class="headerlink" href="#build-from-source" title="Permanent link">#</a></h3>
 <p>If you have the repository cloned, you can build or run the tool directly with <code>make</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Run without building (uses go run)</span>
-make<span class="w"> </span>convert<span class="w"> </span><span class="nv">ARGS</span><span class="o">=</span><span class="s2">&quot;my-cluster.yaml&quot;</span>
-make<span class="w"> </span>convert<span class="w"> </span><span class="nv">ARGS</span><span class="o">=</span><span class="s2">&quot;my-cluster.yaml&quot;</span><span class="w"> </span>&gt;<span class="w"> </span>my-cluster-v1beta2.yaml
+make<span class="w"> </span>convert<span class="w"> </span><span class="nv">ARGS</span><span class="o">=</span><span class="s2">"my-cluster.yaml"</span>
+make<span class="w"> </span>convert<span class="w"> </span><span class="nv">ARGS</span><span class="o">=</span><span class="s2">"my-cluster.yaml"</span><span class="w"> </span>&gt;<span class="w"> </span>my-cluster-v1beta2.yaml
 cat<span class="w"> </span>my-cluster.yaml<span class="w"> </span><span class="p">|</span><span class="w"> </span>make<span class="w"> </span>convert
 
 <span class="c1"># Build a binary for the current platform</span>

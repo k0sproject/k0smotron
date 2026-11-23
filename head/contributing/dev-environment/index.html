@@ -2827,9 +2827,9 @@ provided configuration file:</p>
 <p>Initialize the cluster, patch configurations, and enable features:</p>
 <div class="highlight"><pre><span></span><code>clusterctl<span class="w"> </span>init<span class="w"> </span>--infrastructure<span class="w"> </span>docker
 <span class="w">          </span>kubectl<span class="w"> </span>patch<span class="w"> </span>-n<span class="w"> </span>capi-system<span class="w"> </span>deployment/capi-controller-manager<span class="w"> </span>-p<span class="w"> </span><span class="se">\</span>
-<span class="w">            </span><span class="s1">&#39;{&quot;spec&quot;:{&quot;template&quot;:{&quot;spec&quot;:{&quot;containers&quot;:[{&quot;name&quot;:&quot;manager&quot;,&quot;args&quot;:[&quot;--leader-elect&quot;, &quot;--metrics-bind-addr=localhost:8080&quot;, &quot;--feature-gates=ClusterTopology=true&quot;]}]}}}}&#39;</span>
+<span class="w">            </span><span class="s1">'{"spec":{"template":{"spec":{"containers":[{"name":"manager","args":["--leader-elect", "--metrics-bind-addr=localhost:8080", "--feature-gates=ClusterTopology=true"]}]}}}}'</span>
 <span class="w">          </span>kubectl<span class="w"> </span>patch<span class="w"> </span>-n<span class="w"> </span>capd-system<span class="w"> </span>deployment/capd-controller-manager<span class="w"> </span>-p<span class="w"> </span><span class="se">\</span>
-<span class="w">            </span><span class="s1">&#39;{&quot;spec&quot;:{&quot;template&quot;:{&quot;spec&quot;:{&quot;containers&quot;:[{&quot;name&quot;:&quot;manager&quot;,&quot;args&quot;:[&quot;--leader-elect&quot;, &quot;--metrics-bind-addr=localhost:8080&quot;, &quot;--feature-gates=ClusterTopology=true&quot;]}]}}}}&#39;</span>
+<span class="w">            </span><span class="s1">'{"spec":{"template":{"spec":{"containers":[{"name":"manager","args":["--leader-elect", "--metrics-bind-addr=localhost:8080", "--feature-gates=ClusterTopology=true"]}]}}}}'</span>
 </code></pre></div>
 </li>
 <li>
@@ -2891,21 +2891,21 @@ For example, in <strong>VS Code</strong>, you can add the following debug config
 <span class="w">    </span><span class="c1">// Use IntelliSense to learn about possible attributes.</span>
 <span class="w">    </span><span class="c1">// Hover to view descriptions of existing attributes.</span>
 <span class="w">    </span><span class="c1">// For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387</span>
-<span class="w">    </span><span class="nt">&quot;version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;0.2.0&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;configurations&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="nt">"version"</span><span class="p">:</span><span class="w"> </span><span class="s2">"0.2.0"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"configurations"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">        </span><span class="p">{</span>
-<span class="w">            </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Connect to k0smotron controller manager&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;go&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;request&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;attach&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;mode&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;remote&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;port&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">30001</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;host&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;apiVersion&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;showLog&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;substitutePath&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Connect to k0smotron controller manager"</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"go"</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">"request"</span><span class="p">:</span><span class="w"> </span><span class="s2">"attach"</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">"mode"</span><span class="p">:</span><span class="w"> </span><span class="s2">"remote"</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">"port"</span><span class="p">:</span><span class="w"> </span><span class="mi">30001</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">"host"</span><span class="p">:</span><span class="w"> </span><span class="s2">"127.0.0.1"</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">"apiVersion"</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">"showLog"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">"substitutePath"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">                </span><span class="p">{</span>
-<span class="w">                    </span><span class="nt">&quot;from&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;${workspaceFolder}&quot;</span><span class="p">,</span>
-<span class="w">                    </span><span class="nt">&quot;to&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;${workspaceFolder}&quot;</span>
+<span class="w">                    </span><span class="nt">"from"</span><span class="p">:</span><span class="w"> </span><span class="s2">"${workspaceFolder}"</span><span class="p">,</span>
+<span class="w">                    </span><span class="nt">"to"</span><span class="p">:</span><span class="w"> </span><span class="s2">"${workspaceFolder}"</span>
 <span class="w">                </span><span class="p">}</span>
 <span class="w">            </span><span class="p">]</span>
 <span class="w">        </span><span class="p">}</span>
@@ -2941,7 +2941,7 @@ For example, in <strong>VS Code</strong>, you can add the following debug config
 <span class="w">    </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30001</span>
 
 <span class="nt">kustomize_substitutions</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">EXP_IN_PLACE_UPDATES</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="w">  </span><span class="nt">EXP_IN_PLACE_UPDATES</span><span class="p">:</span><span class="w"> </span><span class="s">"true"</span>
 </code></pre></div>
 <p>Now you can run <code>make tilt-up</code> target in the <strong>cluster-api</strong> project to start the development environment.</p>
 <div class="admonition note">

@@ -2795,7 +2795,7 @@ You are not currently viewing the documentation for the current stable release o
 <span class="w">    </span><span class="no">packages:</span>
 <span class="w">      </span><span class="no">- htop</span>
 <span class="w">    </span><span class="no">runcmd:</span>
-<span class="w">      </span><span class="no">- echo &quot;hello from custom controller cloud-init&quot;</span>
+<span class="w">      </span><span class="no">- echo "hello from custom controller cloud-init"</span>
 <span class="nn">---</span>
 <span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">controlplane.cluster.x-k8s.io/v1beta2</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sControlPlane</span>
@@ -2836,7 +2836,7 @@ You are not currently viewing the documentation for the current stable release o
 <span class="w">    </span><span class="no">#cloud-config</span>
 <span class="w">    </span><span class="no">write_files:</span>
 <span class="w">      </span><span class="no">- path: /etc/motd</span>
-<span class="w">        </span><span class="no">permissions: &quot;0644&quot;</span>
+<span class="w">        </span><span class="no">permissions: "0644"</span>
 <span class="w">        </span><span class="no">content: |</span>
 <span class="w">          </span><span class="no">Welcome from custom worker cloud-init</span>
 <span class="nn">---</span>
@@ -2884,26 +2884,26 @@ The variables include:</p>
 <p>Example customUserData using variables:</p>
 <div class="highlight"><pre><span></span><code><span class="x">runcmd:</span>
 <span class="x">  - </span><span class="cp">{{</span> <span class="nv">k0smotron_k0sDownloadCommands</span> <span class="cp">}}</span>
-<span class="x">  - echo &quot;About to install&quot; &amp;&amp; </span><span class="cp">{{</span> <span class="nv">k0smotron_k0sInstallCommand</span> <span class="cp">}}</span>
+<span class="x">  - echo "About to install" &amp;&amp; </span><span class="cp">{{</span> <span class="nv">k0smotron_k0sInstallCommand</span> <span class="cp">}}</span>
 <span class="x">  - </span><span class="cp">{{</span> <span class="nv">k0smotron_k0sStartCommand</span> <span class="cp">}}</span>
 
 <span class="x">write_files:</span>
 <span class="cp">{%</span> <span class="k">for</span> <span class="nv">f</span> <span class="k">in</span> <span class="nv">k0smotron_files</span> <span class="cp">%}</span>
 <span class="x">  - path: </span><span class="cp">{{</span> <span class="nv">f.path</span> <span class="cp">}}</span>
-<span class="x">    permissions: &quot;</span><span class="cp">{{</span> <span class="nv">f.permissions</span> <span class="cp">}}</span><span class="x">&quot;</span>
-<span class="cp">{%</span> <span class="k">if</span> <span class="nv">f.get</span><span class="o">(</span><span class="s1">&#39;owner&#39;</span><span class="o">)</span> <span class="cp">%}</span>
-<span class="x">    owner: &quot;</span><span class="cp">{{</span> <span class="nv">f.owner</span> <span class="cp">}}</span><span class="x">&quot;</span>
+<span class="x">    permissions: "</span><span class="cp">{{</span> <span class="nv">f.permissions</span> <span class="cp">}}</span><span class="x">"</span>
+<span class="cp">{%</span> <span class="k">if</span> <span class="nv">f.get</span><span class="o">(</span><span class="s1">'owner'</span><span class="o">)</span> <span class="cp">%}</span>
+<span class="x">    owner: "</span><span class="cp">{{</span> <span class="nv">f.owner</span> <span class="cp">}}</span><span class="x">"</span>
 <span class="cp">{%</span> <span class="k">endif</span> <span class="cp">%}</span>
-<span class="cp">{%</span> <span class="k">if</span> <span class="nv">f.get</span><span class="o">(</span><span class="s1">&#39;encoding&#39;</span><span class="o">)</span> <span class="cp">%}</span>
-<span class="x">    encoding: &quot;</span><span class="cp">{{</span> <span class="nv">f.encoding</span> <span class="cp">}}</span><span class="x">&quot;</span>
+<span class="cp">{%</span> <span class="k">if</span> <span class="nv">f.get</span><span class="o">(</span><span class="s1">'encoding'</span><span class="o">)</span> <span class="cp">%}</span>
+<span class="x">    encoding: "</span><span class="cp">{{</span> <span class="nv">f.encoding</span> <span class="cp">}}</span><span class="x">"</span>
 <span class="cp">{%</span> <span class="k">endif</span> <span class="cp">%}</span>
-<span class="cp">{%</span> <span class="k">if</span> <span class="nv">f.get</span><span class="o">(</span><span class="s1">&#39;append&#39;</span><span class="o">)</span> <span class="cp">%}</span>
+<span class="cp">{%</span> <span class="k">if</span> <span class="nv">f.get</span><span class="o">(</span><span class="s1">'append'</span><span class="o">)</span> <span class="cp">%}</span>
 <span class="x">    append: true</span>
 <span class="cp">{%</span> <span class="k">endif</span> <span class="cp">%}</span>
 <span class="x">    content: </span><span class="cp">{{</span> <span class="nv">f.content</span> <span class="o">|</span> <span class="nf">tojson</span> <span class="cp">}}</span>
 <span class="cp">{%</span> <span class="k">endfor</span> <span class="cp">%}</span>
 <span class="x">  - path: /my/custom/file.txt</span>
-<span class="x">    permissions: &quot;0644&quot;</span>
+<span class="x">    permissions: "0644"</span>
 <span class="x">    content: |</span>
 <span class="x">      Welcome from custom cloud-init with variables</span>
 </code></pre></div>
@@ -2911,12 +2911,12 @@ The variables include:</p>
 <p>Use <code>tojson</code> for <code>content</code> instead of a block scalar, which would take its indentation from the first line.</p>
 <p>Another approach is to use the variables in a completely custom script:</p>
 <div class="highlight"><pre><span></span><code><span class="x">runcmd:</span>
-<span class="x">  - echo -n &quot;custom&quot; &gt; /root/custom</span>
+<span class="x">  - echo -n "custom" &gt; /root/custom</span>
 <span class="x">  - /root/cloud-init.sh</span>
 
 <span class="x">write_files:</span>
 <span class="x">  - path: /root/cloud-init.sh</span>
-<span class="x">    permissions: &quot;0755&quot;</span>
+<span class="x">    permissions: "0755"</span>
 <span class="x">    content: |</span>
 <span class="x">      #!/usr/bin/bash</span>
 <span class="x">      set -euo pipefail</span>
@@ -2926,12 +2926,12 @@ The variables include:</p>
 <span class="x">      </span><span class="cp">{{</span> <span class="nv">k0smotron_k0sStartCommand</span> <span class="cp">}}</span>
 <span class="cp">{%</span> <span class="k">for</span> <span class="nv">f</span> <span class="k">in</span> <span class="nv">k0smotron_files</span> <span class="cp">%}</span>
 <span class="x">  - path: </span><span class="cp">{{</span> <span class="nv">f.path</span> <span class="cp">}}</span>
-<span class="x">    permissions: &quot;</span><span class="cp">{{</span> <span class="nv">f.permissions</span> <span class="cp">}}</span><span class="x">&quot;</span>
+<span class="x">    permissions: "</span><span class="cp">{{</span> <span class="nv">f.permissions</span> <span class="cp">}}</span><span class="x">"</span>
 <span class="x">    content: </span><span class="cp">{{</span> <span class="nv">f.content</span> <span class="o">|</span> <span class="nf">tojson</span> <span class="cp">}}</span>
 <span class="cp">{%</span> <span class="k">endfor</span> <span class="cp">%}</span>
 <span class="x">  - path: /root/my-extra-file</span>
 <span class="x">    content: test</span>
-<span class="x">    permissions: &quot;0600&quot;</span>
+<span class="x">    permissions: "0600"</span>
 </code></pre></div>
 <p>You don't need to start the document with <code>## template: jinja</code> or <code>#cloud-init</code>, k0smotron does it.</p>
 <h4 id="enabling-the-feature-gate">Enabling the feature gate<a class="headerlink" href="#enabling-the-feature-gate" title="Permanent link">#</a></h4>
@@ -2942,14 +2942,14 @@ The variables include:</p>
 <p>Setting the <code>K0SMOTRON_FEATURE_GATES</code> environment variable to k0smotron controller manager deployment. For example, if you are using the k0smotron Helm chart, you can set it like this:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">env</span><span class="p">:</span>
 <span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0SMOTRON_FEATURE_GATES</span>
-<span class="w">  </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;CloudInitVars=true&quot;</span>
+<span class="w">  </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">"CloudInitVars=true"</span>
 </code></pre></div>
 </li>
 </ul>
 <ul>
 <li>
 <p>Setting the <code>K0SMOTRON_FEATURE_GATES</code> environment variable for <code>clusterctl</code>. For example:</p>
-<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">K0SMOTRON_FEATURE_GATES</span><span class="o">=</span><span class="s2">&quot;CloudInitVars=true&quot;</span>
+<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">K0SMOTRON_FEATURE_GATES</span><span class="o">=</span><span class="s2">"CloudInitVars=true"</span>
 clusterctl<span class="w"> </span>init<span class="w"> </span>--bootstrap<span class="w"> </span>k0sproject-k0smotron
 </code></pre></div>
 </li>

@@ -2859,7 +2859,7 @@ procedure to check the logs of your infrastructure provider controller:</p>
 <ol>
 <li>
 <p>Decode the token:</p>
-<div class="highlight"><pre><span></span><code><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;&lt;token&gt;&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="w"> </span><span class="p">|</span><span class="w"> </span>gunzip
+<div class="highlight"><pre><span></span><code><span class="nb">echo</span><span class="w"> </span><span class="s2">"&lt;token&gt;"</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="w"> </span><span class="p">|</span><span class="w"> </span>gunzip
 </code></pre></div>
 </li>
 <li>
@@ -2869,7 +2869,7 @@ procedure to check the logs of your infrastructure provider controller:</p>
 <li>
 <p>Run the following command, using the KUBECONFIG of the child cluster, which
    is the first part of the <code>users.user.token</code> field:</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>bootstrap-token-gb823t<span class="w"> </span>--template<span class="o">=</span><span class="s1">&#39;{{.data.expiration}}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>bootstrap-token-gb823t<span class="w"> </span>--template<span class="o">=</span><span class="s1">'{{.data.expiration}}'</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d
 <span class="m">2024</span>-03-14T11:08:13Z
 </code></pre></div>
 </li>
@@ -2883,7 +2883,7 @@ Policy</a>.</p>
 <p>When using <a href="../ingress-support/">Ingress support</a> together with an external
 Cloud Controller Manager (CCM), CCM pods may fail to start with an error like:
 <div class="highlight"><pre><span></span><code>unable to load configmap based request-header-client-ca-file: Get
-&quot;https://10.96.0.1:443/...&quot;: dial tcp 10.96.0.1:443: connect: connection refused
+"https://10.96.0.1:443/...": dial tcp 10.96.0.1:443: connect: connection refused
 </code></pre></div></p>
 <h3 id="root-cause">Root cause<a class="headerlink" href="#root-cause" title="Permanent link">#</a></h3>
 <p>The ingress support architecture relies on a local HAProxy sidecar running on
@@ -2907,9 +2907,9 @@ and <code>KUBERNETES_SERVICE_PORT</code> in the CCM pod spec, pointing directly 
 ingress hostname:
 <div class="highlight"><pre><span></span><code><span class="nt">env</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">KUBERNETES_SERVICE_HOST</span>
-<span class="w">    </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;my-cluster-api.example.com&quot;</span>
+<span class="w">    </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">"my-cluster-api.example.com"</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">KUBERNETES_SERVICE_PORT</span>
-<span class="w">    </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;443&quot;</span>
+<span class="w">    </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">"443"</span>
 </code></pre></div></p>
 <p>Another option is to set <code>--kubeconfig</code> flag in the CCM deployment to point to a kubeconfig file that uses the API hostname.</p>
 <p>This makes the CCM pod to use the API hostname directly for InCluster config instead of default <code>kubernetes</code> Service address.</p>

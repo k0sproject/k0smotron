@@ -2963,7 +2963,7 @@ You are not currently viewing the documentation for the current stable release o
 <span class="w">      </span><span class="nt">content</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
 <span class="w">        </span><span class="no">metadata:</span>
 <span class="w">          </span><span class="no">labels:</span>
-<span class="w">            </span><span class="no">custom-label: &quot;my-value&quot;</span>
+<span class="w">            </span><span class="no">custom-label: "my-value"</span>
 </code></pre></div>
 <h3 id="cluster-api">Cluster API<a class="headerlink" href="#cluster-api" title="Permanent link">#</a></h3>
 <p>The following example builds on the <a href="../../capi-docker/">Docker (HCP)</a> example and adds patches. It demonstrates all three patch types (<code>strategic</code>, <code>json</code>, <code>merge</code>) targeting different components. Before starting, ensure that you have met the <a href="../../capi-examples/#prerequisites">general prerequisites</a> and initialized the Docker infrastructure provider as described in the <a href="../../capi-docker/">Docker (HCP)</a> guide.</p>
@@ -3017,11 +3017,11 @@ You are not currently viewing the documentation for the current stable release o
 <span class="w">                </span><span class="no">- name: controller</span>
 <span class="w">                  </span><span class="no">resources:</span>
 <span class="w">                    </span><span class="no">requests:</span>
-<span class="w">                      </span><span class="no">memory: &quot;256Mi&quot;</span>
-<span class="w">                      </span><span class="no">cpu: &quot;250m&quot;</span>
+<span class="w">                      </span><span class="no">memory: "256Mi"</span>
+<span class="w">                      </span><span class="no">cpu: "250m"</span>
 <span class="w">                    </span><span class="no">limits:</span>
-<span class="w">                      </span><span class="no">memory: &quot;512Mi&quot;</span>
-<span class="w">                      </span><span class="no">cpu: &quot;500m&quot;</span>
+<span class="w">                      </span><span class="no">memory: "512Mi"</span>
+<span class="w">                      </span><span class="no">cpu: "500m"</span>
 <span class="w">                  </span><span class="no">readinessProbe:</span>
 <span class="w">                    </span><span class="no">initialDelaySeconds: 10</span>
 <span class="w">                  </span><span class="no">livenessProbe:</span>
@@ -3032,7 +3032,7 @@ You are not currently viewing the documentation for the current stable release o
 <span class="w">      </span><span class="nt">component</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">etcd</span>
 <span class="w">    </span><span class="nt">patch</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">json</span>
-<span class="w">      </span><span class="nt">content</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;[{&quot;op&quot;:&quot;add&quot;,&quot;path&quot;:&quot;/spec/template/spec/containers/0/readinessProbe/initialDelaySeconds&quot;,&quot;value&quot;:15}]&#39;</span>
+<span class="w">      </span><span class="nt">content</span><span class="p">:</span><span class="w"> </span><span class="s">'[{"op":"add","path":"/spec/template/spec/containers/0/readinessProbe/initialDelaySeconds","value":15}]'</span>
 <span class="w">  </span><span class="c1"># Add an annotation to the control-plane Service</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">target</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Service</span>
@@ -3042,7 +3042,7 @@ You are not currently viewing the documentation for the current stable release o
 <span class="w">      </span><span class="nt">content</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
 <span class="w">        </span><span class="no">metadata:</span>
 <span class="w">          </span><span class="no">annotations:</span>
-<span class="w">            </span><span class="no">example.com/managed-by: &quot;k0smotron-customized&quot;</span>
+<span class="w">            </span><span class="no">example.com/managed-by: "k0smotron-customized"</span>
 <span class="nn">---</span>
 <span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta2</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DevCluster</span>
@@ -3106,17 +3106,17 @@ You are not currently viewing the documentation for the current stable release o
 </code></pre></div>
 <p>After the cluster is provisioned, verify that the patches were applied. Resource names follow the conventions described in <a href="../../generated-resources/">Generated Resources</a>.</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Verify resource limits on the control-plane StatefulSet</span>
-kubectl<span class="w"> </span>get<span class="w"> </span>statefulset<span class="w"> </span>kmc-docker-test<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.spec.template.spec.containers[0].resources}&#39;</span>
+kubectl<span class="w"> </span>get<span class="w"> </span>statefulset<span class="w"> </span>kmc-docker-test<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">'{.spec.template.spec.containers[0].resources}'</span>
 
 <span class="c1"># Verify the control-plane probe timing</span>
-kubectl<span class="w"> </span>get<span class="w"> </span>statefulset<span class="w"> </span>kmc-docker-test<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.spec.template.spec.containers[0].readinessProbe.initialDelaySeconds}&#39;</span>
-kubectl<span class="w"> </span>get<span class="w"> </span>statefulset<span class="w"> </span>kmc-docker-test<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.spec.template.spec.containers[0].livenessProbe.initialDelaySeconds}&#39;</span>
+kubectl<span class="w"> </span>get<span class="w"> </span>statefulset<span class="w"> </span>kmc-docker-test<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">'{.spec.template.spec.containers[0].readinessProbe.initialDelaySeconds}'</span>
+kubectl<span class="w"> </span>get<span class="w"> </span>statefulset<span class="w"> </span>kmc-docker-test<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">'{.spec.template.spec.containers[0].livenessProbe.initialDelaySeconds}'</span>
 
 <span class="c1"># Verify the etcd readiness probe initial delay</span>
-kubectl<span class="w"> </span>get<span class="w"> </span>statefulset<span class="w"> </span>kmc-docker-test-etcd<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.spec.template.spec.containers[0].readinessProbe.initialDelaySeconds}&#39;</span>
+kubectl<span class="w"> </span>get<span class="w"> </span>statefulset<span class="w"> </span>kmc-docker-test-etcd<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">'{.spec.template.spec.containers[0].readinessProbe.initialDelaySeconds}'</span>
 
 <span class="c1"># Verify the annotation on the control-plane Service</span>
-kubectl<span class="w"> </span>get<span class="w"> </span>service<span class="w"> </span>kmc-docker-test-lb<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.metadata.annotations}&#39;</span>
+kubectl<span class="w"> </span>get<span class="w"> </span>service<span class="w"> </span>kmc-docker-test-lb<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">'{.metadata.annotations}'</span>
 </code></pre></div>
 <h2 id="targeting-resources">Targeting resources<a class="headerlink" href="#targeting-resources" title="Permanent link">#</a></h2>
 <p>To keep targeting predictable and maintainable, each patch entry has a <code>target</code> block that selects resources by:</p>

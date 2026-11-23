@@ -3194,14 +3194,14 @@ You are not currently viewing the documentation for the current stable release o
 <span class="w">    </span><span class="nt">verify</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
 <span class="w">    </span><span class="nt">auth</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">auth_url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://keystone.yourCloud.yourOrganization.net/</span>
-<span class="w">      </span><span class="nt">username</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;yourUserName&quot;</span>
-<span class="w">      </span><span class="nt">project_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;yourProjectID&quot;</span>
-<span class="w">      </span><span class="nt">project_name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;yourProjectName&quot;</span>
-<span class="w">      </span><span class="nt">project_domain_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;yourProjectID&quot;</span>
-<span class="w">      </span><span class="nt">user_domain_name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Default&quot;</span>
+<span class="w">      </span><span class="nt">username</span><span class="p">:</span><span class="w"> </span><span class="s">"yourUserName"</span>
+<span class="w">      </span><span class="nt">project_id</span><span class="p">:</span><span class="w"> </span><span class="s">"yourProjectID"</span>
+<span class="w">      </span><span class="nt">project_name</span><span class="p">:</span><span class="w"> </span><span class="s">"yourProjectName"</span>
+<span class="w">      </span><span class="nt">project_domain_id</span><span class="p">:</span><span class="w"> </span><span class="s">"yourProjectID"</span>
+<span class="w">      </span><span class="nt">user_domain_name</span><span class="p">:</span><span class="w"> </span><span class="s">"Default"</span>
 <span class="w">      </span><span class="nt">password</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">YourPassWord</span>
-<span class="w">    </span><span class="nt">region_name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;RegionOne&quot;</span>
-<span class="w">    </span><span class="nt">interface</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;public&quot;</span>
+<span class="w">    </span><span class="nt">region_name</span><span class="p">:</span><span class="w"> </span><span class="s">"RegionOne"</span>
+<span class="w">    </span><span class="nt">interface</span><span class="p">:</span><span class="w"> </span><span class="s">"public"</span>
 <span class="w">    </span><span class="nt">identity_api_version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
 </code></pre></div>
 <p>Create a base64-encoded OpenStack configuration file. The cluster manifest expects a secret named <code>openstack-cloud-config</code> in the <code>default</code> namespace with a <code>clouds.yaml</code> key.</p>
@@ -3387,7 +3387,7 @@ kubectl<span class="w"> </span>get<span class="w"> </span>sc
 <span class="w">              </span><span class="no">nodeSelector: null</span>
 <span class="w">              </span><span class="no">tolerations:</span>
 <span class="w">                </span><span class="no">- key: node.cloudprovider.kubernetes.io/uninitialized</span>
-<span class="w">                  </span><span class="no">value: &quot;true&quot;</span>
+<span class="w">                  </span><span class="no">value: "true"</span>
 <span class="w">                  </span><span class="no">effect: NoSchedule</span>
 <span class="w">                </span><span class="no">- key: node-role.kubernetes.io/control-plane</span>
 <span class="w">                  </span><span class="no">effect: NoSchedule</span>
@@ -3395,7 +3395,7 @@ kubectl<span class="w"> </span>get<span class="w"> </span>sc
 <span class="w">                  </span><span class="no">effect: NoSchedule</span>
 <span class="w">              </span><span class="no">extraEnv:</span>
 <span class="w">                </span><span class="no">- name: OS_CCM_REGIONAL</span>
-<span class="w">                  </span><span class="no">value: &quot;true&quot;</span>
+<span class="w">                  </span><span class="no">value: "true"</span>
 <span class="w">              </span><span class="no">extraVolumes:</span>
 <span class="w">                </span><span class="no">- name: flexvolume-dir</span>
 <span class="w">                  </span><span class="no">hostPath:</span>
@@ -3459,7 +3459,7 @@ kubectl<span class="w"> </span>get<span class="w"> </span>sc
 <span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">args</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--enable-cloud-provider</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--kubelet-extra-args=&quot;--cloud-provider=external&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--kubelet-extra-args="--cloud-provider=external"</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--debug=true</span>
 </code></pre></div>
 <h2 id="deployment-and-monitoring">Deployment and Monitoring<a class="headerlink" href="#deployment-and-monitoring" title="Permanent link">#</a></h2>
@@ -3504,7 +3504,7 @@ Cluster/cluster3<span class="w">                                                
 <h3 id="retrieve-workload-cluster-access">Retrieve Workload Cluster Access<a class="headerlink" href="#retrieve-workload-cluster-access" title="Permanent link">#</a></h3>
 <p>Obtain the workload cluster kubeconfig:</p>
 <div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>-n<span class="w"> </span>default<span class="w"> </span>get<span class="w"> </span>secrets<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-i<span class="w"> </span>kubeconfig
-kubectl<span class="w"> </span>-n<span class="w"> </span>default<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>&lt;NAME&gt;<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.data.value}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="w"> </span>&gt;<span class="w"> </span>workload-cluster.kubeconfig
+kubectl<span class="w"> </span>-n<span class="w"> </span>default<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>&lt;NAME&gt;<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">'{.data.value}'</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="w"> </span>&gt;<span class="w"> </span>workload-cluster.kubeconfig
 </code></pre></div>
 <p>You can also save it to disk and/or import to your favorite tooling like <a href="https://k8slens.dev">Lens</a>.</p>
 <h3 id="configure-openstack-integration">Configure OpenStack Integration<a class="headerlink" href="#configure-openstack-integration" title="Permanent link">#</a></h3>

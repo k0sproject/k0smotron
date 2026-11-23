@@ -2917,7 +2917,7 @@ readiness-gated rolling update. Because the CA does not change, the old and new
 certificates trust each other, so there is no window in which a renewed pod
 cannot talk to a not-yet-renewed one.</p>
 <p>To renew immediately without waiting for the threshold:</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>annotate<span class="w"> </span>cluster.k0smotron.io<span class="w"> </span>my-cluster<span class="w"> </span>k0smotron.io/renew-certificates<span class="o">=</span><span class="s2">&quot;&quot;</span>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>annotate<span class="w"> </span>cluster.k0smotron.io<span class="w"> </span>my-cluster<span class="w"> </span>k0smotron.io/renew-certificates<span class="o">=</span><span class="s2">""</span>
 </code></pre></div>
 <p>The controller removes the annotation once renewal completes.</p>
 <p>Apply the annotation to the <code>k0smotron.io/Cluster</code> resource, <strong>not</strong> to the

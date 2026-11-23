@@ -2959,7 +2959,7 @@ controller for control plane communication, while pods communicate through the H
 <span class="w">    </span><span class="nt">konnectivityHost</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">konnectivity.example.com</span>
 <span class="w">    </span><span class="nt">className</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">haproxy</span>
 <span class="w">    </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">haproxy.org/ssl-passthrough</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="w">      </span><span class="nt">haproxy.org/ssl-passthrough</span><span class="p">:</span><span class="w"> </span><span class="s">"true"</span>
 </code></pre></div>
 <h3 id="standalone-k0smotron-cluster">Standalone k0smotron Cluster<a class="headerlink" href="#standalone-k0smotron-cluster" title="Permanent link">#</a></h3>
 <div class="admonition danger">
@@ -2978,7 +2978,7 @@ controller for control plane communication, while pods communicate through the H
 <span class="w">    </span><span class="nt">konnectivityHost</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">konnectivity.example.com</span>
 <span class="w">    </span><span class="nt">className</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">haproxy</span>
 <span class="w">    </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">haproxy.org/ssl-passthrough</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="w">      </span><span class="nt">haproxy.org/ssl-passthrough</span><span class="p">:</span><span class="w"> </span><span class="s">"true"</span>
 </code></pre></div>
 <h2 id="manual-worker-setup-for-standalone-clusters">Manual Worker Setup for Standalone Clusters<a class="headerlink" href="#manual-worker-setup-for-standalone-clusters" title="Permanent link">#</a></h2>
 <p>When using standalone k0smotron clusters with ingress support, you need to manually add certificates for the HAProxy sidecar on each worker node.</p>
@@ -2987,11 +2987,11 @@ controller for control plane communication, while pods communicate through the H
 </code></pre></div>
 <p>You can obtain the required certificates from the k0smotron cluster secrets:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Get the cluster CA certificate</span>
-kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>&lt;cluster-name&gt;-ca<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.data.tls\.crt}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="w"> </span>&gt;<span class="w"> </span>/etc/haproxy/certs/ca.crt
+kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>&lt;cluster-name&gt;-ca<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">'{.data.tls\.crt}'</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="w"> </span>&gt;<span class="w"> </span>/etc/haproxy/certs/ca.crt
 
 <span class="c1"># Get the HAProxy server certificate and key</span>
-kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>&lt;cluster-name&gt;-ingress-haproxy<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.data.tls\.crt}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="w"> </span>&gt;<span class="w"> </span>/etc/haproxy/certs/server.crt
-kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>&lt;cluster-name&gt;-ingress-haproxy<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.data.tls\.key}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="w"> </span>&gt;<span class="w"> </span>/etc/haproxy/certs/server.key
+kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>&lt;cluster-name&gt;-ingress-haproxy<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">'{.data.tls\.crt}'</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="w"> </span>&gt;<span class="w"> </span>/etc/haproxy/certs/server.crt
+kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>&lt;cluster-name&gt;-ingress-haproxy<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">'{.data.tls\.key}'</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="w"> </span>&gt;<span class="w"> </span>/etc/haproxy/certs/server.key
 
 <span class="c1"># Combine server cert and key for HAProxy</span>
 cat<span class="w"> </span>/etc/haproxy/certs/server.crt<span class="w"> </span>/etc/haproxy/certs/server.key<span class="w"> </span>&gt;<span class="w"> </span>/etc/haproxy/certs/server.pem

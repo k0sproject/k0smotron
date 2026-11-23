@@ -3159,7 +3159,7 @@ grep<span class="w"> </span>ExecStart<span class="w"> </span>/etc/systemd/system
 <span class="c1"># 2. Re-install the service with the same flags plus the new ones.</span>
 <span class="c1">#    --force overwrites the existing unit file in place.</span>
 <span class="c1">#    Replace &lt;existing-flags&gt; with the flags from the ExecStart line above,</span>
-<span class="c1">#    and &lt;machine-name&gt; with this node&#39;s Machine object name (e.g. my-cluster-cp-0).</span>
+<span class="c1">#    and &lt;machine-name&gt; with this node's Machine object name (e.g. my-cluster-cp-0).</span>
 k0s<span class="w"> </span>install<span class="w"> </span>controller<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--force<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>&lt;existing-flags&gt;<span class="w"> </span><span class="se">\</span>
@@ -3188,7 +3188,7 @@ NAME:.metadata.name,<span class="se">\</span>
 INTERNAL_IP:.status.addresses<span class="o">[</span><span class="m">0</span><span class="o">]</span>.address
 </code></pre></div>
 <p>You will also need the pod and service CIDRs:</p>
-<div class="highlight"><pre><span></span><code>k0s<span class="w"> </span>config<span class="w"> </span>create<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-E<span class="w"> </span><span class="s1">&#39;podCIDR|serviceCIDR&#39;</span>
+<div class="highlight"><pre><span></span><code>k0s<span class="w"> </span>config<span class="w"> </span>create<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-E<span class="w"> </span><span class="s1">'podCIDR|serviceCIDR'</span>
 </code></pre></div>
 <h3 id="step-3-store-the-kubeconfig">Step 3: Store the kubeconfig<a class="headerlink" href="#step-3-store-the-kubeconfig" title="Permanent link">#</a></h3>
 <p>Create a Secret in the management cluster containing the existing cluster's kubeconfig. The Secret name <strong>must</strong> follow the CAPI convention: <code>{cluster-name}-kubeconfig</code>.</p>
@@ -3241,15 +3241,15 @@ kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="
 <span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-cluster</span>
 <span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
 <span class="w">  </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">cluster.x-k8s.io/paused</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="w">    </span><span class="nt">cluster.x-k8s.io/paused</span><span class="p">:</span><span class="w"> </span><span class="s">"true"</span>
 <span class="nt">spec</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">clusterNetwork</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">pods</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">cidrBlocks</span><span class="p">:</span>
-<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10.244.0.0/16</span><span class="w">       </span><span class="c1"># replace with your cluster&#39;s pod CIDR</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10.244.0.0/16</span><span class="w">       </span><span class="c1"># replace with your cluster's pod CIDR</span>
 <span class="w">    </span><span class="nt">services</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">cidrBlocks</span><span class="p">:</span>
-<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10.96.0.0/12</span><span class="w">        </span><span class="c1"># replace with your cluster&#39;s service CIDR</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10.96.0.0/12</span><span class="w">        </span><span class="c1"># replace with your cluster's service CIDR</span>
 <span class="w">    </span><span class="nt">serviceDomain</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cluster.local</span>
 <span class="w">  </span><span class="nt">controlPlaneEndpoint</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.2.3.4</span><span class="w">             </span><span class="c1"># replace with your control plane endpoint</span>
@@ -3269,7 +3269,7 @@ kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="
 <span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-cluster</span>
 <span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
 <span class="w">  </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">cluster.x-k8s.io/paused</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="w">    </span><span class="nt">cluster.x-k8s.io/paused</span><span class="p">:</span><span class="w"> </span><span class="s">"true"</span>
 <span class="nt">spec</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span><span class="w">                 </span><span class="c1"># number of existing control plane nodes</span>
 <span class="w">  </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.29.2+k0s.0</span><span class="w">     </span><span class="c1"># k0s version currently running on the cluster</span>
@@ -3288,7 +3288,7 @@ kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="
 <span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-cluster</span>
 <span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
 <span class="w">  </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">cluster.x-k8s.io/paused</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="w">    </span><span class="nt">cluster.x-k8s.io/paused</span><span class="p">:</span><span class="w"> </span><span class="s">"true"</span>
 <span class="nt">spec</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">controlPlaneEndpoint</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.2.3.4</span><span class="w">             </span><span class="c1"># same as Cluster.spec.controlPlaneEndpoint</span>
@@ -3330,7 +3330,7 @@ kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="
 <p>First, retrieve the <code>K0sControlPlane</code> UID — you will set it as the owner reference on each <code>Machine</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="nv">KCP_UID</span><span class="o">=</span><span class="k">$(</span>kubectl<span class="w"> </span>get<span class="w"> </span>k0scontrolplane<span class="w"> </span>my-cluster<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--namespace<span class="o">=</span>default<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.metadata.uid}&#39;</span><span class="k">)</span>
+<span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">'{.metadata.uid}'</span><span class="k">)</span>
 </code></pre></div>
 <p>For each existing control plane node, create a <code>Machine</code> object.</p>
 <p>Set <code>spec.providerID</code> to <code>remote-machine://&lt;IP&gt;:&lt;SSH_PORT&gt;</code>. k0smotron's <code>ProviderIDController</code> reads this value and writes it to the matching Node in the workload cluster, which is how CAPI links the <code>Machine</code> object to the Node.</p>
@@ -3343,12 +3343,12 @@ kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="
 <span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-cluster-cp-0</span>
 <span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
 <span class="w">  </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">cluster.x-k8s.io/paused</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="w">    </span><span class="nt">cluster.x-k8s.io/paused</span><span class="p">:</span><span class="w"> </span><span class="s">"true"</span>
 <span class="w">  </span><span class="nt">labels</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">cluster.x-k8s.io/cluster-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-cluster</span>
-<span class="w">    </span><span class="nt">cluster.x-k8s.io/control-plane</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="w">    </span><span class="nt">cluster.x-k8s.io/control-plane</span><span class="p">:</span><span class="w"> </span><span class="s">"true"</span>
 <span class="w">    </span><span class="nt">cluster.x-k8s.io/control-plane-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-cluster</span>
-<span class="w">    </span><span class="nt">k0smotron.io/control-plane-worker-enabled</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span><span class="w">  </span><span class="c1"># omit if CP nodes do not run workloads</span>
+<span class="w">    </span><span class="nt">k0smotron.io/control-plane-worker-enabled</span><span class="p">:</span><span class="w"> </span><span class="s">"true"</span><span class="w">  </span><span class="c1"># omit if CP nodes do not run workloads</span>
 <span class="w">  </span><span class="nt">ownerReferences</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">controlplane.cluster.x-k8s.io/v1beta2</span>
 <span class="w">    </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">K0sControlPlane</span>
@@ -3384,12 +3384,12 @@ kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="
 <span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-cluster-cp-0</span>
 <span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
 <span class="w">  </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">cluster.x-k8s.io/paused</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="w">    </span><span class="nt">cluster.x-k8s.io/paused</span><span class="p">:</span><span class="w"> </span><span class="s">"true"</span>
 <span class="w">    </span><span class="nt">cluster.x-k8s.io/cloned-from-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-cluster-cp-template</span>
 <span class="w">    </span><span class="nt">cluster.x-k8s.io/cloned-from-groupkind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">RemoteMachineTemplate.infrastructure.cluster.x-k8s.io</span>
 <span class="w">  </span><span class="nt">labels</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">cluster.x-k8s.io/cluster-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-cluster</span>
-<span class="w">    </span><span class="nt">cluster.x-k8s.io/control-plane</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="w">    </span><span class="nt">cluster.x-k8s.io/control-plane</span><span class="p">:</span><span class="w"> </span><span class="s">"true"</span>
 <span class="w">    </span><span class="nt">cluster.x-k8s.io/control-plane-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-cluster</span>
 <span class="nt">spec</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">address</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.2.3.4</span><span class="w">            </span><span class="c1"># IP address of this control plane node</span>
@@ -3428,7 +3428,7 @@ kubectl<span class="w"> </span>--kubeconfig<span class="o">=</span>./my-cluster.
 <h3 id="step-9-unpause">Step 9: Unpause<a class="headerlink" href="#step-9-unpause" title="Permanent link">#</a></h3>
 <p>Once all objects are created and you have verified the names, providerIDs, and addresses are correct, remove the paused annotation from all objects to hand over control to k0smotron.</p>
 <div class="highlight"><pre><span></span><code><span class="k">for</span><span class="w"> </span>kind<span class="w"> </span><span class="k">in</span><span class="w"> </span>cluster<span class="w"> </span>k0scontrolplane<span class="w"> </span>remotecluster<span class="w"> </span>machine<span class="w"> </span>remotemachine<span class="p">;</span><span class="w"> </span><span class="k">do</span>
-<span class="w">  </span>kubectl<span class="w"> </span>annotate<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$kind</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>kubectl<span class="w"> </span>annotate<span class="w"> </span><span class="s2">"</span><span class="nv">$kind</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--all<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--namespace<span class="o">=</span>default<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>cluster.x-k8s.io/paused-
@@ -3469,7 +3469,7 @@ remotemachine.../my-cluster-cp-2  true
 </ul>
 <p>Worker adoption can be done alongside the control plane adoption or independently at any later point.</p>
 <h3 id="step-1-collect-worker-node-information">Step 1: Collect worker node information<a class="headerlink" href="#step-1-collect-worker-node-information" title="Permanent link">#</a></h3>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>get<span class="w"> </span>nodes<span class="w"> </span>--selector<span class="w"> </span><span class="s1">&#39;!node-role.kubernetes.io/control-plane&#39;</span><span class="w"> </span><span class="se">\</span>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>get<span class="w"> </span>nodes<span class="w"> </span>--selector<span class="w"> </span><span class="s1">'!node-role.kubernetes.io/control-plane'</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>-o<span class="w"> </span>custom-columns<span class="o">=</span><span class="se">\</span>
 NAME:.metadata.name,<span class="se">\</span>
 PROVIDER_ID:.spec.providerID,<span class="se">\</span>
@@ -3484,7 +3484,7 @@ INTERNAL_IP:.status.addresses<span class="o">[</span><span class="m">0</span><sp
 <span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-cluster-worker-0</span>
 <span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
 <span class="w">  </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">cluster.x-k8s.io/paused</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="w">    </span><span class="nt">cluster.x-k8s.io/paused</span><span class="p">:</span><span class="w"> </span><span class="s">"true"</span>
 <span class="w">  </span><span class="nt">labels</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">cluster.x-k8s.io/cluster-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-cluster</span>
 <span class="nt">spec</span><span class="p">:</span>
@@ -3504,7 +3504,7 @@ INTERNAL_IP:.status.addresses<span class="o">[</span><span class="m">0</span><sp
 <span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-cluster-worker-0</span>
 <span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
 <span class="w">  </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">cluster.x-k8s.io/paused</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="w">    </span><span class="nt">cluster.x-k8s.io/paused</span><span class="p">:</span><span class="w"> </span><span class="s">"true"</span>
 <span class="nt">spec</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">address</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10.0.0.11</span>
 <span class="w">  </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">22</span>

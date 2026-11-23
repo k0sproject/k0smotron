@@ -2877,7 +2877,7 @@ You are not currently viewing the documentation for the current stable release o
 
 <span class="c"># Obtain the Okta ASA agent key and add the repository</span>
 <span class="k">RUN</span><span class="w"> </span>curl<span class="w"> </span>-fsSL<span class="w"> </span>https://dist.scaleft.com/GPG-KEY-OktaPAM-2023<span class="w"> </span><span class="p">|</span><span class="w"> </span>gpg<span class="w"> </span>--dearmor<span class="w"> </span><span class="p">|</span><span class="w"> </span>tee<span class="w"> </span>/usr/share/keyrings/oktapam-2023-archive-keyring.gpg<span class="w"> </span>&gt;<span class="w"> </span>/dev/null<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;deb [signed-by=/usr/share/keyrings/oktapam-2023-archive-keyring.gpg] https://dist.scaleft.com/repos/deb jammy okta&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tee<span class="w"> </span>/etc/apt/sources.list.d/oktapam-stable.list<span class="w"> </span><span class="err">\</span>
+<span class="w">    </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="s2">"deb [signed-by=/usr/share/keyrings/oktapam-2023-archive-keyring.gpg] https://dist.scaleft.com/repos/deb jammy okta"</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tee<span class="w"> </span>/etc/apt/sources.list.d/oktapam-stable.list<span class="w"> </span><span class="err">\</span>
 
 <span class="c"># Install the Okta ASA agents</span>
 <span class="k">RUN</span><span class="w"> </span>apt-get<span class="w"> </span>update<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span><span class="se">\</span>
@@ -2890,12 +2890,12 @@ You are not currently viewing the documentation for the current stable release o
 
 <span class="c"># Add the entrypoint script.</span>
 <span class="c"># The script starts the Okta ASA server agent, waits a bit, and then runs the command passed to the container.</span>
-<span class="k">RUN</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="s1">&#39;#!/bin/bash \n\</span>
+<span class="k">RUN</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="s1">'#!/bin/bash \n\</span>
 <span class="s1">sftd 2&gt;1 &amp; \n\</span>
 <span class="s1">sleep 10 \n\</span>
-<span class="s1">exec $@ &#39;</span><span class="w"> </span>&gt;&gt;<span class="w"> </span>/entrypoint.sh<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>chmod<span class="w"> </span>+x<span class="w"> </span>/entrypoint.sh
+<span class="s1">exec $@ '</span><span class="w"> </span>&gt;&gt;<span class="w"> </span>/entrypoint.sh<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>chmod<span class="w"> </span>+x<span class="w"> </span>/entrypoint.sh
 
-<span class="k">ENTRYPOINT</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;/entrypoint.sh&quot;</span><span class="p">]</span>
+<span class="k">ENTRYPOINT</span><span class="w"> </span><span class="p">[</span><span class="s2">"/entrypoint.sh"</span><span class="p">]</span>
 </code></pre></div>
 <h2 id="server-enrollment">Server enrollment<a class="headerlink" href="#server-enrollment" title="Permanent link">#</a></h2>
 <p>Okta ASA agent needs to be enrolled to the Okta ASA service. To do that, first we need to run <code>sftd</code> once with the enrollment token.
@@ -2918,10 +2918,10 @@ In this example we put the token to the Kubernetes secret:</p>
 <span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
 <span class="nt">data</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">sftd.yaml</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
-<span class="w">    </span><span class="no">CanonicalName: &quot;k0smotron-job-demo-runner&quot;</span>
+<span class="w">    </span><span class="no">CanonicalName: "k0smotron-job-demo-runner"</span>
 <span class="w">  </span><span class="nt">sft.conf</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
 <span class="w">    </span><span class="no"># Allow authentication as a Service User</span>
-<span class="w">    </span><span class="no">section &quot;service_auth&quot; {</span>
+<span class="w">    </span><span class="no">section "service_auth" {</span>
 <span class="w">      </span><span class="no">enable = true</span>
 <span class="w">    </span><span class="no">}</span>
 </code></pre></div>
@@ -2991,8 +2991,8 @@ $<span class="w"> </span>kubectl<span class="w"> </span>delete<span class="w"> <
 <span class="w">  </span><span class="nt">address</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;server-name&gt;</span>
 <span class="w">  </span><span class="nt">useSudo</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 <span class="w">  </span><span class="nt">provisionJob</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">sshCommand</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;ssh&quot;</span>
-<span class="w">    </span><span class="nt">scpCommand</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;scp&quot;</span>
+<span class="w">    </span><span class="nt">sshCommand</span><span class="p">:</span><span class="w"> </span><span class="s">"ssh"</span>
+<span class="w">    </span><span class="nt">scpCommand</span><span class="p">:</span><span class="w"> </span><span class="s">"scp"</span>
 <span class="w">    </span><span class="nt">jobSpecTemplate</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">spec</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">containers</span><span class="p">:</span>

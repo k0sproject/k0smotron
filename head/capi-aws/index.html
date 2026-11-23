@@ -3018,7 +3018,7 @@ Cluster/k0s-aws-test<span class="w">                                   </span>Tr
 <span class="w">    </span><span class="nt">apiPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">6443</span>
 <span class="w">    </span><span class="nt">konnectivityPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8132</span>
 <span class="w">    </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">service.beta.kubernetes.io/aws-load-balancer-type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;nlb&quot;</span>
+<span class="w">      </span><span class="nt">service.beta.kubernetes.io/aws-load-balancer-type</span><span class="p">:</span><span class="w"> </span><span class="s">"nlb"</span>
 </code></pre></div>
 <p>For scenarios involving Classic ELBs or NLBs without special options, the AWS CCM can be utilized.</p>
 <h4 id="internal-nlb">Internal NLB<a class="headerlink" href="#internal-nlb" title="Permanent link">#</a></h4>
@@ -3029,8 +3029,8 @@ Cluster/k0s-aws-test<span class="w">                                   </span>Tr
 <span class="w">    </span><span class="nt">apiPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">6443</span>
 <span class="w">    </span><span class="nt">konnectivityPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8132</span>
 <span class="w">    </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">service.beta.kubernetes.io/aws-load-balancer-type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;external&quot;</span><span class="w"> </span><span class="c1"># AWS Loadbalancer Controller creates a NLB when type is &quot;external&quot;</span>
-<span class="w">      </span><span class="nt">service.beta.kubernetes.io/aws-load-balancer-internal</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="w">      </span><span class="nt">service.beta.kubernetes.io/aws-load-balancer-type</span><span class="p">:</span><span class="w"> </span><span class="s">"external"</span><span class="w"> </span><span class="c1"># AWS Loadbalancer Controller creates a NLB when type is "external"</span>
+<span class="w">      </span><span class="nt">service.beta.kubernetes.io/aws-load-balancer-internal</span><span class="p">:</span><span class="w"> </span><span class="s">"true"</span>
 <span class="w">      </span><span class="nt">service.beta.kubernetes.io/aws-load-balancer-target-group-attributes</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">preserve_client_ip.enabled=false</span>
 </code></pre></div>
 <p><strong><em>Note:</em></strong> Please make sure that the Security Group does allow the access to the NLB on port 6443 and 8132 from the management cluster nodes. This access is crucial for Cluster API (CAPI), Cluster API Provider for AWS (CAPA), and k0smotron, as they require access to the Control Plane API. Additionally, the port for the Konnectivity service need to be accessible from worker nodes.</p>

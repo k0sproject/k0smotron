@@ -2833,9 +2833,9 @@ Also, you need to have <code>tctl</code> installed on your desktop.</p>
 <span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">secrets-admin</span>
 <span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
 <span class="nt">rules</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">apiGroups</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;&quot;</span><span class="p p-Indicator">]</span>
-<span class="w">    </span><span class="nt">resources</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;secrets&quot;</span><span class="p p-Indicator">]</span>
-<span class="w">    </span><span class="nt">verbs</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;*&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">apiGroups</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">""</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">resources</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"secrets"</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">verbs</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"*"</span><span class="p p-Indicator">]</span>
 <span class="nn">---</span>
 <span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rbac.authorization.k8s.io/v1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">RoleBinding</span>
@@ -2855,7 +2855,7 @@ Also, you need to have <code>tctl</code> installed on your desktop.</p>
 It will be used by the Teleport Cluster to verify the JWT tokens.</p>
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>kubectl<span class="w"> </span>proxy<span class="w"> </span>-p<span class="w"> </span><span class="m">8080</span>
 $<span class="w"> </span>curl<span class="w"> </span>http://localhost:8080/openid/v1/jwks
-<span class="o">{</span><span class="s2">&quot;keys&quot;</span>:<span class="o">[</span>&lt;REDACTED&gt;<span class="o">]}</span>
+<span class="o">{</span><span class="s2">"keys"</span>:<span class="o">[</span>&lt;REDACTED&gt;<span class="o">]}</span>
 </code></pre></div>
 <p>Create <code>teleport-role.yaml</code>. Don't forget to specify correct permissions for the role, see <a href="https://goteleport.com/docs/access-controls/guides/role-templates/">Teleport documentation</a>.</p>
 <div class="highlight"><pre><span></span><code><span class="nn">---</span>
@@ -2885,9 +2885,9 @@ $<span class="w"> </span>curl<span class="w"> </span>http://localhost:8080/openi
 <span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">static_jwks</span>
 <span class="w">    </span><span class="nt">static_jwks</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">jwks</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
-<span class="w">        </span><span class="no">{&quot;keys&quot;:[&lt;REDACTED&gt;]}</span>
+<span class="w">        </span><span class="no">{"keys":[&lt;REDACTED&gt;]}</span>
 <span class="w">    </span><span class="nt">allow</span><span class="p">:</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">service_account</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;default:k0smotron-teleport-bot&quot;</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">service_account</span><span class="p">:</span><span class="w"> </span><span class="s">"default:k0smotron-teleport-bot"</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>tctl<span class="w"> </span>create<span class="w"> </span>-f<span class="w"> </span>k0smotron-bot-token.yaml
 </code></pre></div>
@@ -2983,8 +2983,8 @@ Also, you can use <a href="https://github.com/k0sproject/k0smotron/blob/v2.3.1/c
 <span class="w">  </span><span class="nt">address</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;server-name&gt;</span>
 <span class="w">  </span><span class="nt">useSudo</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
 <span class="w">  </span><span class="nt">provisionJob</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">sshCommand</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;tsh</span><span class="nv"> </span><span class="s">-i</span><span class="nv"> </span><span class="s">/identity-output/identity</span><span class="nv"> </span><span class="s">--proxy</span><span class="nv"> </span><span class="s">teleport.example.com:443</span><span class="nv"> </span><span class="s">ssh&quot;</span>
-<span class="w">    </span><span class="nt">scpCommand</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;tsh</span><span class="nv"> </span><span class="s">-i</span><span class="nv"> </span><span class="s">/identity-output/identity</span><span class="nv"> </span><span class="s">--proxy</span><span class="nv"> </span><span class="s">teleport.example.com:443</span><span class="nv"> </span><span class="s">scp&quot;</span>
+<span class="w">    </span><span class="nt">sshCommand</span><span class="p">:</span><span class="w"> </span><span class="s">"tsh</span><span class="nv"> </span><span class="s">-i</span><span class="nv"> </span><span class="s">/identity-output/identity</span><span class="nv"> </span><span class="s">--proxy</span><span class="nv"> </span><span class="s">teleport.example.com:443</span><span class="nv"> </span><span class="s">ssh"</span>
+<span class="w">    </span><span class="nt">scpCommand</span><span class="p">:</span><span class="w"> </span><span class="s">"tsh</span><span class="nv"> </span><span class="s">-i</span><span class="nv"> </span><span class="s">/identity-output/identity</span><span class="nv"> </span><span class="s">--proxy</span><span class="nv"> </span><span class="s">teleport.example.com:443</span><span class="nv"> </span><span class="s">scp"</span>
 <span class="w">    </span><span class="nt">jobSpecTemplate</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">spec</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">containers</span><span class="p">:</span>

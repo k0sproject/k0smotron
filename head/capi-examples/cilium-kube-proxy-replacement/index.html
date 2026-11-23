@@ -2926,8 +2926,8 @@ You are not currently viewing the documentation for the current stable release o
 <span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">control-plane-endpoint</span>
 <span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kube-system</span>
 <span class="nt">data</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">apiServerHost</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;&lt;API</span><span class="nv"> </span><span class="s">external</span><span class="nv"> </span><span class="s">address&gt;&quot;</span>
-<span class="w">  </span><span class="nt">apiServerPort</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;&lt;API</span><span class="nv"> </span><span class="s">port&gt;&quot;</span>
+<span class="w">  </span><span class="nt">apiServerHost</span><span class="p">:</span><span class="w"> </span><span class="s">"&lt;API</span><span class="nv"> </span><span class="s">external</span><span class="nv"> </span><span class="s">address&gt;"</span>
+<span class="w">  </span><span class="nt">apiServerPort</span><span class="p">:</span><span class="w"> </span><span class="s">"&lt;API</span><span class="nv"> </span><span class="s">port&gt;"</span>
 </code></pre></div>
 <p>You can reference these values in Cilium's Helm chart configuration, so no manual, pre-known addresses are required.</p>
 <h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">#</a></h2>
@@ -2970,7 +2970,7 @@ You are not currently viewing the documentation for the current stable release o
 <span class="w">              </span><span class="nt">charts</span><span class="p">:</span>
 <span class="w">                </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cilium</span>
 <span class="w">                  </span><span class="nt">chartname</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cilium/cilium</span>
-<span class="w">                  </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1.17.1&quot;</span>
+<span class="w">                  </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="s">"1.17.1"</span>
 <span class="w">                  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kube-system</span>
 <span class="w">                  </span><span class="nt">values</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
 <span class="w">                    </span><span class="no">kubeProxyReplacement: true</span>
@@ -3051,8 +3051,8 @@ You are not currently viewing the documentation for the current stable release o
 <span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">control-plane-endpoint</span>
 <span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kube-system</span>
 <span class="nt">data</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">apiServerHost</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;192.168.1.100&quot;</span><span class="w">   </span><span class="c1"># your LB IP or hostname</span>
-<span class="w">  </span><span class="nt">apiServerPort</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;6443&quot;</span>
+<span class="w">  </span><span class="nt">apiServerHost</span><span class="p">:</span><span class="w"> </span><span class="s">"192.168.1.100"</span><span class="w">   </span><span class="c1"># your LB IP or hostname</span>
+<span class="w">  </span><span class="nt">apiServerPort</span><span class="p">:</span><span class="w"> </span><span class="s">"6443"</span>
 </code></pre></div>
 <h2 id="verifying-cilium">Verifying Cilium<a class="headerlink" href="#verifying-cilium" title="Permanent link">#</a></h2>
 <div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>--kubeconfig<span class="w"> </span>child.conf<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>ds/cilium<span class="w"> </span>--<span class="w"> </span>cilium<span class="w"> </span>status

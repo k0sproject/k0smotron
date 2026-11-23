@@ -2702,7 +2702,7 @@ to prevent data loss. For example:</p>
 <span class="w">   </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.27.2-k0s.0</span>
 <span class="w">   </span><span class="nt">persistence</span><span class="p">:</span>
 <span class="w">     </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hostPath</span>
-<span class="w">     </span><span class="nt">hostPath</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/tmp/kmc-test&quot;</span><span class="w"> </span><span class="c1"># k0smotron will mount a basic hostPath volume to avoid data loss.</span>
+<span class="w">     </span><span class="nt">hostPath</span><span class="p">:</span><span class="w"> </span><span class="s">"/tmp/kmc-test"</span><span class="w"> </span><span class="c1"># k0smotron will mount a basic hostPath volume to avoid data loss.</span>
 </code></pre></div>
 <p>Using the <code>hostPath</code> volume type introduces many security risks.
  Avoid configuring persistence for volumes of the <code>hostPath</code> type in production environments.

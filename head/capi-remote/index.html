@@ -2912,7 +2912,7 @@ You are not currently viewing the documentation for the current stable release o
 <span class="w">  </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">22</span>
 <span class="w">  </span><span class="nt">user</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">root</span>
 <span class="w">  </span><span class="nt">sshKeyRef</span><span class="p">:</span>
-<span class="w">    </span><span class="c1"># This defines which SSH key to use for connecting to the machine. The Secret needs to have key &#39;value&#39; with the SSH private key in it.</span>
+<span class="w">    </span><span class="c1"># This defines which SSH key to use for connecting to the machine. The Secret needs to have key 'value' with the SSH private key in it.</span>
 <span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">footloose-key</span>
 </code></pre></div>
 <h2 id="using-remotemachines-in-machinetemplates-of-higher-level-objects">Using <code>RemoteMachine</code>s in <code>machineTemplate</code>s of higher-level objects<a class="headerlink" href="#using-remotemachines-in-machinetemplates-of-higher-level-objects" title="Permanent link">#</a></h2>
@@ -2982,7 +2982,7 @@ Since k0smotron remote machine provider can't create machines on its own, it wor
 <span class="w">      </span><span class="nt">spec</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">api</span><span class="p">:</span>
 <span class="w">          </span><span class="nt">extraArgs</span><span class="p">:</span>
-<span class="w">            </span><span class="nt">anonymous-auth</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="w">            </span><span class="nt">anonymous-auth</span><span class="p">:</span><span class="w"> </span><span class="s">"true"</span>
 <span class="w">  </span><span class="nt">machineTemplate</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">infrastructureRef</span><span class="p">:</span>
@@ -3074,13 +3074,13 @@ If the <code>RemoteMachine</code> was provisioned using some other bootstrap pro
 <span class="w">  </span><span class="nt">sshKeyRef</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">footloose-key</span>
 <span class="w">  </span><span class="nt">customCleanUpCommands</span><span class="p">:</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;systemctl</span><span class="nv"> </span><span class="s">stop</span><span class="nv"> </span><span class="s">custom-service&quot;</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;/custom-cleanup-script.sh&quot;</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;/usr/local/bin/k0s</span><span class="nv"> </span><span class="s">etcd</span><span class="nv"> </span><span class="s">leave&quot;</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;/usr/local/bin/k0s</span><span class="nv"> </span><span class="s">stop&quot;</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;/usr/local/bin/k0s</span><span class="nv"> </span><span class="s">reset&quot;</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;rm</span><span class="nv"> </span><span class="s">-rf</span><span class="nv"> </span><span class="s">/opt/custom-data&quot;</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;echo</span><span class="nv"> </span><span class="s">&#39;Custom</span><span class="nv"> </span><span class="s">cleanup</span><span class="nv"> </span><span class="s">completed&#39;&quot;</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"systemctl</span><span class="nv"> </span><span class="s">stop</span><span class="nv"> </span><span class="s">custom-service"</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"/custom-cleanup-script.sh"</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"/usr/local/bin/k0s</span><span class="nv"> </span><span class="s">etcd</span><span class="nv"> </span><span class="s">leave"</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"/usr/local/bin/k0s</span><span class="nv"> </span><span class="s">stop"</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"/usr/local/bin/k0s</span><span class="nv"> </span><span class="s">reset"</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"rm</span><span class="nv"> </span><span class="s">-rf</span><span class="nv"> </span><span class="s">/opt/custom-data"</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"echo</span><span class="nv"> </span><span class="s">'Custom</span><span class="nv"> </span><span class="s">cleanup</span><span class="nv"> </span><span class="s">completed'"</span>
 </code></pre></div>
 <p><code>useSudo</code> field will be respected for <code>customCleanUpCommands</code> to execute the commands with elevated privileges if needed.</p>
 <p>Another way to provide custom cleanup logic is to create a script on the machine using <code>files</code> and then reference that script in <code>customCleanUpCommands</code>. For example:</p>
@@ -3094,9 +3094,9 @@ If the <code>RemoteMachine</code> was provisioned using some other bootstrap pro
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/custom-cleanup-script.sh</span>
 <span class="w">      </span><span class="nt">content</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
 <span class="w">        </span><span class="no">#!/bin/bash</span>
-<span class="w">        </span><span class="no">echo &quot;Running custom cleanup script&quot;</span>
+<span class="w">        </span><span class="no">echo "Running custom cleanup script"</span>
 <span class="w">        </span><span class="no"># Add your custom cleanup logic here</span>
-<span class="w">      </span><span class="nt">permissions</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;0755&quot;</span>
+<span class="w">      </span><span class="nt">permissions</span><span class="p">:</span><span class="w"> </span><span class="s">"0755"</span>
 <span class="nn">---</span>
 <span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infrastructure.cluster.x-k8s.io/v1beta1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">RemoteMachine</span>
@@ -3110,7 +3110,7 @@ If the <code>RemoteMachine</code> was provisioned using some other bootstrap pro
 <span class="w">  </span><span class="nt">sshKeyRef</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">footloose-key</span>
 <span class="w">  </span><span class="nt">customCleanUpCommands</span><span class="p">:</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;/custom-cleanup-script.sh&quot;</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"/custom-cleanup-script.sh"</span>
 </code></pre></div>
 
 

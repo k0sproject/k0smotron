@@ -2807,8 +2807,8 @@ curl<span class="w"> </span>-L<span class="w"> </span>https://github.com/k0sproj
 <span class="c1"># Optional: Annotate the layer for your binary</span>
 cat<span class="w"> </span><span class="s">&lt;&lt;EOF &gt; annotations.json</span>
 <span class="s">{</span>
-<span class="s">  &quot;k0s&quot;: {</span>
-<span class="s">    &quot;arch&quot;: &quot;amd64&quot;</span>
+<span class="s">  "k0s": {</span>
+<span class="s">    "arch": "amd64"</span>
 <span class="s">  }</span>
 <span class="s">}</span>
 <span class="s">EOF</span>
@@ -2821,16 +2821,16 @@ oras<span class="w"> </span>push<span class="w"> </span>example.com/my-repo/k0s:
 </code></pre></div>
 <p>This command outputs the OCI manifest, including its layers. One of these layers corresponds to the k0s binary blob.</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;schemaVersion&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;mediaType&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;application/vnd.oci.image.manifest.v1+json&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;artifactType&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;application/octet-stream&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;layers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">  </span><span class="nt">"schemaVersion"</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"mediaType"</span><span class="p">:</span><span class="w"> </span><span class="s2">"application/vnd.oci.image.manifest.v1+json"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"artifactType"</span><span class="p">:</span><span class="w"> </span><span class="s2">"application/octet-stream"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"layers"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;mediaType&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;application/vnd.oci.image.layer.v1.tar&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;digest&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sha256:abcdefg123456789&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;size&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">262022198</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;annotations&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;org.opencontainers.image.title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;k0s&quot;</span>
+<span class="w">      </span><span class="nt">"mediaType"</span><span class="p">:</span><span class="w"> </span><span class="s2">"application/vnd.oci.image.layer.v1.tar"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"digest"</span><span class="p">:</span><span class="w"> </span><span class="s2">"sha256:abcdefg123456789"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"size"</span><span class="p">:</span><span class="w"> </span><span class="mi">262022198</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"annotations"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"org.opencontainers.image.title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"k0s"</span>
 <span class="w">      </span><span class="p">}</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">]</span>
@@ -2900,8 +2900,8 @@ oras<span class="w"> </span>push<span class="w"> </span>example.com/my-repo/k0s:
 <span class="w">    </span><span class="nt">downloadURL</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">oci://example.com/my-repo/k0s@sha256:abcdefg123456789</span>
 <span class="w">    </span><span class="c1"># Install Oras CLI</span>
 <span class="w">    </span><span class="nt">preK0sCommands</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">VERSION=&quot;1.3.0&quot;</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">curl -LO &quot;https://github.com/oras-project/oras/releases/download/v${VERSION}/oras_${VERSION}_linux_amd64.tar.gz&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">VERSION="1.3.0"</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">curl -LO "https://github.com/oras-project/oras/releases/download/v${VERSION}/oras_${VERSION}_linux_amd64.tar.gz"</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mkdir -p oras-install/</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tar -zxf oras_${VERSION}_*.tar.gz -C oras-install/</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sudo mv oras-install/oras /usr/local/bin/</span>
@@ -2916,7 +2916,7 @@ oras<span class="w"> </span>push<span class="w"> </span>example.com/my-repo/k0s:
 <span class="w">      </span><span class="nt">spec</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">api</span><span class="p">:</span>
 <span class="w">          </span><span class="nt">extraArgs</span><span class="p">:</span>
-<span class="w">            </span><span class="nt">anonymous-auth</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="w">            </span><span class="nt">anonymous-auth</span><span class="p">:</span><span class="w"> </span><span class="s">"true"</span>
 <span class="w">        </span><span class="nt">telemetry</span><span class="p">:</span>
 <span class="w">          </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
 <span class="w">  </span><span class="nt">machineTemplate</span><span class="p">:</span>
@@ -2938,7 +2938,7 @@ oras<span class="w"> </span>push<span class="w"> </span>example.com/my-repo/k0s:
 <span class="w">    </span><span class="nt">healthCheckProtocol</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TCP</span>
 <span class="w">  </span><span class="nt">network</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">additionalControlPlaneIngressRules</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;k0s</span><span class="nv"> </span><span class="s">controller</span><span class="nv"> </span><span class="s">join</span><span class="nv"> </span><span class="s">API&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">"k0s</span><span class="nv"> </span><span class="s">controller</span><span class="nv"> </span><span class="s">join</span><span class="nv"> </span><span class="s">API"</span>
 <span class="w">        </span><span class="nt">protocol</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tcp</span>
 <span class="w">        </span><span class="nt">fromPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">9443</span>
 <span class="w">        </span><span class="nt">toPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">9443</span>
@@ -2965,8 +2965,8 @@ oras<span class="w"> </span>push<span class="w"> </span>example.com/my-repo/k0s:
 <span class="w">        </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">.dockerconfigjson</span>
 <span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/root/.docker/config.json</span>
 <span class="w">    </span><span class="nt">preK0sCommands</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">VERSION=&quot;1.3.0&quot;</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">curl -LO &quot;https://github.com/oras-project/oras/releases/download/v${VERSION}/oras_${VERSION}_linux_amd64.tar.gz&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">VERSION="1.3.0"</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">curl -LO "https://github.com/oras-project/oras/releases/download/v${VERSION}/oras_${VERSION}_linux_amd64.tar.gz"</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mkdir -p oras-install/</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tar -zxf oras_${VERSION}_*.tar.gz -C oras-install/</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sudo mv oras-install/oras /usr/local/bin/</span>
@@ -2982,7 +2982,7 @@ oras<span class="w"> </span>push<span class="w"> </span>example.com/my-repo/k0s:
 <span class="w">      </span><span class="nt">spec</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">api</span><span class="p">:</span>
 <span class="w">          </span><span class="nt">extraArgs</span><span class="p">:</span>
-<span class="w">            </span><span class="nt">anonymous-auth</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="w">            </span><span class="nt">anonymous-auth</span><span class="p">:</span><span class="w"> </span><span class="s">"true"</span>
 <span class="w">        </span><span class="nt">telemetry</span><span class="p">:</span>
 <span class="w">          </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
 <span class="w">  </span><span class="nt">machineTemplate</span><span class="p">:</span>

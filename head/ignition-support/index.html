@@ -2814,7 +2814,7 @@ clusterctl<span class="w"> </span>init<span class="w"> </span>--infrastructure<s
 <span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">ignition</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">storageType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ClusterObjectStore</span>
-<span class="w">        </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;3.4&quot;</span>
+<span class="w">        </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="s">"3.4"</span>
 <span class="w">      </span><span class="nt">ami</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ami-00d12617b68dbc62f</span><span class="w"> </span><span class="c1"># Flatcar Container Linux stable 3975.2.1 (HVM) in eu-west-1</span>
 <span class="w">      </span><span class="nt">instanceType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">t3.large</span>
@@ -2857,7 +2857,7 @@ clusterctl<span class="w"> </span>init<span class="w"> </span>--infrastructure<s
 <span class="w">      </span><span class="nt">spec</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">api</span><span class="p">:</span>
 <span class="w">          </span><span class="nt">extraArgs</span><span class="p">:</span>
-<span class="w">            </span><span class="nt">anonymous-auth</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="w">            </span><span class="nt">anonymous-auth</span><span class="p">:</span><span class="w"> </span><span class="s">"true"</span>
 <span class="w">        </span><span class="nt">telemetry</span><span class="p">:</span>
 <span class="w">          </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
 <span class="w">  </span><span class="nt">machineTemplate</span><span class="p">:</span>
@@ -2889,7 +2889,7 @@ clusterctl<span class="w"> </span>init<span class="w"> </span>--infrastructure<s
 <span class="w">    </span><span class="nt">healthCheckProtocol</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TCP</span>
 <span class="w">  </span><span class="nt">network</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">additionalControlPlaneIngressRules</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;k0s</span><span class="nv"> </span><span class="s">controller</span><span class="nv"> </span><span class="s">join</span><span class="nv"> </span><span class="s">API&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">"k0s</span><span class="nv"> </span><span class="s">controller</span><span class="nv"> </span><span class="s">join</span><span class="nv"> </span><span class="s">API"</span>
 <span class="w">        </span><span class="nt">protocol</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tcp</span>
 <span class="w">        </span><span class="nt">fromPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">9443</span>
 <span class="w">        </span><span class="nt">toPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">9443</span>
