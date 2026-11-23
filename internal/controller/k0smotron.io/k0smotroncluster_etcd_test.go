@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	km "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
 	apps "k8s.io/api/apps/v1"
@@ -46,37 +47,8 @@ func TestEtcd_calculateDesiredReplicas(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run("", func(t *testing.T) {
-			got := calculateDesiredReplicas(tc.cluster, nil)
+			got := calculateDesiredEtcdReplicas(tc.cluster)
 			assert.Equal(t, tc.want, got)
-		})
-	}
-}
-
-func TestEtcd_etcdReplicasToApply(t *testing.T) {
-	tests := []struct {
-		name               string
-		desired            int32
-		current            int32
-		ready              int32
-		wantReplicas       int32
-		wantScaleUpPending bool
-	}{
-		{name: "unchanged with all members ready", desired: 3, current: 3, ready: 3, wantReplicas: 3},
-		// Template changes must still be applied, e.g. to fix crash-looping members.
-		{name: "unchanged with no member ready", desired: 3, current: 3, ready: 0, wantReplicas: 3},
-		{name: "unchanged with some members ready", desired: 3, current: 3, ready: 1, wantReplicas: 3},
-		{name: "scale up by one", desired: 3, current: 1, ready: 1, wantReplicas: 2, wantScaleUpPending: true},
-		{name: "scale up last step", desired: 3, current: 2, ready: 2, wantReplicas: 3},
-		{name: "scale up waits for current members", desired: 3, current: 2, ready: 1, wantReplicas: 2, wantScaleUpPending: true},
-		{name: "scale up waits with no member ready", desired: 5, current: 3, ready: 0, wantReplicas: 3, wantScaleUpPending: true},
-		{name: "scale down", desired: 1, current: 3, ready: 0, wantReplicas: 1},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			replicas, scaleUpPending := etcdReplicasToApply(tc.desired, tc.current, tc.ready)
-			assert.Equal(t, tc.wantReplicas, replicas)
-			assert.Equal(t, tc.wantScaleUpPending, scaleUpPending)
 		})
 	}
 }
@@ -250,4 +222,173 @@ func TestEtcd_emptyFingerprintOmitsAnnotation(t *testing.T) {
 	sts := generateEtcdStatefulSet(kmc, nil, 1, "")
 	_, ok := sts.Spec.Template.Annotations[certificateFingerprintAnnotation]
 	assert.False(t, ok, "an empty fingerprint must not add an annotation, so existing clusters do not roll on upgrade")
+}
+
+func Test_calculateReplicasToApply(t *testing.T) {
+	tests := []struct {
+		name                string
+		desired             int32
+		current             int32
+		ready               int32
+		isEtcdBootstrapping bool
+		want                int32
+	}{
+		{
+			name:                "bootstrapping with no ready replicas",
+			desired:             3,
+			current:             3,
+			ready:               0,
+			isEtcdBootstrapping: true,
+			want:                3,
+		},
+		{
+			// This state is reached in a very specific scenario during bootstrapping when join configmap has not
+			// yet marked the cluster as bootstrapped.
+			name:                "bootstrapping with ready replicas",
+			desired:             5,
+			current:             3,
+			ready:               1,
+			isEtcdBootstrapping: true,
+			want:                3,
+		},
+		{
+			name:                "etcd cluster not ready to be scaled up",
+			desired:             5,
+			current:             3,
+			ready:               1,
+			isEtcdBootstrapping: false,
+			want:                3,
+		},
+		{
+			name:                "scaled up one by one. One replicas to add -> only one to be applied",
+			desired:             4,
+			current:             3,
+			ready:               3,
+			isEtcdBootstrapping: false,
+			want:                4,
+		},
+		{
+			name:                "scaled up one by one. Two replicas to add -> only one to be applied",
+			desired:             5,
+			current:             3,
+			ready:               3,
+			isEtcdBootstrapping: false,
+			want:                4,
+		},
+		{
+			name:                "scaled down not supported",
+			desired:             2,
+			current:             3,
+			ready:               3,
+			isEtcdBootstrapping: false,
+			want:                3,
+		},
+		{
+			name:                "state reached",
+			desired:             3,
+			current:             3,
+			ready:               3,
+			isEtcdBootstrapping: false,
+			want:                3,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := calculateReplicasToApply(tt.desired, tt.current, tt.ready, tt.isEtcdBootstrapping)
+			require.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func Test_calculateIsEtcdBootstrappingKey(t *testing.T) {
+	tests := []struct {
+		name          string
+		sts           *apps.StatefulSet
+		joinConfigMap *corev1.ConfigMap
+		want          bool
+	}{
+		{
+			name: "etcd cluster not found: nil sts",
+			sts:  nil,
+			want: true,
+		},
+		{
+			name: "etcd cluster not found: empty sts (go-client case for NotFound)",
+			sts:  &apps.StatefulSet{},
+			want: true,
+		},
+		{
+			name: "join config map not found",
+			sts: &apps.StatefulSet{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
+			},
+			joinConfigMap: nil,
+			want:          false,
+		},
+		{
+			name: "join config reporting cluster created",
+			sts: &apps.StatefulSet{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
+			},
+			joinConfigMap: &corev1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
+				Data: map[string]string{
+					isEtcdBootstrappingKey: "false",
+				},
+			},
+			want: false,
+		},
+		{
+			name: "some members ready, meaning cluster is already created",
+			sts: &apps.StatefulSet{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
+				Status: apps.StatefulSetStatus{
+					ReadyReplicas: 1,
+				},
+			},
+			joinConfigMap: &corev1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
+				Data: map[string]string{
+					isEtcdBootstrappingKey: "true",
+				},
+			},
+			want: false,
+		},
+		{
+			name: "etcd is bootstrapping",
+			sts: &apps.StatefulSet{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
+				Status: apps.StatefulSetStatus{
+					ReadyReplicas: 0,
+				},
+			},
+			joinConfigMap: &corev1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
+				Data: map[string]string{
+					isEtcdBootstrappingKey: "true",
+				},
+			},
+			want: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := calculateIsEtcdBootstrappingKey(tt.sts, tt.joinConfigMap)
+			require.Equal(t, tt.want, got)
+		})
+	}
 }

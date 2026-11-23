@@ -79,7 +79,10 @@ func reconcileEtcdPVC(ctx context.Context, kmc *km.Cluster, scope *kmcScope) err
 	if err != nil && !apierrors.IsNotFound(err) {
 		return fmt.Errorf("failed to get StatefulSet %s: %w", kmc.GetEtcdStatefulSetName(), err)
 	}
-	return resizeStatefulSetAndPVC(ctx, kmc, kmc.Spec.Storage.Etcd.Persistence.Size, calculateDesiredReplicas(kmc, foundStatefulSet), kmc.GetEtcdStatefulSetName(), "etcd-data", scope.client)
+
+	// etcd is never scaled down, so there may be more members than desired: resize all of their PVCs.
+	replicas := max(calculateDesiredEtcdReplicas(kmc), foundStatefulSet.Status.Replicas)
+	return resizeStatefulSetAndPVC(ctx, kmc, kmc.Spec.Storage.Etcd.Persistence.Size, replicas, kmc.GetEtcdStatefulSetName(), "etcd-data", scope.client)
 }
 
 func resizeStatefulSetAndPVC(ctx context.Context, kmc *km.Cluster, desiredStorageSize resource.Quantity, replicas int32, stsName, vctName string, c client.Client) error {
