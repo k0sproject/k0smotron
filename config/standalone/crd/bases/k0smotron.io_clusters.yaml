@@ -9483,6 +9483,12 @@ spec:
                     - name
                     - namespace
                     type: object
+                  syncReferencedObjects:
+                    default: false
+                    description: |-
+                      When true, resources consumed by HCP StatefulSet are copied from the
+                      management cluster to the remote host cluster on each reconciliation and deleted with the Cluster.
+                    type: boolean
                 type: object
               replicas:
                 default: 1
