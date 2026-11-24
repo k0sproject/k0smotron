@@ -128,7 +128,10 @@ func SyncReferencedObjects(ctx context.Context, src, dst client.Client, kmc *km.
 		}
 		// The object passed to CreateOrUpdate is overwritten by the Get, so it starts empty and is
 		// filled from the fetched source object in the mutate function.
-		obj := runtimeObj.(client.Object)
+		obj, ok := runtimeObj.(client.Object)
+		if !ok {
+			return fmt.Errorf("%s is not a client.Object", gvk.Kind)
+		}
 		obj.SetName(ref.GetName())
 		obj.SetNamespace(ref.GetNamespace())
 
@@ -151,13 +154,19 @@ func SyncReferencedObjects(ctx context.Context, src, dst client.Client, kmc *km.
 func copyContent(dst, src client.Object) error {
 	switch s := src.(type) {
 	case *corev1.Secret:
-		d := dst.(*corev1.Secret)
+		d, ok := dst.(*corev1.Secret)
+		if !ok {
+			return fmt.Errorf("expected a Secret to copy to, got %T", dst)
+		}
 		if d.Type == "" {
 			d.Type = s.Type
 		}
 		d.Data = maps.Clone(s.Data)
 	case *corev1.ConfigMap:
-		d := dst.(*corev1.ConfigMap)
+		d, ok := dst.(*corev1.ConfigMap)
+		if !ok {
+			return fmt.Errorf("expected a ConfigMap to copy to, got %T", dst)
+		}
 		d.Data = maps.Clone(s.Data)
 		d.BinaryData = maps.Clone(s.BinaryData)
 	default:
