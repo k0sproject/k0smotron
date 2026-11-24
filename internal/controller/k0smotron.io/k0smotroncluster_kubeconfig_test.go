@@ -93,29 +93,3 @@ func TestRewriteKubeconfigNames(t *testing.T) {
 		t.Fatalf("kubeconfig mismatch:\nGot:\n%s\nWant:\n%s", string(gotBytes), string(wantBytes))
 	}
 }
-
-func TestRewriteKubeconfigExternalAddress(t *testing.T) {
-	kmc := &v1beta2.Cluster{
-		ObjectMeta: metav1.ObjectMeta{Name: "wl1", Namespace: "default"},
-		Spec: v1beta2.ClusterSpec{
-			ExternalAddress: "1.2.3.4",
-			Service:         v1beta2.ServiceSpec{APIPort: 31443},
-		},
-	}
-	out, err := rewriteKubeconfigValues(sampleKubeconfig, kmc)
-	if err != nil {
-		t.Fatalf("rewriteKubeconfigValues returned error: %v", err)
-	}
-	cfg, err := clientcmd.Load([]byte(out))
-	if err != nil {
-		t.Fatalf("failed to load processed kubeconfig: %v", err)
-	}
-	cluster := cfg.Clusters["wl1-k0s"]
-	if cluster == nil {
-		t.Fatalf("cluster wl1-k0s not found in kubeconfig")
-	}
-	want := "https://1.2.3.4:31443"
-	if cluster.Server != want {
-		t.Fatalf("server = %q, want %q", cluster.Server, want)
-	}
-}

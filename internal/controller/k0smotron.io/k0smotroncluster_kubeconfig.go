@@ -139,9 +139,8 @@ func rewriteKubeconfigValues(kubeconfigYAML string, kmc *km.Cluster) (string, er
 	}
 	if kmc.Spec.Ingress != nil {
 		srcCluster.Server = fmt.Sprintf("https://%s:%d", kmc.Spec.Ingress.APIHost, kmc.Spec.Ingress.Port)
-	} else if kmc.Spec.ExternalAddress != "" {
-		srcCluster.Server = fmt.Sprintf("https://%s:%d", kmc.Spec.ExternalAddress, kmc.Spec.Service.APIPort)
 	}
+
 	if len(srcUser.ClientCertificateData) == 0 || len(srcUser.ClientKeyData) == 0 {
 		return "", fmt.Errorf("client certificate/key data not found in kubeconfig")
 	}
