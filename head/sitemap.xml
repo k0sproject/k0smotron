@@ -209,6 +209,46 @@
          <lastmod>2026-11-24</lastmod>
     </url>
     <url>
+         <loc>https://docs.k0smotron.io/head/reconciliation-workflows/</loc>
+         <lastmod>2026-11-24</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.k0smotron.io/head/reconciliation-workflows/jointokenrequest/</loc>
+         <lastmod>2026-11-24</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.k0smotron.io/head/reconciliation-workflows/k0scontrollerconfig/</loc>
+         <lastmod>2026-11-24</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.k0smotron.io/head/reconciliation-workflows/k0scontrolplane/</loc>
+         <lastmod>2026-11-24</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.k0smotron.io/head/reconciliation-workflows/k0smotron-cluster/</loc>
+         <lastmod>2026-11-24</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.k0smotron.io/head/reconciliation-workflows/k0smotroncontrolplane/</loc>
+         <lastmod>2026-11-24</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.k0smotron.io/head/reconciliation-workflows/k0sworkerconfig/</loc>
+         <lastmod>2026-11-24</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.k0smotron.io/head/reconciliation-workflows/machine-provider-id/</loc>
+         <lastmod>2026-11-24</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.k0smotron.io/head/reconciliation-workflows/remotecluster/</loc>
+         <lastmod>2026-11-24</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.k0smotron.io/head/reconciliation-workflows/remotemachine/</loc>
+         <lastmod>2026-11-24</lastmod>
+    </url>
+    <url>
          <loc>https://docs.k0smotron.io/head/resource-reference/bootstrap.cluster.x-k8s.io-v1beta1/</loc>
          <lastmod>2026-11-24</lastmod>
     </url>
