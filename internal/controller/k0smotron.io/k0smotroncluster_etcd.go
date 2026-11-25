@@ -113,11 +113,10 @@ func (scope *kmcScope) reconcileEtcdSvc(ctx context.Context, kmc *km.Cluster) er
 }
 
 func (scope *kmcScope) reconcileEtcdDefragJob(ctx context.Context, kmc *km.Cluster) error {
-	// Add app.kubernetes.io/component to metadata labels; keep legacy component=etcd from LabelsForEtcdK0smotronCluster.
-	selectorLabels := kcontrollerutil.LabelsForEtcdK0smotronCluster(kmc)
-	metadataLabels := make(map[string]string, len(selectorLabels)+1)
-	maps.Copy(metadataLabels, selectorLabels)
-	metadataLabels[kcontrollerutil.ComponentLabel] = kcontrollerutil.ComponentEtcd
+	metadataLabels := kcontrollerutil.LabelsForK0smotronComponent(kmc, kcontrollerutil.ComponentEtcdDefrag)
+	// The legacy component label must not be "etcd" or "cluster", otherwise the defrag pods
+	// would match the etcd or control plane Service selectors.
+	metadataLabels["component"] = kcontrollerutil.ComponentEtcdDefrag
 
 	cronJob := batchv1.CronJob{
 		TypeMeta: metav1.TypeMeta{

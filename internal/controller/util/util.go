@@ -35,6 +35,7 @@ const (
 	ComponentControlPlane  = "control-plane"
 	ComponentEntrypoint    = "entrypoint"
 	ComponentEtcd          = "etcd"
+	ComponentEtcdDefrag    = "etcd-defragmentation"
 	ComponentIngress       = "ingress"
 	ComponentJointoken     = "jointoken"
 	ComponentKubeconfig    = "kubeconfig"
