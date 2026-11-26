@@ -1,5 +1,5 @@
 certifi==2026.10.23
-charset-normalizer==3.5.2
+charset-normalizer==3.5.3
 click==8.5.1
 colorama==0.4.6
 ghp-import==2.1.0
