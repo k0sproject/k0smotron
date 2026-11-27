@@ -360,7 +360,7 @@ type Mount struct {
 const (
 	defaultK0SImage = "quay.io/k0sproject/k0s"
 	// DefaultK0SVersion is the default k0s version used by k0smotron if no version is specified in the ClusterSpec.
-	DefaultK0SVersion = "v1.27.9-k0s.0"
+	DefaultK0SVersion = "v1.37.0-k0s.0"
 	// DefaultK0SSuffix is the default suffix added to the k0s version if no suffix is specified.
 	// This is needed because k0s images are tagged with -k0s.X suffix.
 	DefaultK0SSuffix = "k0s.0"
