@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 	"maps"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
@@ -204,45 +205,94 @@ func (scope *kmcScope) reconcileEtcdStatefulSet(ctx context.Context, kmc *km.Clu
 		if !apierrors.IsNotFound(err) {
 			return ctrl.Result{}, err
 		}
+		foundStatefulSet = nil
 	}
-	desiredReplicas := calculateDesiredReplicas(kmc, foundStatefulSet)
-	result := ctrl.Result{}
-	// We can't check for nil due to the client_go implementation
-	if foundStatefulSet.GetName() != "" {
-		var scaleUpPending bool
-		desiredReplicas, scaleUpPending = etcdReplicasToApply(desiredReplicas, *foundStatefulSet.Spec.Replicas, foundStatefulSet.Status.ReadyReplicas)
-		if scaleUpPending {
-			scope.currentReconcileState.etcdScaleUpPending = true
-			result = ctrl.Result{RequeueAfter: time.Second * 10}
+	joinConfigMap, err := scope.clienSet.CoreV1().ConfigMaps(kmc.Namespace).Get(ctx, kmc.GetEtcdJoinConfigMapName(), metav1.GetOptions{})
+	if err != nil {
+		if !apierrors.IsNotFound(err) {
+			return ctrl.Result{}, err
 		}
+		joinConfigMap = nil
+	}
+	wasBootstrapping := joinConfigMap != nil && joinConfigMap.Data[isEtcdBootstrappingKey] == "true"
+
+	desiredReplicas := calculateDesiredEtcdReplicas(kmc)
+
+	replicasToApply := desiredReplicas
+	if foundStatefulSet != nil {
+		// We calculate the number of replicas to apply when the etcd cluster already exists. In that case, we need to take into account
+		// the state of the existing etcd cluster for deciding the number of replicas to apply.
+		currentReplicas := *foundStatefulSet.Spec.Replicas
+		readyReplicas := foundStatefulSet.Status.ReadyReplicas
+		replicasToApply = calculateReplicasToApply(desiredReplicas, currentReplicas, readyReplicas, wasBootstrapping)
+	}
+
+	isBootstrapping := calculateIsEtcdBootstrappingKey(foundStatefulSet, joinConfigMap)
+
+	joinConfigMap = generateEtcdJoinConfigMap(kmc, isBootstrapping)
+	_ = kcontrollerutil.SetExternalOwnerReference(kmc, joinConfigMap, scope.client.Scheme(), scope.externalOwner)
+	if err := scope.reconcileResource(ctx, kmc, joinConfigMap); err != nil {
+		return ctrl.Result{}, fmt.Errorf("error reconciling etcd join configmap: %w", err)
 	}
 
 	effectiveFingerprint := effectiveCertFingerprint(foundStatefulSet, certFingerprint, scope.currentReconcileState.certificatesRenewed)
 
-	statefulSet := generateEtcdStatefulSet(kmc, foundStatefulSet, desiredReplicas, effectiveFingerprint)
-
+	statefulSet := generateEtcdStatefulSet(kmc, foundStatefulSet, replicasToApply, effectiveFingerprint)
 	_ = kcontrollerutil.SetExternalOwnerReference(kmc, &statefulSet, scope.client.Scheme(), scope.externalOwner)
+	err = scope.reconcileResource(ctx, kmc, &statefulSet)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("error reconciling etcd statefulset: %w", err)
+	}
 
-	return result, scope.reconcileResource(ctx, kmc, &statefulSet)
+	if replicasToApply < desiredReplicas {
+		// Members are added one at a time so requeue until the desired number of etcd replicas is applied.
+		scope.currentReconcileState.etcdScaleUpPending = true
+		return ctrl.Result{RequeueAfter: time.Second * 10}, nil
+	}
+	return ctrl.Result{}, nil
 }
 
-// etcdReplicasToApply returns the replica count to write to an existing etcd
-// StatefulSet, given the desired, current and ready replica counts.
-//
-// A scale-up adds one member at a time, and only once every current member is
-// ready, so that a new member never joins a cluster that is not healthy. Until
-// then the current replica count is kept rather than skipping the update, so
-// that other changes, such as a higher memory limit for crash-looping members,
-// still reach the StatefulSet. scaleUpPending reports whether the desired
-// replica count has not been reached by the returned one.
-func etcdReplicasToApply(desired, current, ready int32) (replicas int32, scaleUpPending bool) {
-	if desired <= current {
-		return desired, false
+const (
+	etcdJoinScriptKey      = "join.sh"
+	isEtcdBootstrappingKey = "bootstrap"
+	etcdJoinMountPath      = "/etcd-join"
+)
+
+func calculateIsEtcdBootstrappingKey(sts *apps.StatefulSet, joinConfigMap *v1.ConfigMap) bool {
+	if sts == nil || sts.GetName() == "" {
+		// No StatefulSet, no members: there is no cluster to join.
+		return true
 	}
-	if ready < current {
-		return current, true
+	if joinConfigMap == nil {
+		// StatefulSet created by a version without this ConfigMap: the cluster already exists.
+		return false
 	}
-	return current + 1, current+1 < desired
+	if joinConfigMap.Data[isEtcdBootstrappingKey] == "false" {
+		// The cluster has formed once. Even if every member goes down, a member without data must
+		// join it, not bootstrap a new one.
+		return false
+	}
+	// If there is any replica ready, we consider the etcd to be created.
+	return sts.Status.ReadyReplicas == 0
+}
+
+func generateEtcdJoinConfigMap(kmc *km.Cluster, isEtcdBootstrapping bool) *v1.ConfigMap {
+	return &v1.ConfigMap{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ConfigMap",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        kmc.GetEtcdJoinConfigMapName(),
+			Namespace:   kmc.Namespace,
+			Labels:      kcontrollerutil.LabelsForK0smotronComponent(kmc, kcontrollerutil.ComponentEtcd),
+			Annotations: kcontrollerutil.AnnotationsForK0smotronCluster(kmc),
+		},
+		Data: map[string]string{
+			etcdJoinScriptKey:      etcdJoinScript,
+			isEtcdBootstrappingKey: strconv.FormatBool(isEtcdBootstrapping),
+		},
+	}
 }
 
 func generateEtcdStatefulSet(kmc *km.Cluster, existingSts *apps.StatefulSet, replicas int32, certFingerprint string) apps.StatefulSet {
@@ -328,40 +378,50 @@ func generateEtcdStatefulSet(kmc *km.Cluster, existingSts *apps.StatefulSet, rep
 							},
 						},
 					}},
-					Volumes: []v1.Volume{{
-						Name: "certs",
-						VolumeSource: v1.VolumeSource{
-							Projected: &v1.ProjectedVolumeSource{
-								Sources: []v1.VolumeProjection{
-									{
-										Secret: &v1.SecretProjection{
-											LocalObjectReference: v1.LocalObjectReference{Name: secret.Name(kmc.Name, secret.EtcdCA)},
-											Items: []v1.KeyToPath{
-												{Key: "tls.crt", Path: "ca.crt"},
-												{Key: "tls.key", Path: "ca.key"},
+					Volumes: []v1.Volume{
+						{
+							Name: "certs",
+							VolumeSource: v1.VolumeSource{
+								Projected: &v1.ProjectedVolumeSource{
+									Sources: []v1.VolumeProjection{
+										{
+											Secret: &v1.SecretProjection{
+												LocalObjectReference: v1.LocalObjectReference{Name: secret.Name(kmc.Name, secret.EtcdCA)},
+												Items: []v1.KeyToPath{
+													{Key: "tls.crt", Path: "ca.crt"},
+													{Key: "tls.key", Path: "ca.key"},
+												},
 											},
-										},
-									}, {
-										Secret: &v1.SecretProjection{
-											LocalObjectReference: v1.LocalObjectReference{Name: secret.Name(kmc.Name, "etcd-server")},
-											Items: []v1.KeyToPath{
-												{Key: "tls.crt", Path: "server.crt"},
-												{Key: "tls.key", Path: "server.key"},
+										}, {
+											Secret: &v1.SecretProjection{
+												LocalObjectReference: v1.LocalObjectReference{Name: secret.Name(kmc.Name, "etcd-server")},
+												Items: []v1.KeyToPath{
+													{Key: "tls.crt", Path: "server.crt"},
+													{Key: "tls.key", Path: "server.key"},
+												},
 											},
-										},
-									}, {
-										Secret: &v1.SecretProjection{
-											LocalObjectReference: v1.LocalObjectReference{Name: secret.Name(kmc.Name, "etcd-peer")},
-											Items: []v1.KeyToPath{
-												{Key: "tls.crt", Path: "peer.crt"},
-												{Key: "tls.key", Path: "peer.key"},
+										}, {
+											Secret: &v1.SecretProjection{
+												LocalObjectReference: v1.LocalObjectReference{Name: secret.Name(kmc.Name, "etcd-peer")},
+												Items: []v1.KeyToPath{
+													{Key: "tls.crt", Path: "peer.crt"},
+													{Key: "tls.key", Path: "peer.key"},
+												},
 											},
 										},
 									},
 								},
 							},
 						},
-					}},
+						{
+							Name: "join",
+							VolumeSource: v1.VolumeSource{
+								ConfigMap: &v1.ConfigMapVolumeSource{
+									LocalObjectReference: v1.LocalObjectReference{Name: kmc.GetEtcdJoinConfigMapName()},
+								},
+							},
+						},
+					},
 					SecurityContext: &v1.PodSecurityContext{
 						FSGroup: new(int64(1001)),
 					},
@@ -384,7 +444,9 @@ func generateEtcdStatefulSet(kmc *km.Cluster, existingSts *apps.StatefulSet, rep
 						ReadinessProbe: &v1.Probe{
 							ProbeHandler: v1.ProbeHandler{
 								Exec: &v1.ExecAction{
-									Command: []string{"etcdctl", "endpoint", "health"},
+									// Probe this member only. Going through the Service would report the health of
+									// whichever member answers.
+									Command: []string{"sh", "-c", "ETCDCTL_ENDPOINTS=https://${HOSTNAME}.${SVC_NAME}:2379 etcdctl endpoint health"},
 								},
 							},
 						},
@@ -465,8 +527,7 @@ func generateEtcdInitContainers(kmc *km.Cluster, existingSts *apps.StatefulSet) 
 			Name:            "init",
 			Image:           kmc.Spec.Storage.Etcd.Image,
 			ImagePullPolicy: v1.PullIfNotPresent,
-			Command:         []string{"/bin/bash"},
-			Args:            []string{"-c", initEntryScript},
+			Command:         []string{"/bin/bash", etcdJoinMountPath + "/" + etcdJoinScriptKey},
 			Env: []v1.EnvVar{
 				{Name: "SVC_NAME", Value: kmc.GetEtcdServiceName()},
 				{Name: "ETCDCTL_API", Value: "3"},
@@ -477,15 +538,14 @@ func generateEtcdInitContainers(kmc *km.Cluster, existingSts *apps.StatefulSet) 
 			VolumeMounts: []v1.VolumeMount{
 				{Name: "certs", MountPath: "/var/lib/k0s/pki/etcd/"},
 				{Name: "etcd-data", MountPath: "/var/lib/k0s/etcd"},
+				{Name: "join", MountPath: etcdJoinMountPath, ReadOnly: true},
 			},
 		},
 	}
 }
 
-// calculateDesiredReplicas calculates the desired number of etcd replicas
-// We don't allow even number of replicas, so we always round up to the next odd number
-func calculateDesiredReplicas(kmc *km.Cluster, existingEtcdSts *apps.StatefulSet) int32 {
-	var desiredReplicas int32 = 1
+func calculateDesiredEtcdReplicas(kmc *km.Cluster) int32 {
+	desiredReplicas := int32(1)
 	if kmc.Spec.Replicas > 1 {
 		desiredReplicas = kmc.Spec.Replicas
 		if kmc.Spec.Replicas%2 == 0 {
@@ -493,11 +553,31 @@ func calculateDesiredReplicas(kmc *km.Cluster, existingEtcdSts *apps.StatefulSet
 		}
 	}
 
-	if existingEtcdSts != nil && existingEtcdSts.Status.Replicas > desiredReplicas {
-		desiredReplicas = existingEtcdSts.Status.Replicas
+	return desiredReplicas
+}
+
+func calculateReplicasToApply(desired, current, ready int32, isEtcdBootstrapping bool) int32 {
+	if isEtcdBootstrapping {
+		// Do not scale while etcd is bootstrapping. Adding new members during a bootstrapping process
+		// will differ from the initial cluster formation calculating a new Cluster ID for the added member, which
+		// will create a second cluster instead of joining the existing one.
+		return current
 	}
 
-	return desiredReplicas
+	if ready < current {
+		// Do not scale up if not all current members are ready
+		return current
+	}
+
+	if desired > current {
+		// Scale up etcd by one replica at a time
+		return current + 1
+	}
+
+	// We do not scale etcd when:
+	// - The desired replicas are less than the current replicas (scale down is not allowed)
+	// - The desired replicas are equal to the current replicas (no scaling needed)
+	return current
 }
 
 const etcdEntrypointScriptTemplate = `
@@ -531,30 +611,54 @@ etcd --name ${HOSTNAME} \
   --data-dir=/var/lib/k0s/etcd
 `
 
-var initEntryScript = `
-#!/bin/bash
+// etcdJoinScript runs in the init container of every etcd member. It's porpuse is to ensure that a new etcd member
+// joins the existing cluster correctly. It skips joining in the following cases:
+// 1. The cluster is being bootstrapped (mount path contains the bootstrap key with value "true")
+// 2. The member has data (snapshot db exists)
+// 3. The member has already been added to the cluster (sentinel file exists)
+const etcdJoinScript = `#!/bin/bash
 
 set -eu
 
-export ETCDCTL_ENDPOINTS=https://${SVC_NAME}:2379
-
-if [[ ! -f /var/lib/k0s/etcd/member/snap/db ]]; then
-  echo "Checking if cluster is functional"
-  if etcdctl member list; then
-    echo "Cluster is functional"
-	MEMBER_ID=$(etcdctl member list -w simple | grep "${HOSTNAME}" | awk -F, '{ print $1 }')
-	if [[ -n "${MEMBER_ID}" ]]; then
-	  echo "A member with this name (${HOSTNAME}) already exists, removing"
-	  etcdctl member remove "${MEMBER_ID}"
-      echo "Adding new member"
-	fi
-
-    etcdctl member add ${HOSTNAME} --peer-urls https://${HOSTNAME}.${SVC_NAME}:2380
-    touch /var/lib/k0s/etcd/existing
-  else
-    echo "Could not list members, assuming this is the first member or the cluster is not up yet"
-  fi
-else
-  echo "Snapshot db exists, the member has data"
+if [[ "$(cat ` + etcdJoinMountPath + "/" + isEtcdBootstrappingKey + `)" == "true" ]]; then
+    echo "Cluster is being bootstrapped. Skipping join"
+    exit 0
 fi
+
+if [[ -f /var/lib/k0s/etcd/member/snap/db ]]; then
+    echo "Snapshot db exists, the member has data. Skipping join"
+    exit 0
+fi
+
+if [[ -f /var/lib/k0s/etcd/existing ]]; then
+    # Sentinel file exists, indicating the member has already been added to the cluster.
+    echo "Member already added to the cluster. Skipping join"
+    exit 0
+fi
+
+# Increase the chances of successfully joining the cluster by setting bigger timeouts for etcdctl commands.
+export ETCDCTL_DIAL_TIMEOUT=5s
+export ETCDCTL_COMMAND_TIMEOUT=10s
+
+export ETCDCTL_ENDPOINTS="https://${SVC_NAME}:2379"
+
+PEER_URL="https://${HOSTNAME}.${SVC_NAME}:2380"
+
+# At this point, the cluster already exists, so never 'exit 0' without joining. If the members
+# cannot be listed (e.g. no quorum), fail and let kubelet retry the init container.
+if ! members=$(etcdctl member list -w simple); then
+    echo "Failed to list members, will retry"
+    exit 1
+fi
+
+# Match by peer URL: a member that was added but never started is listed without a name.
+MEMBER_ID=$(echo "${members}" | awk -F', ' -v url="${PEER_URL}" '$4 == url { print $1 }')
+if [[ -n "${MEMBER_ID}" ]]; then
+    echo "Member ${HOSTNAME} (${MEMBER_ID}) is already registered, removing it"
+    etcdctl member remove "${MEMBER_ID}"
+fi
+
+echo "Adding member ${HOSTNAME} to the cluster"
+etcdctl member add "${HOSTNAME}" --peer-urls "${PEER_URL}"
+touch /var/lib/k0s/etcd/existing
 `
