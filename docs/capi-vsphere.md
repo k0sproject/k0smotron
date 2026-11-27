@@ -68,10 +68,6 @@ NODE_IPAM_POOL_NAME: "ipam-ip-pool"
 NODE_IPAM_POOL_API_GROUP: "ipam.cluster.x-k8s.io"
 NODE_IPAM_POOL_KIND: "InClusterIPPool"
 NAMESERVER: "8.8.8.8"
-providers:
-  - name: incluster
-    url: https://github.com/kubernetes-sigs/cluster-api-ipam-provider-in-cluster/releases/latest/ipam-components.yaml
-    type: IPAMProvider
 
 ```
 
@@ -80,7 +76,12 @@ providers:
 From your local machine run the following command to initialize the management cluster with vSphere infrastructure provider and additional IPAM provider:
 
 ```
-clusterctl init --infrastructure vsphere --ipam incluster
+clusterctl init \
+  --core cluster-api:{{{ extra.capi_versions.core }}} \
+  --infrastructure vsphere:{{{ extra.capi_versions.vsphere }}} \
+  --ipam in-cluster:{{{ extra.capi_versions.ipam }}} \
+  --bootstrap k0sproject-k0smotron:{{{ extra.k0smotron_version }}} \
+  --control-plane k0sproject-k0smotron:{{{ extra.k0smotron_version }}}
 ```
 
 *NOTE:* In order to initialize Cluster API on you Kubernetes management cluster, you need to have kubeconfig (or set context with `kubectl`) to the cluster.
