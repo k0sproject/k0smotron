@@ -193,7 +193,7 @@ The certificate secrets follow the pattern: `<cluster-name>-<certificate-type>`
 #### etcd CronJob (when defrag is enabled)
 
 - **Name**: `kmc-<cluster-name>-defrag`
-- **Component**: `etcd`
+- **Component**: `etcd-defragmentation`
 - **Purpose**: Periodic etcd defragmentation job
 - **Condition**: Created when `spec.storage.etcd.defragJob.enabled` is `true`
 - **Example**: `kmc-docker-test-defrag`
