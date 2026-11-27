@@ -802,6 +802,11 @@ func (kmc *Cluster) GetEntrypointConfigMapName() string {
 	return kmc.getObjectName("kmc-entrypoint-%s-config")
 }
 
+// GetEtcdEntrypointConfigMapName returns the name of the configmap containing the etcd entrypoint script.
+func (kmc *Cluster) GetEtcdEntrypointConfigMapName() string {
+	return kmc.getObjectName("kmc-entrypoint-%s-etcd-config")
+}
+
 // GetMonitoringConfigMapName returns the name of the configmap containing the prometheus
 // configuration for monitoring the cluster.
 func (kmc *Cluster) GetMonitoringConfigMapName() string {

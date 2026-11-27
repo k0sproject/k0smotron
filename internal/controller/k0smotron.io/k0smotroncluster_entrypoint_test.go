@@ -129,7 +129,7 @@ func TestKineDataSourceURLSubstitution(t *testing.T) {
 				client: client,
 			}
 
-			cm, err := scope.generateEntrypointCM(kmc)
+			cm, err := scope.generateControlPlaneEntrypointCM(kmc)
 			require.NoError(t, err)
 
 			entrypointScript := cm.Data["k0smotron-entrypoint.sh"]

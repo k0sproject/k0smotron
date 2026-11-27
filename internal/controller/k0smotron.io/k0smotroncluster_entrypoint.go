@@ -30,16 +30,18 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-var entrypointTmpl *template.Template
+var controlPlaneEntrypointTmpl *template.Template
+var etcdEntrypointScriptTmpl *template.Template
 var minVersionWithoutSetcap = version.MustParse("v1.37.1+k0s.0")
 
 func init() {
-	entrypointTmpl = template.Must(template.New("entrypoint.sh").Parse(entrypointTemplate))
+	controlPlaneEntrypointTmpl = template.Must(template.New("entrypoint.sh").Parse(entrypointTemplate))
+	etcdEntrypointScriptTmpl = template.Must(template.New("entrypoint.sh").Parse(etcdEntrypointScriptTemplate))
 }
 
-func (scope *kmcScope) generateEntrypointCM(kmc *km.Cluster) (v1.ConfigMap, error) {
+func (scope *kmcScope) generateControlPlaneEntrypointCM(kmc *km.Cluster) (v1.ConfigMap, error) {
 	var entrypointBuf bytes.Buffer
-	err := entrypointTmpl.Execute(&entrypointBuf, map[string]any{
+	err := controlPlaneEntrypointTmpl.Execute(&entrypointBuf, map[string]any{
 		"KineDataSourceURLPlaceholder": kineDataSourceURLPlaceholder,
 		"NatsTokenPlaceholder":         natsTokenPlaceholder,
 		"K0sControllerArgs":            getControllerFlags(kmc),
@@ -71,11 +73,56 @@ func (scope *kmcScope) generateEntrypointCM(kmc *km.Cluster) (v1.ConfigMap, erro
 	return cm, nil
 }
 
-func (scope *kmcScope) reconcileEntrypointCM(ctx context.Context, kmc *km.Cluster) error {
+func (scope *kmcScope) generateEtcdEntrypointCM(kmc *km.Cluster, replicas int32) (v1.ConfigMap, error) {
+	var etcdEntrypointScriptBuf bytes.Buffer
+	err := etcdEntrypointScriptTmpl.Execute(&etcdEntrypointScriptBuf, struct {
+		Args           []string
+		InitialCluster string
+	}{
+		Args:           kmc.Spec.Storage.Etcd.Args,
+		InitialCluster: initialCluster(kmc, replicas),
+	})
+	if err != nil {
+		return v1.ConfigMap{}, err
+	}
+
+	cm := v1.ConfigMap{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ConfigMap",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        kmc.GetEtcdEntrypointConfigMapName(),
+			Namespace:   kmc.Namespace,
+			Labels:      kcontrollerutil.LabelsForK0smotronComponent(kmc, kcontrollerutil.ComponentEntrypoint),
+			Annotations: kcontrollerutil.AnnotationsForK0smotronCluster(kmc),
+		},
+		Data: map[string]string{
+			"etcd-entrypoint.sh": etcdEntrypointScriptBuf.String(),
+		},
+	}
+
+	_ = kcontrollerutil.SetExternalOwnerReference(kmc, &cm, scope.client.Scheme(), scope.externalOwner)
+	return cm, nil
+}
+
+func (scope *kmcScope) reconcileControlPlaneEntrypoint(ctx context.Context, kmc *km.Cluster) error {
 	logger := log.FromContext(ctx)
 	logger.Info("Reconciling entrypoint configmap")
 
-	cm, err := scope.generateEntrypointCM(kmc)
+	cm, err := scope.generateControlPlaneEntrypointCM(kmc)
+	if err != nil {
+		return err
+	}
+
+	return scope.reconcileResource(ctx, kmc, &cm)
+}
+
+func (scope *kmcScope) reconcileEtcdEntrypoint(ctx context.Context, kmc *km.Cluster, replicas int32) error {
+	logger := log.FromContext(ctx)
+	logger.Info("Reconciling etcd entrypoint configmap")
+
+	cm, err := scope.generateEtcdEntrypointCM(kmc, replicas)
 	if err != nil {
 		return err
 	}

@@ -17,12 +17,10 @@ limitations under the License.
 package k0smotronio
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"maps"
 	"strings"
-	"text/template"
 	"time"
 
 	batchv1 "k8s.io/api/batch/v1"
@@ -39,12 +37,6 @@ import (
 	"sigs.k8s.io/cluster-api/util/secret"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
-
-var etcdEntrypointScriptTmpl *template.Template
-
-func init() {
-	etcdEntrypointScriptTmpl = template.Must(template.New("entrypoint.sh").Parse(etcdEntrypointScriptTemplate))
-}
 
 func (scope *kmcScope) reconcileEtcd(ctx context.Context, kmc *km.Cluster, certFingerprint string) (ctrl.Result, error) {
 	if kmc.Spec.Storage.Type != km.StorageTypeEtcd {
@@ -219,6 +211,11 @@ func (scope *kmcScope) reconcileEtcdStatefulSet(ctx context.Context, kmc *km.Clu
 
 	effectiveFingerprint := effectiveCertFingerprint(foundStatefulSet, certFingerprint, scope.currentReconcileState.certificatesRenewed)
 
+	err = scope.reconcileEtcdEntrypoint(ctx, kmc, desiredReplicas)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
 	statefulSet := generateEtcdStatefulSet(kmc, foundStatefulSet, desiredReplicas, effectiveFingerprint)
 
 	_ = kcontrollerutil.SetExternalOwnerReference(kmc, &statefulSet, scope.client.Scheme(), scope.externalOwner)
@@ -274,13 +271,6 @@ func generateEtcdStatefulSet(kmc *km.Cluster, existingSts *apps.StatefulSet, rep
 		pvc.Spec.StorageClassName = &kmc.Spec.Storage.Etcd.Persistence.StorageClass
 	}
 
-	var etcdEntrypointScriptBuf bytes.Buffer
-	_ = etcdEntrypointScriptTmpl.Execute(&etcdEntrypointScriptBuf, struct {
-		Args []string
-	}{
-		Args: kmc.Spec.Storage.Etcd.Args,
-	})
-
 	statefulSet := apps.StatefulSet{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "apps/v1",
@@ -328,40 +318,57 @@ func generateEtcdStatefulSet(kmc *km.Cluster, existingSts *apps.StatefulSet, rep
 							},
 						},
 					}},
-					Volumes: []v1.Volume{{
-						Name: "certs",
-						VolumeSource: v1.VolumeSource{
-							Projected: &v1.ProjectedVolumeSource{
-								Sources: []v1.VolumeProjection{
-									{
-										Secret: &v1.SecretProjection{
-											LocalObjectReference: v1.LocalObjectReference{Name: secret.Name(kmc.Name, secret.EtcdCA)},
-											Items: []v1.KeyToPath{
-												{Key: "tls.crt", Path: "ca.crt"},
-												{Key: "tls.key", Path: "ca.key"},
+					Volumes: []v1.Volume{
+						{
+							Name: "certs",
+							VolumeSource: v1.VolumeSource{
+								Projected: &v1.ProjectedVolumeSource{
+									Sources: []v1.VolumeProjection{
+										{
+											Secret: &v1.SecretProjection{
+												LocalObjectReference: v1.LocalObjectReference{Name: secret.Name(kmc.Name, secret.EtcdCA)},
+												Items: []v1.KeyToPath{
+													{Key: "tls.crt", Path: "ca.crt"},
+													{Key: "tls.key", Path: "ca.key"},
+												},
 											},
-										},
-									}, {
-										Secret: &v1.SecretProjection{
-											LocalObjectReference: v1.LocalObjectReference{Name: secret.Name(kmc.Name, "etcd-server")},
-											Items: []v1.KeyToPath{
-												{Key: "tls.crt", Path: "server.crt"},
-												{Key: "tls.key", Path: "server.key"},
+										}, {
+											Secret: &v1.SecretProjection{
+												LocalObjectReference: v1.LocalObjectReference{Name: secret.Name(kmc.Name, "etcd-server")},
+												Items: []v1.KeyToPath{
+													{Key: "tls.crt", Path: "server.crt"},
+													{Key: "tls.key", Path: "server.key"},
+												},
 											},
-										},
-									}, {
-										Secret: &v1.SecretProjection{
-											LocalObjectReference: v1.LocalObjectReference{Name: secret.Name(kmc.Name, "etcd-peer")},
-											Items: []v1.KeyToPath{
-												{Key: "tls.crt", Path: "peer.crt"},
-												{Key: "tls.key", Path: "peer.key"},
+										}, {
+											Secret: &v1.SecretProjection{
+												LocalObjectReference: v1.LocalObjectReference{Name: secret.Name(kmc.Name, "etcd-peer")},
+												Items: []v1.KeyToPath{
+													{Key: "tls.crt", Path: "peer.crt"},
+													{Key: "tls.key", Path: "peer.key"},
+												},
 											},
 										},
 									},
 								},
 							},
 						},
-					}},
+						{
+							Name: kmc.GetEtcdEntrypointConfigMapName(),
+							VolumeSource: v1.VolumeSource{
+								ConfigMap: &v1.ConfigMapVolumeSource{
+									LocalObjectReference: v1.LocalObjectReference{
+										Name: kmc.GetEtcdEntrypointConfigMapName(),
+									},
+									DefaultMode: &entrypointDefaultMode,
+									Items: []v1.KeyToPath{{
+										Key:  "etcd-entrypoint.sh",
+										Path: "etcd-entrypoint.sh",
+									}},
+								},
+							},
+						},
+					},
 					SecurityContext: &v1.PodSecurityContext{
 						FSGroup: new(int64(1001)),
 					},
@@ -370,15 +377,14 @@ func generateEtcdStatefulSet(kmc *km.Cluster, existingSts *apps.StatefulSet, rep
 						Name:            "etcd",
 						Image:           kmc.Spec.Storage.Etcd.Image,
 						ImagePullPolicy: v1.PullIfNotPresent,
-						Command:         []string{"/bin/bash"},
-						Args:            []string{"-c", etcdEntrypointScriptBuf.String()},
+						Command:         []string{"/bin/bash", "/etcd-entrypoint.sh"},
 						Env: []v1.EnvVar{
 							{Name: "SVC_NAME", Value: kmc.GetEtcdServiceName()},
 							{Name: "ETCDCTL_ENDPOINTS", Value: fmt.Sprintf("https://%s:2379", kmc.GetEtcdServiceName())},
 							{Name: "ETCDCTL_CACERT", Value: "/var/lib/k0s/pki/etcd/ca.crt"},
 							{Name: "ETCDCTL_CERT", Value: "/var/lib/k0s/pki/etcd/server.crt"},
 							{Name: "ETCDCTL_KEY", Value: "/var/lib/k0s/pki/etcd/server.key"},
-							{Name: "ETCD_INITIAL_CLUSTER", Value: initialCluster(kmc, replicas)},
+							//{Name: "ETCD_INITIAL_CLUSTER", Value: initialCluster(kmc, replicas)},
 						},
 						Resources: kmc.Spec.Storage.Etcd.Resources,
 						ReadinessProbe: &v1.Probe{
@@ -403,6 +409,11 @@ func generateEtcdStatefulSet(kmc *km.Cluster, existingSts *apps.StatefulSet, rep
 						VolumeMounts: []v1.VolumeMount{
 							{Name: "certs", MountPath: "/var/lib/k0s/pki/etcd/"},
 							{Name: "etcd-data", MountPath: "/var/lib/k0s/etcd"},
+							{
+								Name:      kmc.GetEtcdEntrypointConfigMapName(),
+								MountPath: "/etcd-entrypoint.sh",
+								SubPath:   "etcd-entrypoint.sh",
+							},
 						},
 					}},
 				},
@@ -500,14 +511,16 @@ func calculateDesiredReplicas(kmc *km.Cluster, existingEtcdSts *apps.StatefulSet
 	return desiredReplicas
 }
 
-const etcdEntrypointScriptTemplate = `
+const etcdEntrypointScriptTemplate = `#!/bin/bash
 
 export ETCD_INITIAL_CLUSTER_STATE="new"
 if [[ -f /var/lib/k0s/etcd/existing ]]; then
   export ETCD_INITIAL_CLUSTER_STATE="existing"
 fi
 
-etcd --name ${HOSTNAME} \
+export ETCD_INITIAL_CLUSTER="{{ .InitialCluster }}"
+
+exec etcd --name ${HOSTNAME} \
   --listen-peer-urls=https://0.0.0.0:2380 \
   --listen-client-urls=https://0.0.0.0:2379 \
   --advertise-client-urls=https://${HOSTNAME}.${SVC_NAME}:2379 \
