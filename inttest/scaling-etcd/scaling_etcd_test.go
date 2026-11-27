@@ -17,6 +17,7 @@ limitations under the License.
 package scalingetcd
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"testing"
@@ -30,12 +31,14 @@ import (
 	"github.com/k0sproject/k0smotron/v2/inttest/util"
 
 	"github.com/stretchr/testify/suite"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/remotecommand"
 )
 
 type ScalingSuite struct {
@@ -124,6 +127,9 @@ func (s *ScalingSuite) TestK0sGetsUp() {
 	s.Require().Equal(3, int(etcdSts.Status.Replicas))
 
 	s.checkClusterStatus(s.Context(), rc)
+
+	s.T().Log("verifying the etcd member stays Ready under a NOSPACE alarm")
+	s.assertReadyUnderNospace(s.Context(), kc, rc)
 }
 
 func TestScalingSuite(t *testing.T) {
@@ -163,6 +169,42 @@ func (s *ScalingSuite) checkClusterStatus(ctx context.Context, rc *rest.Config) 
 	})
 
 	s.Require().NoError(err)
+}
+
+func (s *ScalingSuite) assertReadyUnderNospace(ctx context.Context, kc *kubernetes.Clientset, rc *rest.Config) {
+	const pod = "kmc-scaling-etcd-0"
+
+	fill := `for i in $(seq 1 24); do head -c 1048576 /dev/urandom | base64 | etcdctl put key-$i >/dev/null 2>&1 || true; done; etcdctl alarm list`
+	alarms, err := s.etcdExec(ctx, kc, rc, pod, fill)
+	s.Require().NoError(err)
+	s.Require().Contains(alarms, "NOSPACE", "test setup failed to arm a NOSPACE alarm")
+
+	s.Require().NoError(util.WaitForPod(ctx, kc, pod, "default"), "etcd member went unready under NOSPACE")
+
+	stillArmed, err := s.etcdExec(ctx, kc, rc, pod, "etcdctl alarm list")
+	s.Require().NoError(err)
+	s.Require().Contains(stillArmed, "NOSPACE", "alarm cleared before the readiness assertion; test proved nothing")
+}
+
+func (s *ScalingSuite) etcdExec(ctx context.Context, kc *kubernetes.Clientset, rc *rest.Config, pod, command string) (string, error) {
+	req := kc.CoreV1().RESTClient().Post().Resource("pods").Name(pod).Namespace("default").SubResource("exec")
+	req.VersionedParams(&corev1.PodExecOptions{
+		Container: "etcd",
+		Command:   []string{"/bin/sh", "-c", command},
+		Stdout:    true,
+		Stderr:    true,
+	}, scheme.ParameterCodec)
+
+	executor, err := remotecommand.NewSPDYExecutor(rc, "POST", req.URL())
+	if err != nil {
+		return "", err
+	}
+	var stdout, stderr bytes.Buffer
+	err = executor.StreamWithContext(ctx, remotecommand.StreamOptions{Stdout: &stdout, Stderr: &stderr})
+	if err != nil {
+		return stdout.String(), fmt.Errorf("exec in etcd container failed: %w, stderr: %s", err, stderr.String())
+	}
+	return stdout.String(), nil
 }
 
 func (s *ScalingSuite) createK0smotronCluster(ctx context.Context, kc *kubernetes.Clientset) {
@@ -218,8 +260,11 @@ var clusterResource = `
 					"telemetry": {"enabled": false}
 				}
 			},
-			"etcd": {
-				"args": ["--auto-compaction-retention=1h", "--snapshot-count=500000"]
+			"storage": {
+				"type": "etcd",
+				"etcd": {
+					"args": ["--auto-compaction-retention=1h", "--snapshot-count=500000", "--quota-backend-bytes=16777216"]
+				}
 			}
 		}
 	  }

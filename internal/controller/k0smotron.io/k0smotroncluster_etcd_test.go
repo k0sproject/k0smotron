@@ -69,6 +69,7 @@ func TestEtcd_etcdReplicasToApply(t *testing.T) {
 		{name: "scale up last step", desired: 3, current: 2, ready: 2, wantReplicas: 3},
 		{name: "scale up waits for current members", desired: 3, current: 2, ready: 1, wantReplicas: 2, wantScaleUpPending: true},
 		{name: "scale up waits with no member ready", desired: 5, current: 3, ready: 0, wantReplicas: 3, wantScaleUpPending: true},
+		{name: "scale up multi-step all ready", desired: 5, current: 3, ready: 3, wantReplicas: 4, wantScaleUpPending: true},
 		{name: "scale down", desired: 1, current: 3, ready: 0, wantReplicas: 1},
 	}
 
@@ -191,6 +192,38 @@ func TestEtcd_generateEtcdStatefulSet(t *testing.T) {
 			for _, w := range tc.want {
 				assert.True(t, strings.Contains(sts.Spec.Template.Spec.Containers[0].Args[1], w))
 			}
+		})
+	}
+}
+
+func TestEtcd_readinessProbeExcludesNospace(t *testing.T) {
+	sts := generateEtcdStatefulSet(&km.Cluster{}, nil, 1, "")
+	c := sts.Spec.Template.Spec.Containers[0]
+
+	probe := c.ReadinessProbe
+	assert.Nil(t, probe.Exec, "exec probe cannot exclude the NOSPACE alarm")
+	assert.NotNil(t, probe.HTTPGet)
+	assert.Equal(t, "/health?exclude=NOSPACE", probe.HTTPGet.Path)
+	assert.Equal(t, etcdMetricsPort, probe.HTTPGet.Port.IntVal)
+
+	assert.Contains(t, c.Args[1], "--listen-metrics-urls=http://0.0.0.0:2381",
+		"the health endpoint the probe targets must be served")
+}
+
+func TestEtcd_defragQuotaFromArgs(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+		want string
+	}{
+		{"flag=value form", []string{"--quota-backend-bytes=3221225472"}, "3221225472"},
+		{"flag value form", []string{"--quota-backend-bytes", "3221225472"}, "3221225472"},
+		{"absent", []string{"--snapshot-count=10000"}, ""},
+		{"flag with no value is ignored", []string{"--quota-backend-bytes"}, ""},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, argValue(tc.args, "--quota-backend-bytes"))
 		})
 	}
 }

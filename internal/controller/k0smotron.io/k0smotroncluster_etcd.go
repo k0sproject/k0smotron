@@ -42,6 +42,22 @@ import (
 
 var etcdEntrypointScriptTmpl *template.Template
 
+const etcdMetricsPort int32 = 2381
+
+// argValue returns the value of "--flag=value" or "--flag value" in args, or ""
+// if the flag is absent or has no value.
+func argValue(args []string, flag string) string {
+	for i, a := range args {
+		if v, ok := strings.CutPrefix(a, flag+"="); ok {
+			return v
+		}
+		if a == flag && i+1 < len(args) {
+			return args[i+1]
+		}
+	}
+	return ""
+}
+
 func init() {
 	etcdEntrypointScriptTmpl = template.Must(template.New("entrypoint.sh").Parse(etcdEntrypointScriptTemplate))
 }
@@ -119,6 +135,19 @@ func (scope *kmcScope) reconcileEtcdDefragJob(ctx context.Context, kmc *km.Clust
 	maps.Copy(metadataLabels, selectorLabels)
 	metadataLabels[kcontrollerutil.ComponentLabel] = kcontrollerutil.ComponentEtcd
 
+	defragArgs := []string{
+		fmt.Sprintf("--endpoints=https://%s:2379", kmc.GetEtcdServiceName()),
+		"--cacert=/var/lib/k0s/pki/etcd/ca.crt",
+		"--cert=/var/lib/k0s/pki/etcd/client.crt",
+		"--key=/var/lib/k0s/pki/etcd/client.key",
+		"--cluster",
+		"--defrag-rule",
+		kmc.Spec.Storage.Etcd.DefragJob.Rule,
+	}
+	if quota := argValue(kmc.Spec.Storage.Etcd.Args, "--quota-backend-bytes"); quota != "" {
+		defragArgs = append(defragArgs, "--etcd-storage-quota-bytes="+quota)
+	}
+
 	cronJob := batchv1.CronJob{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "batch/v1",
@@ -146,15 +175,7 @@ func (scope *kmcScope) reconcileEtcdDefragJob(ctx context.Context, kmc *km.Clust
 									Name:            "etcd-defrag",
 									Image:           kmc.Spec.Storage.Etcd.DefragJob.Image,
 									ImagePullPolicy: v1.PullIfNotPresent,
-									Args: []string{
-										fmt.Sprintf("--endpoints=https://%s:2379", kmc.GetEtcdServiceName()),
-										"--cacert=/var/lib/k0s/pki/etcd/ca.crt",
-										"--cert=/var/lib/k0s/pki/etcd/client.crt",
-										"--key=/var/lib/k0s/pki/etcd/client.key",
-										"--cluster",
-										"--defrag-rule",
-										kmc.Spec.Storage.Etcd.DefragJob.Rule,
-									},
+									Args:            defragArgs,
 									VolumeMounts: []v1.VolumeMount{
 										{Name: "certs", MountPath: "/var/lib/k0s/pki/etcd/"},
 									},
@@ -383,8 +404,9 @@ func generateEtcdStatefulSet(kmc *km.Cluster, existingSts *apps.StatefulSet, rep
 						Resources: kmc.Spec.Storage.Etcd.Resources,
 						ReadinessProbe: &v1.Probe{
 							ProbeHandler: v1.ProbeHandler{
-								Exec: &v1.ExecAction{
-									Command: []string{"etcdctl", "endpoint", "health"},
+								HTTPGet: &v1.HTTPGetAction{
+									Path: "/health?exclude=NOSPACE",
+									Port: intstr.FromInt32(etcdMetricsPort),
 								},
 							},
 						},
@@ -398,6 +420,11 @@ func generateEtcdStatefulSet(kmc *km.Cluster, existingSts *apps.StatefulSet, rep
 								Name:          "peer",
 								Protocol:      v1.ProtocolTCP,
 								ContainerPort: 2380,
+							},
+							{
+								Name:          "metrics",
+								Protocol:      v1.ProtocolTCP,
+								ContainerPort: etcdMetricsPort,
 							},
 						},
 						VolumeMounts: []v1.VolumeMount{
@@ -510,6 +537,7 @@ fi
 etcd --name ${HOSTNAME} \
   --listen-peer-urls=https://0.0.0.0:2380 \
   --listen-client-urls=https://0.0.0.0:2379 \
+  --listen-metrics-urls=http://0.0.0.0:2381 \
   --advertise-client-urls=https://${HOSTNAME}.${SVC_NAME}:2379 \
   --initial-advertise-peer-urls=https://${HOSTNAME}.${SVC_NAME}:2380 \
   --client-cert-auth=true \
