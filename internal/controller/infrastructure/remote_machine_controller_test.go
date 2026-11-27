@@ -23,7 +23,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -83,12 +82,10 @@ func TestReservePooledMachineAndPopulateRemoteMachine(t *testing.T) {
 	require.NoError(t, infrastructure.AddToScheme(scheme))
 
 	pooled := &infrastructure.PooledRemoteMachine{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        "pooled",
-			Namespace:   "default",
-			Labels:      map[string]string{"pool": "a"},
-			Annotations: map[string]string{"note": "from the pool"},
-		},
+		Name:        "pooled",
+		Namespace:   "default",
+		Labels:      map[string]string{"pool": "a"},
+		Annotations: map[string]string{"note": "from the pool"},
 		Spec: infrastructure.PooledRemoteMachineSpec{
 			Pool: "a",
 			Machine: infrastructure.PooledMachineSpec{
@@ -106,8 +103,8 @@ func TestReservePooledMachineAndPopulateRemoteMachine(t *testing.T) {
 	// A RemoteMachine created by hand rather than by CAPI, so both metadata maps
 	// are nil.
 	rm := &infrastructure.RemoteMachine{
-		ObjectMeta: metav1.ObjectMeta{Name: "rm", Namespace: "default"},
-		Spec:       infrastructure.RemoteMachineSpec{Pool: "a"},
+		Name: "rm", Namespace: "default",
+		Spec: infrastructure.RemoteMachineSpec{Pool: "a"},
 	}
 	require.Nil(t, rm.Labels, "the fixture must have no labels or this proves nothing")
 	require.Nil(t, rm.Annotations, "the fixture must have no annotations or this proves nothing")

@@ -650,11 +650,9 @@ func (r *Controller) getK0sToken(ctx context.Context, scope *Scope) (string, err
 	// The credential is created last so that a retry of anything above it does not
 	// leave another usable worker join token behind in the workload cluster.
 	if err := wcClient.Create(ctx, &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("bootstrap-token-%s", tokenID),
-			Namespace: "kube-system",
-		},
-		Type: corev1.SecretTypeBootstrapToken,
+		Name:      fmt.Sprintf("bootstrap-token-%s", tokenID),
+		Namespace: "kube-system",
+		Type:      corev1.SecretTypeBootstrapToken,
 		StringData: map[string]string{
 			"token-id":                         tokenID,
 			"token-secret":                     tokenSecret,
@@ -687,10 +685,8 @@ func createIngressCommands(scope *Scope) []string {
 func (r *Controller) resolveFilesForIngress(ctx context.Context, scope *Scope) ([]provisioner.File, error) {
 	resolvedFiles, err := resolveFiles(ctx, r.Client, scope.Cluster, []bootstrapv2.File{
 		{
-			File: provisioner.File{
-				Path:        "/etc/haproxy/certs/ca.crt",
-				Permissions: "0644",
-			},
+			Path:        "/etc/haproxy/certs/ca.crt",
+			Permissions: "0644",
 			ContentFrom: &bootstrapv2.ContentSource{
 				SecretRef: &bootstrapv2.ContentSourceRef{
 					Name: secret.Name(scope.Cluster.Name, secret.ClusterCA),
@@ -699,10 +695,8 @@ func (r *Controller) resolveFilesForIngress(ctx context.Context, scope *Scope) (
 			},
 		},
 		{
-			File: provisioner.File{
-				Path:        "/etc/haproxy/certs/server.crt",
-				Permissions: "0644",
-			},
+			Path:        "/etc/haproxy/certs/server.crt",
+			Permissions: "0644",
 			ContentFrom: &bootstrapv2.ContentSource{
 				SecretRef: &bootstrapv2.ContentSourceRef{
 					Name: secret.Name(scope.Cluster.Name, "ingress-haproxy"),
@@ -711,11 +705,9 @@ func (r *Controller) resolveFilesForIngress(ctx context.Context, scope *Scope) (
 			},
 		},
 		{
-			File: provisioner.File{
-				Path: "/etc/haproxy/certs/server.key",
-				// A private key, so not the 0644 every renderer falls back to.
-				Permissions: "0600",
-			},
+			Path: "/etc/haproxy/certs/server.key",
+			// A private key, so not the 0644 every renderer falls back to.
+			Permissions: "0600",
 			ContentFrom: &bootstrapv2.ContentSource{
 				SecretRef: &bootstrapv2.ContentSourceRef{
 					Name: secret.Name(scope.Cluster.Name, "ingress-haproxy"),
@@ -752,23 +744,19 @@ func createBootstrapSecret(scope *Scope, bootstrapData []byte, format provisione
 	}
 
 	return &corev1.Secret{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v1",
-			Kind:       "Secret",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        scope.Config.Name,
-			Namespace:   scope.Config.Namespace,
-			Labels:      labels,
-			Annotations: annotations,
-			OwnerReferences: []metav1.OwnerReference{
-				{
-					APIVersion: bootstrapv2.GroupVersion.String(),
-					Kind:       scope.Config.Kind,
-					Name:       scope.Config.Name,
-					UID:        scope.Config.UID,
-					Controller: new(true),
-				},
+		APIVersion:  "v1",
+		Kind:        "Secret",
+		Name:        scope.Config.Name,
+		Namespace:   scope.Config.Namespace,
+		Labels:      labels,
+		Annotations: annotations,
+		OwnerReferences: []metav1.OwnerReference{
+			{
+				APIVersion: bootstrapv2.GroupVersion.String(),
+				Kind:       scope.Config.Kind,
+				Name:       scope.Config.Name,
+				UID:        scope.Config.UID,
+				Controller: new(true),
 			},
 		},
 		Data: map[string][]byte{
@@ -920,7 +908,7 @@ func (r *Controller) SetupWithManager(ctx context.Context, mgr ctrl.Manager, opt
 				if !ref.IsDefined() || ref.GroupKind() != bootstrapv2.GroupVersion.WithKind("K0sWorkerConfig").GroupKind() {
 					return nil
 				}
-				return []ctrl.Request{{NamespacedName: client.ObjectKey{Namespace: o.GetNamespace(), Name: ref.Name}}}
+				return []ctrl.Request{{Namespace: o.GetNamespace(), Name: ref.Name}}
 			}),
 		).
 		Watches(

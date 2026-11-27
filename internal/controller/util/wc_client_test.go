@@ -25,7 +25,6 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/cluster-api/util/secret"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -98,7 +97,7 @@ func TestRestConfigFromKubeconfigIsBounded(t *testing.T) {
 	require.NoError(t, corev1.AddToScheme(scheme))
 
 	c := fake.NewClientBuilder().WithScheme(scheme).WithObjects(&corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-kubeconfig", Namespace: "default"},
+		Name: "test-kubeconfig", Namespace: "default",
 		Data: map[string][]byte{secret.KubeconfigDataName: []byte(`apiVersion: v1
 kind: Config
 clusters:
@@ -144,7 +143,7 @@ func TestGetControllerRuntimeClientRejectsNoConfig(t *testing.T) {
 // the caller needs.
 func kubeconfigSecret(name, clusterFields, userFields string) *corev1.Secret {
 	return &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"},
+		Name: name, Namespace: "default",
 		Data: map[string][]byte{secret.KubeconfigDataName: []byte(fmt.Sprintf(`apiVersion: v1
 kind: Config
 clusters:

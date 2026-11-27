@@ -87,8 +87,8 @@ func topologyAPI(t *testing.T, state *topologyState) *kubernetes.Clientset {
 			state.served.Add(1) > state.failAfter {
 			w.WriteHeader(http.StatusUnauthorized)
 			write(w, &metav1.Status{
-				TypeMeta: metav1.TypeMeta{Kind: "Status", APIVersion: "v1"},
-				Status:   metav1.StatusFailure, Code: http.StatusUnauthorized,
+				Kind: "Status", APIVersion: "v1",
+				Status: metav1.StatusFailure, Code: http.StatusUnauthorized,
 				Reason: metav1.StatusReasonUnauthorized, Message: "the bearer token has expired",
 			})
 
@@ -120,8 +120,8 @@ func topologyAPI(t *testing.T, state *topologyState) *kubernetes.Clientset {
 			}
 
 			write(w, &clusterv1.Cluster{
-				ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default"},
-				Spec:       clusterv1.ClusterSpec{Topology: topology},
+				Name: "test", Namespace: "default",
+				Spec: clusterv1.ClusterSpec{Topology: topology},
 			})
 		default:
 			// Not silently empty, since an empty list reads as a settled rollout.
@@ -142,7 +142,7 @@ func topologyAPI(t *testing.T, state *topologyState) *kubernetes.Clientset {
 // machineDeployment is one topology owned MachineDeployment at a version.
 func machineDeployment(name, version string, replicas int32) clusterv1.MachineDeployment {
 	return clusterv1.MachineDeployment{
-		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"},
+		Name: name, Namespace: "default",
 		Spec: clusterv1.MachineDeploymentSpec{
 			Replicas: new(replicas),
 			Template: clusterv1.MachineTemplateSpec{
@@ -155,12 +155,10 @@ func machineDeployment(name, version string, replicas int32) clusterv1.MachineDe
 // machine is one Machine owned by a MachineDeployment, terminating or not.
 func machine(name, mdName, version string, terminating bool) clusterv1.Machine {
 	m := clusterv1.Machine{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: "default",
-			Labels:    map[string]string{clusterv1.MachineDeploymentNameLabel: mdName},
-		},
-		Spec: clusterv1.MachineSpec{Version: version},
+		Name:      name,
+		Namespace: "default",
+		Labels:    map[string]string{clusterv1.MachineDeploymentNameLabel: mdName},
+		Spec:      clusterv1.MachineSpec{Version: version},
 	}
 	if terminating {
 		m.DeletionTimestamp = &metav1.Time{Time: time.Unix(1, 0)}

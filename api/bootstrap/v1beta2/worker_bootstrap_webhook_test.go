@@ -22,7 +22,6 @@ import (
 
 	"github.com/k0sproject/k0smotron/v2/internal/provisioner"
 	"github.com/stretchr/testify/require"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
@@ -49,16 +48,12 @@ func TestK0sWorkerConfigValidate(t *testing.T) {
 							},
 						},
 						{
-							File: provisioner.File{
-								Path:    "/one/path/to/file",
-								Content: "some-content",
-							},
+							Path:    "/one/path/to/file",
+							Content: "some-content",
 						},
 						{
-							File: provisioner.File{
-								Path:    "/another/path/to/file",
-								Content: "some-content",
-							},
+							Path:    "/another/path/to/file",
+							Content: "some-content",
 						},
 					},
 				},
@@ -83,9 +78,7 @@ func TestK0sWorkerConfigValidate(t *testing.T) {
 					Version: "v1.27.4+k0s.0",
 					Files: []File{
 						{
-							File: provisioner.File{
-								Content: "some-content",
-							},
+							Content: "some-content",
 							ContentFrom: &ContentSource{
 								SecretRef: &ContentSourceRef{
 									Name: "my-secret",
@@ -106,9 +99,7 @@ func TestK0sWorkerConfigValidate(t *testing.T) {
 					Version: "v1.27.4+k0s.0",
 					Files: []File{
 						{
-							File: provisioner.File{
-								Content: "",
-							},
+							Content: "",
 						},
 					},
 				},
@@ -187,19 +178,13 @@ func TestK0sWorkerConfigValidate(t *testing.T) {
 					Version: "v1.27.4+k0s.0",
 					Files: []File{
 						{
-							File: provisioner.File{
-								Path: "same-path",
-							},
+							Path: "same-path",
 						},
 						{
-							File: provisioner.File{
-								Path: "same-path",
-							},
+							Path: "same-path",
 						},
 						{
-							File: provisioner.File{
-								Path: "same-path",
-							},
+							Path: "same-path",
 						},
 					},
 				},
@@ -236,8 +221,8 @@ func TestK0sWorkerConfigValidate(t *testing.T) {
 func TestValidateFileOwnerChecksEveryFile(t *testing.T) {
 	spec := &K0sWorkerConfigSpec{
 		Files: []File{
-			{File: provisioner.File{Path: "/a", Content: "x", Owner: "etcd:etcd"}},
-			{File: provisioner.File{Path: "/b", Content: "x", Owner: "root; rm -rf /"}},
+			{Path: "/a", Content: "x", Owner: "etcd:etcd"},
+			{Path: "/b", Content: "x", Owner: "root; rm -rf /"},
 		},
 	}
 
@@ -294,7 +279,7 @@ func TestValidateFileOwner(t *testing.T) {
 			spec := &K0sWorkerConfigSpec{
 				Provisioner: ProvisionerSpec{Type: tt.format, Platform: tt.platform},
 				Files: []File{
-					{File: provisioner.File{Path: "/etc/thing", Content: "x", Owner: tt.owner}},
+					{Path: "/etc/thing", Content: "x", Owner: tt.owner},
 				},
 			}
 
@@ -339,7 +324,7 @@ func TestProvisionerWarningsForIgnition(t *testing.T) {
 
 	t.Run("the worker webhook surfaces it and still admits", func(t *testing.T) {
 		cfg := &K0sWorkerConfig{
-			ObjectMeta: metav1.ObjectMeta{Name: "w"},
+			Name: "w",
 			Spec: K0sWorkerConfigSpec{
 				Provisioner: ProvisionerSpec{
 					Type:              provisioner.IgnitionProvisioningFormat,
@@ -360,7 +345,7 @@ func TestProvisionerWarningsForIgnition(t *testing.T) {
 // method on the validator and so a separate place the warning can go missing.
 func TestProvisionerWarningsOnWorkerUpdate(t *testing.T) {
 	cfg := &K0sWorkerConfig{
-		ObjectMeta: metav1.ObjectMeta{Name: "w"},
+		Name: "w",
 		Spec: K0sWorkerConfigSpec{
 			Provisioner: ProvisionerSpec{
 				Type:              provisioner.IgnitionProvisioningFormat,

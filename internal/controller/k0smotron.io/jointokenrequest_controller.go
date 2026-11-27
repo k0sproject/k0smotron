@@ -235,16 +235,12 @@ func (r *JoinTokenRequestReconciler) generateSecret(jtr *km.JoinTokenRequest, to
 	}
 	maps.Copy(labels, jtr.Labels)
 	secret := v1.Secret{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Secret",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        jtr.Name,
-			Namespace:   jtr.Namespace,
-			Labels:      labels,
-			Annotations: jtr.Annotations,
-		},
+		Kind:        "Secret",
+		APIVersion:  "v1",
+		Name:        jtr.Name,
+		Namespace:   jtr.Namespace,
+		Labels:      labels,
+		Annotations: jtr.Annotations,
 		StringData: map[string]string{
 			"token": token,
 		},

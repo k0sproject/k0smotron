@@ -25,7 +25,6 @@ import (
 
 	"github.com/imdario/mergo"
 	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/cluster-api/controllers/remote"
 	"sigs.k8s.io/cluster-api/util/conditions"
@@ -96,16 +95,12 @@ func (scope *kmcScope) generateConfig(kmc *km.Cluster, sans []string) (v1.Config
 	}
 
 	cm := v1.ConfigMap{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "ConfigMap",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        kmc.GetConfigMapName(),
-			Namespace:   kmc.Namespace,
-			Labels:      kcontrollerutil.LabelsForK0smotronComponent(kmc, kcontrollerutil.ComponentClusterConfig),
-			Annotations: kcontrollerutil.AnnotationsForK0smotronCluster(kmc),
-		},
+		Kind:        "ConfigMap",
+		APIVersion:  "v1",
+		Name:        kmc.GetConfigMapName(),
+		Namespace:   kmc.Namespace,
+		Labels:      kcontrollerutil.LabelsForK0smotronComponent(kmc, kcontrollerutil.ComponentClusterConfig),
+		Annotations: kcontrollerutil.AnnotationsForK0smotronCluster(kmc),
 		Data: map[string]string{
 			"K0SMOTRON_K0S_YAML": string(b),
 		},

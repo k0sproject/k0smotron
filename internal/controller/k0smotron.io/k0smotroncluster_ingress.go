@@ -23,7 +23,6 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/networking/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	km "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
@@ -63,22 +62,14 @@ func (scope *kmcScope) reconcileIngress(ctx context.Context, kmc *km.Cluster) er
 
 	ingressVolume := corev1.Volume{
 		Name: kmc.GetIngressManifestsConfigMapName(),
-		VolumeSource: corev1.VolumeSource{
-			ConfigMap: &corev1.ConfigMapVolumeSource{
-				LocalObjectReference: corev1.LocalObjectReference{
-					Name: kmc.GetIngressManifestsConfigMapName(),
-				},
-			},
+		ConfigMap: &corev1.ConfigMapVolumeSource{
+			Name: kmc.GetIngressManifestsConfigMapName(),
 		},
 	}
 	konnectivityVolume := corev1.Volume{
 		Name: "konnectivity",
-		VolumeSource: corev1.VolumeSource{
-			ConfigMap: &corev1.ConfigMapVolumeSource{
-				LocalObjectReference: corev1.LocalObjectReference{
-					Name: kmc.GetIngressManifestsConfigMapName() + "-konnectivity",
-				},
-			},
+		ConfigMap: &corev1.ConfigMapVolumeSource{
+			Name: kmc.GetIngressManifestsConfigMapName() + "-konnectivity",
 		},
 	}
 
@@ -191,16 +182,12 @@ func (scope *kmcScope) getKonnectivityAgentPullPolicy(kmc *km.Cluster) string {
 
 func (scope *kmcScope) generateIngressManifestsConfigMap(kmc *km.Cluster) (corev1.ConfigMap, error) {
 	configMap := corev1.ConfigMap{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "ConfigMap",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        kmc.GetIngressManifestsConfigMapName(),
-			Namespace:   kmc.Namespace,
-			Labels:      kcontrollerutil.LabelsForK0smotronComponent(kmc, kcontrollerutil.ComponentIngress),
-			Annotations: kcontrollerutil.AnnotationsForK0smotronCluster(kmc),
-		},
+		Kind:        "ConfigMap",
+		APIVersion:  "v1",
+		Name:        kmc.GetIngressManifestsConfigMapName(),
+		Namespace:   kmc.Namespace,
+		Labels:      kcontrollerutil.LabelsForK0smotronComponent(kmc, kcontrollerutil.ComponentIngress),
+		Annotations: kcontrollerutil.AnnotationsForK0smotronCluster(kmc),
 		Data: map[string]string{
 			// Due to k0s behavior, we need to create a dummy Endpoints object to create a worker profile
 			// Once a local haproxy is up, it will update the Endpoints object to point with the actual proxy's IP
@@ -317,16 +304,12 @@ spec:
 
 func (scope *kmcScope) generateKonnectivityIngressConfigMap(kmc *km.Cluster) (corev1.ConfigMap, error) {
 	configMap := corev1.ConfigMap{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "ConfigMap",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        kmc.GetIngressManifestsConfigMapName() + "-konnectivity",
-			Namespace:   kmc.Namespace,
-			Labels:      kcontrollerutil.LabelsForK0smotronComponent(kmc, kcontrollerutil.ComponentIngress),
-			Annotations: kcontrollerutil.AnnotationsForK0smotronCluster(kmc),
-		},
+		Kind:        "ConfigMap",
+		APIVersion:  "v1",
+		Name:        kmc.GetIngressManifestsConfigMapName() + "-konnectivity",
+		Namespace:   kmc.Namespace,
+		Labels:      kcontrollerutil.LabelsForK0smotronComponent(kmc, kcontrollerutil.ComponentIngress),
+		Annotations: kcontrollerutil.AnnotationsForK0smotronCluster(kmc),
 		Data: map[string]string{
 			"konnectivity-agent.yaml": fmt.Sprintf(`apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -432,55 +415,47 @@ func (scope *kmcScope) generateIngress(kmc *km.Cluster) v1.Ingress {
 	}
 	maps.Copy(annotations, kmc.Spec.Ingress.Annotations)
 	ingress := v1.Ingress{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Ingress",
-			APIVersion: "networking.k8s.io/v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        kmc.GetIngressName(),
-			Namespace:   kmc.Namespace,
-			Annotations: annotations,
-			Labels:      kcontrollerutil.LabelsForK0smotronComponent(kmc, kcontrollerutil.ComponentIngress),
-		},
+		Kind:        "Ingress",
+		APIVersion:  "networking.k8s.io/v1",
+		Name:        kmc.GetIngressName(),
+		Namespace:   kmc.Namespace,
+		Annotations: annotations,
+		Labels:      kcontrollerutil.LabelsForK0smotronComponent(kmc, kcontrollerutil.ComponentIngress),
 		Spec: v1.IngressSpec{
 			IngressClassName: kmc.Spec.Ingress.ClassName,
 			Rules: []v1.IngressRule{
 				{
 					Host: kmc.Spec.Ingress.APIHost,
-					IngressRuleValue: v1.IngressRuleValue{
-						HTTP: &v1.HTTPIngressRuleValue{
-							Paths: []v1.HTTPIngressPath{{
-								Path:     "/",
-								PathType: new(v1.PathTypePrefix),
-								Backend: v1.IngressBackend{
-									Service: &v1.IngressServiceBackend{
-										Name: kmc.GetServiceName(),
-										Port: v1.ServiceBackendPort{
-											Number: int32(kmc.Spec.Service.APIPort),
-										},
+					HTTP: &v1.HTTPIngressRuleValue{
+						Paths: []v1.HTTPIngressPath{{
+							Path:     "/",
+							PathType: new(v1.PathTypePrefix),
+							Backend: v1.IngressBackend{
+								Service: &v1.IngressServiceBackend{
+									Name: kmc.GetServiceName(),
+									Port: v1.ServiceBackendPort{
+										Number: int32(kmc.Spec.Service.APIPort),
 									},
 								},
-							}},
-						},
+							},
+						}},
 					},
 				},
 				{
 					Host: kmc.Spec.Ingress.KonnectivityHost,
-					IngressRuleValue: v1.IngressRuleValue{
-						HTTP: &v1.HTTPIngressRuleValue{
-							Paths: []v1.HTTPIngressPath{{
-								Path:     "/",
-								PathType: new(v1.PathTypePrefix),
-								Backend: v1.IngressBackend{
-									Service: &v1.IngressServiceBackend{
-										Name: kmc.GetServiceName(),
-										Port: v1.ServiceBackendPort{
-											Number: int32(kmc.Spec.Service.KonnectivityPort),
-										},
+					HTTP: &v1.HTTPIngressRuleValue{
+						Paths: []v1.HTTPIngressPath{{
+							Path:     "/",
+							PathType: new(v1.PathTypePrefix),
+							Backend: v1.IngressBackend{
+								Service: &v1.IngressServiceBackend{
+									Name: kmc.GetServiceName(),
+									Port: v1.ServiceBackendPort{
+										Number: int32(kmc.Spec.Service.KonnectivityPort),
 									},
 								},
-							}},
-						},
+							},
+						}},
 					},
 				},
 			},

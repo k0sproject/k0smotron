@@ -39,7 +39,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/ssh"
 	batchv1 "k8s.io/api/batch/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	api "github.com/k0sproject/k0smotron/v2/api/infrastructure/v1beta2"
 	"github.com/k0sproject/k0smotron/v2/internal/provisioner"
@@ -317,7 +316,7 @@ func TestExtractCloudInitDecodesAndChowns(t *testing.T) {
 		provisionJob: &api.ProvisionJob{
 			SSHCommand:  "ssh",
 			SCPCommand:  "scp",
-			JobTemplate: &batchv1.JobTemplateSpec{ObjectMeta: metav1.ObjectMeta{Name: "job"}},
+			JobTemplate: &batchv1.JobTemplateSpec{Name: "job"},
 		},
 	}
 
@@ -352,7 +351,7 @@ func TestExtractCloudInitFileMode(t *testing.T) {
 		provisionJob: &api.ProvisionJob{
 			SSHCommand:  "ssh",
 			SCPCommand:  "scp",
-			JobTemplate: &batchv1.JobTemplateSpec{ObjectMeta: metav1.ObjectMeta{Name: "job"}},
+			JobTemplate: &batchv1.JobTemplateSpec{Name: "job"},
 		},
 	}
 
@@ -384,7 +383,7 @@ func TestExtractCloudInitQuotesOwnerAgainstInjection(t *testing.T) {
 		provisionJob: &api.ProvisionJob{
 			SSHCommand:  "ssh",
 			SCPCommand:  "scp",
-			JobTemplate: &batchv1.JobTemplateSpec{ObjectMeta: metav1.ObjectMeta{Name: "job"}},
+			JobTemplate: &batchv1.JobTemplateSpec{Name: "job"},
 		},
 	}
 
@@ -404,7 +403,7 @@ func TestExtractCloudInitQuotesScpDestination(t *testing.T) {
 		provisionJob: &api.ProvisionJob{
 			SSHCommand:  "ssh",
 			SCPCommand:  "scp",
-			JobTemplate: &batchv1.JobTemplateSpec{ObjectMeta: metav1.ObjectMeta{Name: "job"}},
+			JobTemplate: &batchv1.JobTemplateSpec{Name: "job"},
 		},
 	}
 
@@ -425,7 +424,7 @@ func TestExtractCloudInitUsesSudoWhenRequested(t *testing.T) {
 			provisionJob: &api.ProvisionJob{
 				SSHCommand:  "ssh",
 				SCPCommand:  "scp",
-				JobTemplate: &batchv1.JobTemplateSpec{ObjectMeta: metav1.ObjectMeta{Name: "job"}},
+				JobTemplate: &batchv1.JobTemplateSpec{Name: "job"},
 			},
 		}
 
@@ -451,7 +450,7 @@ func TestExtractCloudInitRejectsAppend(t *testing.T) {
 		provisionJob: &api.ProvisionJob{
 			SSHCommand:  "ssh",
 			SCPCommand:  "scp",
-			JobTemplate: &batchv1.JobTemplateSpec{ObjectMeta: metav1.ObjectMeta{Name: "job"}},
+			JobTemplate: &batchv1.JobTemplateSpec{Name: "job"},
 		},
 	}
 
@@ -477,7 +476,7 @@ func TestExtractCloudInitSurvivesTheTargetShellParse(t *testing.T) {
 		provisionJob: &api.ProvisionJob{
 			SSHCommand:  "ssh",
 			SCPCommand:  "scp",
-			JobTemplate: &batchv1.JobTemplateSpec{ObjectMeta: metav1.ObjectMeta{Name: "job"}},
+			JobTemplate: &batchv1.JobTemplateSpec{Name: "job"},
 		},
 	}
 

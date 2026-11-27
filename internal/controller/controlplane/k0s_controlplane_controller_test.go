@@ -135,7 +135,7 @@ func TestK0sConfigEnrichment(t *testing.T) {
 func TestClusterToK0sControlPlane(t *testing.T) {
 	newCluster := func(kind, name string) *clusterv1.Cluster {
 		return &clusterv1.Cluster{
-			ObjectMeta: metav1.ObjectMeta{Name: "c", Namespace: "ns"},
+			Name: "c", Namespace: "ns",
 			Spec: clusterv1.ClusterSpec{
 				ControlPlaneRef: clusterv1.ContractVersionedObjectReference{Kind: kind, Name: name},
 			},
@@ -150,7 +150,7 @@ func TestClusterToK0sControlPlane(t *testing.T) {
 		{
 			name: "a k0s control plane is enqueued in the cluster namespace",
 			obj:  newCluster("K0sControlPlane", "cp"),
-			want: []ctrl.Request{{NamespacedName: client.ObjectKey{Namespace: "ns", Name: "cp"}}},
+			want: []ctrl.Request{{Namespace: "ns", Name: "cp"}},
 		},
 		{
 			name: "the hosted control plane flavor is left to its own controller",
@@ -162,7 +162,7 @@ func TestClusterToK0sControlPlane(t *testing.T) {
 		},
 		{
 			name: "anything that is not a cluster is skipped",
-			obj:  &clusterv1.Machine{ObjectMeta: metav1.ObjectMeta{Name: "m", Namespace: "ns"}},
+			obj:  &clusterv1.Machine{Name: "m", Namespace: "ns"},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -183,9 +183,9 @@ func certScheme(t *testing.T) *runtime.Scheme {
 
 func certScope(initialized bool) *controlplane {
 	return &controlplane{
-		cluster: &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default"}},
+		cluster: &clusterv1.Cluster{Name: "test", Namespace: "default"},
 		kcp: &cpv1beta2.K0sControlPlane{
-			ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default", UID: "kcp-uid"},
+			Name: "test", Namespace: "default", UID: "kcp-uid",
 			Status: cpv1beta2.K0sControlPlaneStatus{
 				Initialization: cpv1beta2.Initialization{
 					ControlPlaneInitialized: new(initialized),
@@ -248,7 +248,7 @@ func TestEnsureCertificatesReportsMissingCertificates(t *testing.T) {
 
 	scope := certScope(true)
 
-	require.NoError(t, cl.Delete(t.Context(), &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Namespace: "default", Name: "test-ca"}}))
+	require.NoError(t, cl.Delete(t.Context(), &corev1.Secret{Namespace: "default", Name: "test-ca"}))
 	require.Error(t, c.ensureCertificates(t.Context(), scope))
 
 	got := conditions.Get(scope.kcp, kapi.ClusterCertificatesAvailableCondition)

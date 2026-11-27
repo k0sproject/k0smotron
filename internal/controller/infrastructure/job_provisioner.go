@@ -62,10 +62,8 @@ func (p *JobProvisioner) Provision(ctx context.Context) error {
 
 	jb := p.provisionJob.JobTemplate
 	job := &batchv1.Job{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "batch/v1",
-			Kind:       "Job",
-		},
+		APIVersion: "batch/v1",
+		Kind:       "Job",
 		ObjectMeta: jb.ObjectMeta,
 		Spec:       jb.Spec,
 	}
@@ -83,20 +81,16 @@ func (p *JobProvisioner) Provision(ctx context.Context) error {
 	}}
 
 	secret := &v1.Secret{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v1",
-			Kind:       "Secret",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-job-bootstrap-data", job.Name),
-			Namespace: job.Namespace,
-			OwnerReferences: []metav1.OwnerReference{{
-				APIVersion: p.remoteMachine.APIVersion,
-				Kind:       p.remoteMachine.Kind,
-				Name:       p.remoteMachine.GetName(),
-				UID:        p.remoteMachine.GetUID(),
-			}},
-		},
+		APIVersion: "v1",
+		Kind:       "Secret",
+		Name:       fmt.Sprintf("%s-job-bootstrap-data", job.Name),
+		Namespace:  job.Namespace,
+		OwnerReferences: []metav1.OwnerReference{{
+			APIVersion: p.remoteMachine.APIVersion,
+			Kind:       p.remoteMachine.Kind,
+			Name:       p.remoteMachine.GetName(),
+			UID:        p.remoteMachine.GetUID(),
+		}},
 	}
 
 	volume, volumeMounts, secretData, err := p.extractCloudInit(p.cloudInit)
@@ -157,10 +151,8 @@ func (p *JobProvisioner) extractCloudInit(cloudInit *provisioner.InputProvisionD
 
 	volume = v1.Volume{
 		Name: "bootstrap-data",
-		VolumeSource: v1.VolumeSource{
-			Secret: &v1.SecretVolumeSource{
-				SecretName: fmt.Sprintf("%s-job-bootstrap-data", p.provisionJob.JobTemplate.Name),
-			},
+		Secret: &v1.SecretVolumeSource{
+			SecretName: fmt.Sprintf("%s-job-bootstrap-data", p.provisionJob.JobTemplate.Name),
 		},
 	}
 

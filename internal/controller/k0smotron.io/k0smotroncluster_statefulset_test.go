@@ -139,7 +139,7 @@ func Test_effectiveCertFingerprint(t *testing.T) {
 		},
 	}
 	withoutAnnotation := &apps.StatefulSet{
-		ObjectMeta: metav1.ObjectMeta{Name: "sts"},
+		Name: "sts",
 	}
 	// client-go's typed clientset never returns a nil StatefulSet, even when
 	// one does not exist - only its Name is empty in that case.
@@ -211,7 +211,7 @@ func Test_effectiveCertFingerprint(t *testing.T) {
 // stamp, regardless of what the (possibly stale/zero) existing object looks
 // like) - the fix for the transient-error regression from round 2.
 func Test_effectiveCertFingerprintFromLookup(t *testing.T) {
-	withoutAnnotation := &apps.StatefulSet{ObjectMeta: metav1.ObjectMeta{Name: "sts"}}
+	withoutAnnotation := &apps.StatefulSet{Name: "sts"}
 
 	tests := []struct {
 		name        string
@@ -284,8 +284,8 @@ func newStatefulSetTestScope(t *testing.T, certFingerprints map[string]string) *
 
 func TestGenerateStatefulSet_certificateFingerprintAnnotation(t *testing.T) {
 	kmc := &km.Cluster{
-		ObjectMeta: metav1.ObjectMeta{Name: "kmc", Namespace: "default"},
-		Spec:       km.ClusterSpec{Replicas: 1},
+		Name: "kmc", Namespace: "default",
+		Spec: km.ClusterSpec{Replicas: 1},
 	}
 
 	scope := newStatefulSetTestScope(t, map[string]string{"controlplane": "abc123"})
@@ -297,8 +297,8 @@ func TestGenerateStatefulSet_certificateFingerprintAnnotation(t *testing.T) {
 
 func TestGenerateStatefulSet_emptyFingerprintOmitsAnnotation(t *testing.T) {
 	kmc := &km.Cluster{
-		ObjectMeta: metav1.ObjectMeta{Name: "kmc", Namespace: "default"},
-		Spec:       km.ClusterSpec{Replicas: 1},
+		Name: "kmc", Namespace: "default",
+		Spec: km.ClusterSpec{Replicas: 1},
 	}
 
 	scope := newStatefulSetTestScope(t, map[string]string{"controlplane": ""})
@@ -311,8 +311,8 @@ func TestGenerateStatefulSet_emptyFingerprintOmitsAnnotation(t *testing.T) {
 
 func TestGenerateStatefulSet_differentFingerprintsProduceDifferentTemplates(t *testing.T) {
 	kmc := &km.Cluster{
-		ObjectMeta: metav1.ObjectMeta{Name: "kmc", Namespace: "default"},
-		Spec:       km.ClusterSpec{Replicas: 1},
+		Name: "kmc", Namespace: "default",
+		Spec: km.ClusterSpec{Replicas: 1},
 	}
 
 	scopeA := newStatefulSetTestScope(t, map[string]string{"controlplane": "abc123"})
@@ -337,8 +337,8 @@ func TestGenerateStatefulSet_differentFingerprintsProduceDifferentTemplates(t *t
 // Kubernetes rolls the control plane and etcd for nothing.
 func TestGenerateStatefulSet_upgradeDoesNotRoll(t *testing.T) {
 	kmc := &km.Cluster{
-		ObjectMeta: metav1.ObjectMeta{Name: "kmc", Namespace: "default"},
-		Spec:       km.ClusterSpec{Replicas: 1},
+		Name: "kmc", Namespace: "default",
+		Spec: km.ClusterSpec{Replicas: 1},
 	}
 
 	scope := newStatefulSetTestScope(t, map[string]string{"controlplane": "abc123"})
@@ -346,10 +346,8 @@ func TestGenerateStatefulSet_upgradeDoesNotRoll(t *testing.T) {
 	// Simulate a pre-existing StatefulSet, as created by a stable operator
 	// that predates the fingerprint annotation.
 	preExisting := &apps.StatefulSet{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      kmc.GetStatefulSetName(),
-			Namespace: kmc.Namespace,
-		},
+		Name:      kmc.GetStatefulSetName(),
+		Namespace: kmc.Namespace,
 		Spec: apps.StatefulSetSpec{
 			Selector: &metav1.LabelSelector{},
 			Template: corev1.PodTemplateSpec{},
@@ -374,11 +372,9 @@ func TestGenerateStatefulSet_upgradeDoesNotRoll(t *testing.T) {
 // spec on every reconcile.
 func TestGenerateStatefulSet_doesNotEditClusterAnnotations(t *testing.T) {
 	kmc := &km.Cluster{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        "kmc",
-			Namespace:   "default",
-			Annotations: map[string]string{km.AnnotationKeyClusterSpecHash: "abc123", "own": "cluster"},
-		},
+		Name:        "kmc",
+		Namespace:   "default",
+		Annotations: map[string]string{km.AnnotationKeyClusterSpecHash: "abc123", "own": "cluster"},
 		Spec: km.ClusterSpec{
 			Replicas:                 1,
 			KubeconfigSecretMetadata: km.SecretMetadata{Annotations: map[string]string{"from": "kubeconfig-secret"}},

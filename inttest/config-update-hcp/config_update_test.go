@@ -162,17 +162,13 @@ func (s *ConfigUpdateSuite) updateK0smotronCluster(ctx context.Context, rc *rest
 func (s *ConfigUpdateSuite) createK0smotronCluster(ctx context.Context, kc *kubernetes.Clientset) {
 	// create K0smotron namespace
 	_, err := kc.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "kmc-test",
-		},
+		Name: "kmc-test",
 	}, metav1.CreateOptions{})
 	s.Require().NoError(err)
 
 	// create manifests
 	_, err = kc.CoreV1().Secrets("kmc-test").Create(ctx, &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "manifest-secret",
-		},
+		Name: "manifest-secret",
 		Data: map[string][]byte{
 			"manifest.yaml": []byte(`---
 apiVersion: v1
@@ -184,9 +180,7 @@ metadata:
 	s.Require().NoError(err)
 
 	_, err = kc.CoreV1().ConfigMaps("kmc-test").Create(ctx, &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "manifest-cm",
-		},
+		Name: "manifest-cm",
 		Data: map[string]string{
 			"manifest.yaml": `---
 apiVersion: v1

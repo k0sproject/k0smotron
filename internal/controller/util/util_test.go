@@ -21,12 +21,11 @@ import (
 
 	km "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
 	"github.com/stretchr/testify/assert"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestDefaultK0smotronClusterLabels(t *testing.T) {
 	kmc := &km.Cluster{
-		ObjectMeta: metav1.ObjectMeta{Name: "mycluster"},
+		Name: "mycluster",
 	}
 	got := DefaultK0smotronClusterLabels(kmc)
 	want := map[string]string{
@@ -38,8 +37,8 @@ func TestDefaultK0smotronClusterLabels(t *testing.T) {
 
 func TestLabelsForK0smotronCluster_LegacyComponent(t *testing.T) {
 	kmc := &km.Cluster{
-		ObjectMeta: metav1.ObjectMeta{Name: "mycluster"},
-		Spec:       km.ClusterSpec{},
+		Name: "mycluster",
+		Spec: km.ClusterSpec{},
 	}
 	got := LabelsForK0smotronCluster(kmc)
 	assert.Equal(t, "k0smotron", got["app"])
@@ -51,8 +50,8 @@ func TestLabelsForK0smotronCluster_LegacyComponent(t *testing.T) {
 
 func TestLabelsForK0smotronComponent_AddsAppComponentOnly(t *testing.T) {
 	kmc := &km.Cluster{
-		ObjectMeta: metav1.ObjectMeta{Name: "mycluster"},
-		Spec:       km.ClusterSpec{},
+		Name: "mycluster",
+		Spec: km.ClusterSpec{},
 	}
 	got := LabelsForK0smotronComponent(kmc, ComponentConfig)
 	assert.Equal(t, "k0smotron", got["app"])
@@ -63,8 +62,8 @@ func TestLabelsForK0smotronComponent_AddsAppComponentOnly(t *testing.T) {
 
 func TestLabelsForK0smotronControlPlane(t *testing.T) {
 	kmc := &km.Cluster{
-		ObjectMeta: metav1.ObjectMeta{Name: "mycluster"},
-		Spec:       km.ClusterSpec{},
+		Name: "mycluster",
+		Spec: km.ClusterSpec{},
 	}
 	got := LabelsForK0smotronControlPlane(kmc)
 	assert.Equal(t, "k0smotron", got["app"])
@@ -77,8 +76,8 @@ func TestLabelsForK0smotronControlPlane(t *testing.T) {
 
 func TestLabelsForEtcdK0smotronCluster(t *testing.T) {
 	kmc := &km.Cluster{
-		ObjectMeta: metav1.ObjectMeta{Name: "mycluster"},
-		Spec:       km.ClusterSpec{},
+		Name: "mycluster",
+		Spec: km.ClusterSpec{},
 	}
 	got := LabelsForEtcdK0smotronCluster(kmc)
 	assert.Equal(t, "k0smotron", got["app"])
@@ -90,10 +89,8 @@ func TestLabelsForEtcdK0smotronCluster(t *testing.T) {
 
 func TestAnnotationsForK0smotronCluster_ReturnsCopy(t *testing.T) {
 	kmc := &km.Cluster{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        "mycluster",
-			Annotations: map[string]string{km.AnnotationKeyClusterSpecHash: "abc123", "own": "cluster"},
-		},
+		Name:        "mycluster",
+		Annotations: map[string]string{km.AnnotationKeyClusterSpecHash: "abc123", "own": "cluster"},
 		Spec: km.ClusterSpec{
 			KubeconfigSecretMetadata: km.SecretMetadata{
 				Annotations: map[string]string{"from": "kubeconfig-secret"},
@@ -118,7 +115,7 @@ func TestAnnotationsForK0smotronCluster_ReturnsCopy(t *testing.T) {
 }
 
 func TestAnnotationsForK0smotronCluster_NilAnnotations(t *testing.T) {
-	kmc := &km.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "mycluster"}}
+	kmc := &km.Cluster{Name: "mycluster"}
 
 	got := AnnotationsForK0smotronCluster(kmc)
 

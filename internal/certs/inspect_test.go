@@ -31,7 +31,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // testCertPEM returns a self-signed certificate PEM valid until notAfter.
@@ -55,8 +54,8 @@ func testCertPEM(t *testing.T, cn string, serial int64, notAfter time.Time) []by
 
 func testSecret(name string, crt []byte) *corev1.Secret {
 	return &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"},
-		Data:       map[string][]byte{"tls.crt": crt},
+		Name: name, Namespace: "default",
+		Data: map[string][]byte{"tls.crt": crt},
 	}
 }
 
@@ -96,8 +95,8 @@ func TestInspect_nilSecret(t *testing.T) {
 
 func TestInspect_missingTLSCrt(t *testing.T) {
 	s := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{Name: "x", Namespace: "default"},
-		Data:       map[string][]byte{"tls.key": []byte("nope")},
+		Name: "x", Namespace: "default",
+		Data: map[string][]byte{"tls.key": []byte("nope")},
 	}
 	_, err := Inspect(s)
 	assert.Error(t, err)

@@ -74,8 +74,8 @@ func TestSetCertificatesConditions(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			kmc := &km.Cluster{
-				ObjectMeta: metav1.ObjectMeta{Name: "kmc", Namespace: "default"},
-				Spec:       km.ClusterSpec{CertificateRefs: tc.refs},
+				Name: "kmc", Namespace: "default",
+				Spec: km.ClusterSpec{CertificateRefs: tc.refs},
 			}
 
 			setCertificatesConditions(kmc, currentReconcileState{certificatesReconciled: true, certificates: tc.certificates})
@@ -93,8 +93,8 @@ func TestSetCertificatesConditions(t *testing.T) {
 
 func TestSetCertificatesConditions_doesNotAffectAvailableSummary(t *testing.T) {
 	kmc := &km.Cluster{
-		ObjectMeta: metav1.ObjectMeta{Name: "kmc", Namespace: "default"},
-		Spec:       km.ClusterSpec{CertificateRefs: []km.CertificateRef{{Type: "ca", Name: "kmc-ca"}}},
+		Name: "kmc", Namespace: "default",
+		Spec: km.ClusterSpec{CertificateRefs: []km.CertificateRef{{Type: "ca", Name: "kmc-ca"}}},
 	}
 
 	// A healthy control plane with an expired certificate must still summarise
@@ -129,8 +129,8 @@ func TestSetCertificatesConditions_doesNotAffectAvailableSummary(t *testing.T) {
 func TestSetCertificatesConditions_notReconciledLeavesConditionsAlone(t *testing.T) {
 	t.Run("fresh object: no conditions are set", func(t *testing.T) {
 		kmc := &km.Cluster{
-			ObjectMeta: metav1.ObjectMeta{Name: "kmc", Namespace: "default"},
-			Spec:       km.ClusterSpec{CertificateRefs: []km.CertificateRef{{Type: "ca", Name: "kmc-ca"}}},
+			Name: "kmc", Namespace: "default",
+			Spec: km.ClusterSpec{CertificateRefs: []km.CertificateRef{{Type: "ca", Name: "kmc-ca"}}},
 		}
 
 		setCertificatesConditions(kmc, currentReconcileState{
@@ -144,8 +144,8 @@ func TestSetCertificatesConditions_notReconciledLeavesConditionsAlone(t *testing
 
 	t.Run("a pre-set condition survives unchanged", func(t *testing.T) {
 		kmc := &km.Cluster{
-			ObjectMeta: metav1.ObjectMeta{Name: "kmc", Namespace: "default"},
-			Spec:       km.ClusterSpec{CertificateRefs: []km.CertificateRef{{Type: "ca", Name: "kmc-ca"}}},
+			Name: "kmc", Namespace: "default",
+			Spec: km.ClusterSpec{CertificateRefs: []km.CertificateRef{{Type: "ca", Name: "kmc-ca"}}},
 		}
 		// Simulate a previous, successful reconcile that found a certificate
 		// genuinely expiring soon.
@@ -188,8 +188,8 @@ func TestSetCertificatesConditions_notReconciledLeavesConditionsAlone(t *testing
 	// The referenced certificates exist; there is simply nothing to track here.
 	t.Run("reconciled with empty leaf set and refs present reports Available", func(t *testing.T) {
 		kmc := &km.Cluster{
-			ObjectMeta: metav1.ObjectMeta{Name: "kmc", Namespace: "default"},
-			Spec:       km.ClusterSpec{CertificateRefs: []km.CertificateRef{{Type: "ca", Name: "kmc-ca"}}},
+			Name: "kmc", Namespace: "default",
+			Spec: km.ClusterSpec{CertificateRefs: []km.CertificateRef{{Type: "ca", Name: "kmc-ca"}}},
 		}
 
 		setCertificatesConditions(kmc, currentReconcileState{
@@ -213,8 +213,8 @@ func TestSetCertificatesConditions_notReconciledLeavesConditionsAlone(t *testing
 	// guard above.
 	t.Run("reconciled with empty leaf set but unparseable secrets reports Unknown", func(t *testing.T) {
 		kmc := &km.Cluster{
-			ObjectMeta: metav1.ObjectMeta{Name: "kmc", Namespace: "default"},
-			Spec:       km.ClusterSpec{CertificateRefs: []km.CertificateRef{{Type: "ca", Name: "kmc-ca"}}},
+			Name: "kmc", Namespace: "default",
+			Spec: km.ClusterSpec{CertificateRefs: []km.CertificateRef{{Type: "ca", Name: "kmc-ca"}}},
 		}
 
 		setCertificatesConditions(kmc, currentReconcileState{
@@ -237,7 +237,7 @@ func TestSetCertificatesConditions_notReconciledLeavesConditionsAlone(t *testing
 	// reassuring claim backed by zero data.
 	t.Run("no refs reports Unknown for Expiring", func(t *testing.T) {
 		kmc := &km.Cluster{
-			ObjectMeta: metav1.ObjectMeta{Name: "kmc", Namespace: "default"},
+			Name: "kmc", Namespace: "default",
 		}
 
 		setCertificatesConditions(kmc, currentReconcileState{certificatesReconciled: true})
@@ -255,8 +255,8 @@ func TestSetCertificatesConditions_notReconciledLeavesConditionsAlone(t *testing
 
 	t.Run("reconciled with a healthy certificate reports Available", func(t *testing.T) {
 		kmc := &km.Cluster{
-			ObjectMeta: metav1.ObjectMeta{Name: "kmc", Namespace: "default"},
-			Spec:       km.ClusterSpec{CertificateRefs: []km.CertificateRef{{Type: "ca", Name: "kmc-ca"}}},
+			Name: "kmc", Namespace: "default",
+			Spec: km.ClusterSpec{CertificateRefs: []km.CertificateRef{{Type: "ca", Name: "kmc-ca"}}},
 		}
 
 		setCertificatesConditions(kmc, currentReconcileState{

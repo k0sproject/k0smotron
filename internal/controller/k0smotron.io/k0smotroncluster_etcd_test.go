@@ -28,7 +28,6 @@ import (
 	apps "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestEtcd_calculateDesiredReplicas(t *testing.T) {
@@ -197,8 +196,8 @@ func TestEtcd_generateEtcdStatefulSet(t *testing.T) {
 
 func TestEtcd_certificateFingerprintAnnotation(t *testing.T) {
 	kmc := &km.Cluster{
-		ObjectMeta: metav1.ObjectMeta{Name: "kmc", Namespace: "default"},
-		Spec:       km.ClusterSpec{Replicas: 1},
+		Name: "kmc", Namespace: "default",
+		Spec: km.ClusterSpec{Replicas: 1},
 	}
 
 	sts := generateEtcdStatefulSet(kmc, nil, 1, "abc123")
@@ -223,14 +222,14 @@ func TestEtcd_certificateFingerprintAnnotation(t *testing.T) {
 // the fleet for nothing.
 func TestEtcd_upgradeDoesNotRoll(t *testing.T) {
 	kmc := &km.Cluster{
-		ObjectMeta: metav1.ObjectMeta{Name: "kmc", Namespace: "default"},
-		Spec:       km.ClusterSpec{Replicas: 1},
+		Name: "kmc", Namespace: "default",
+		Spec: km.ClusterSpec{Replicas: 1},
 	}
 
 	// A pre-existing etcd StatefulSet with no fingerprint annotation, as
 	// created by a stable operator that predates it.
 	existingSts := &apps.StatefulSet{
-		ObjectMeta: metav1.ObjectMeta{Name: kmc.GetEtcdStatefulSetName(), Namespace: kmc.Namespace},
+		Name: kmc.GetEtcdStatefulSetName(), Namespace: kmc.Namespace,
 	}
 
 	// certificates were not renewed this reconcile (they are perfectly valid).
@@ -243,8 +242,8 @@ func TestEtcd_upgradeDoesNotRoll(t *testing.T) {
 
 func TestEtcd_emptyFingerprintOmitsAnnotation(t *testing.T) {
 	kmc := &km.Cluster{
-		ObjectMeta: metav1.ObjectMeta{Name: "kmc", Namespace: "default"},
-		Spec:       km.ClusterSpec{Replicas: 1},
+		Name: "kmc", Namespace: "default",
+		Spec: km.ClusterSpec{Replicas: 1},
 	}
 
 	sts := generateEtcdStatefulSet(kmc, nil, 1, "")

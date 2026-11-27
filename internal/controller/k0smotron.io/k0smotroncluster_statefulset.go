@@ -136,15 +136,11 @@ func (scope *kmcScope) generateStatefulSet(ctx context.Context, kmc *km.Cluster)
 	delete(annotations, km.AnnotationKeyClusterSpecHash)
 
 	statefulSet := apps.StatefulSet{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "apps/v1",
-			Kind:       "StatefulSet",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      kmc.GetStatefulSetName(),
-			Namespace: kmc.Namespace,
-			Labels:    labels,
-		},
+		APIVersion: "apps/v1",
+		Kind:       "StatefulSet",
+		Name:       kmc.GetStatefulSetName(),
+		Namespace:  kmc.Namespace,
+		Labels:     labels,
 		Spec: apps.StatefulSetSpec{
 			Selector: &metav1.LabelSelector{
 				MatchLabels: selectorLabels,
@@ -181,17 +177,13 @@ func (scope *kmcScope) generateStatefulSet(ctx context.Context, kmc *km.Cluster)
 					}},
 					Volumes: []v1.Volume{{
 						Name: kmc.GetEntrypointConfigMapName(),
-						VolumeSource: v1.VolumeSource{
-							ConfigMap: &v1.ConfigMapVolumeSource{
-								LocalObjectReference: v1.LocalObjectReference{
-									Name: kmc.GetEntrypointConfigMapName(),
-								},
-								DefaultMode: &entrypointDefaultMode,
-								Items: []v1.KeyToPath{{
-									Key:  "k0smotron-entrypoint.sh",
-									Path: "k0smotron-entrypoint.sh",
-								}},
-							},
+						ConfigMap: &v1.ConfigMapVolumeSource{
+							Name:        kmc.GetEntrypointConfigMapName(),
+							DefaultMode: &entrypointDefaultMode,
+							Items: []v1.KeyToPath{{
+								Key:  "k0smotron-entrypoint.sh",
+								Path: "k0smotron-entrypoint.sh",
+							}},
 						},
 					}},
 					Containers: []v1.Container{{
@@ -213,9 +205,7 @@ func (scope *kmcScope) generateStatefulSet(ctx context.Context, kmc *km.Cluster)
 						},
 						EnvFrom: []v1.EnvFromSource{{
 							ConfigMapRef: &v1.ConfigMapEnvSource{
-								LocalObjectReference: v1.LocalObjectReference{
-									Name: kmc.GetConfigMapName(),
-								},
+								Name: kmc.GetConfigMapName(),
 							},
 						}},
 						Resources: kmc.Spec.Resources,
@@ -251,9 +241,7 @@ func (scope *kmcScope) generateStatefulSet(ctx context.Context, kmc *km.Cluster)
 			natsSize = resource.MustParse("1Gi")
 		}
 		natsPVC := v1.PersistentVolumeClaim{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "nats-data",
-			},
+			Name: "nats-data",
 			Spec: v1.PersistentVolumeClaimSpec{
 				AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
 				Resources: v1.VolumeResourceRequirements{
@@ -292,10 +280,8 @@ func (scope *kmcScope) generateStatefulSet(ctx context.Context, kmc *km.Cluster)
 				Name: "K0SMOTRON_NATS_TOKEN",
 				ValueFrom: &v1.EnvVarSource{
 					SecretKeyRef: &v1.SecretKeySelector{
-						LocalObjectReference: v1.LocalObjectReference{
-							Name: kmc.GetNatsTokenSecretName(),
-						},
-						Key: "token",
+						Name: kmc.GetNatsTokenSecretName(),
+						Key:  "token",
 					},
 				},
 			},
@@ -325,9 +311,7 @@ func (scope *kmcScope) generateStatefulSet(ctx context.Context, kmc *km.Cluster)
 	if kmc.Spec.Storage.Kine.DataSourceSecretName != "" {
 		statefulSet.Spec.Template.Spec.Containers[0].EnvFrom = append(statefulSet.Spec.Template.Spec.Containers[0].EnvFrom, v1.EnvFromSource{
 			SecretRef: &v1.SecretEnvSource{
-				LocalObjectReference: v1.LocalObjectReference{
-					Name: kmc.Spec.Storage.Kine.DataSourceSecretName,
-				},
+				Name: kmc.Spec.Storage.Kine.DataSourceSecretName,
 			},
 		})
 	}
@@ -344,10 +328,8 @@ func (scope *kmcScope) generateStatefulSet(ctx context.Context, kmc *km.Cluster)
 	case "hostPath":
 		statefulSet.Spec.Template.Spec.Volumes = append(statefulSet.Spec.Template.Spec.Volumes, v1.Volume{
 			Name: kmc.GetVolumeName(),
-			VolumeSource: v1.VolumeSource{
-				HostPath: &v1.HostPathVolumeSource{
-					Path: kmc.Spec.Persistence.HostPath,
-				},
+			HostPath: &v1.HostPathVolumeSource{
+				Path: kmc.Spec.Persistence.HostPath,
 			},
 		})
 		statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts = append(statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts, v1.VolumeMount{
@@ -368,14 +350,12 @@ func (scope *kmcScope) generateStatefulSet(ctx context.Context, kmc *km.Cluster)
 			}
 		}
 		statefulSet.Spec.VolumeClaimTemplates = append(statefulSet.Spec.VolumeClaimTemplates, v1.PersistentVolumeClaim{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:        kmc.Spec.Persistence.PersistentVolumeClaim.Name,
-				Namespace:   kmc.Spec.Persistence.PersistentVolumeClaim.Namespace,
-				Labels:      kmc.Spec.Persistence.PersistentVolumeClaim.Labels,
-				Annotations: kmc.Spec.Persistence.PersistentVolumeClaim.Annotations,
-				Finalizers:  kmc.Spec.Persistence.PersistentVolumeClaim.Finalizers,
-			},
-			Spec: kmc.Spec.Persistence.PersistentVolumeClaim.Spec,
+			Name:        kmc.Spec.Persistence.PersistentVolumeClaim.Name,
+			Namespace:   kmc.Spec.Persistence.PersistentVolumeClaim.Namespace,
+			Labels:      kmc.Spec.Persistence.PersistentVolumeClaim.Labels,
+			Annotations: kmc.Spec.Persistence.PersistentVolumeClaim.Annotations,
+			Finalizers:  kmc.Spec.Persistence.PersistentVolumeClaim.Finalizers,
+			Spec:        kmc.Spec.Persistence.PersistentVolumeClaim.Spec,
 		})
 
 		statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts = append(statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts, v1.VolumeMount{
@@ -386,10 +366,8 @@ func (scope *kmcScope) generateStatefulSet(ctx context.Context, kmc *km.Cluster)
 		fallthrough
 	default:
 		statefulSet.Spec.Template.Spec.Volumes = append(statefulSet.Spec.Template.Spec.Volumes, v1.Volume{
-			Name: kmc.GetVolumeName(),
-			VolumeSource: v1.VolumeSource{
-				EmptyDir: &v1.EmptyDirVolumeSource{},
-			},
+			Name:     kmc.GetVolumeName(),
+			EmptyDir: &v1.EmptyDirVolumeSource{},
 		})
 		statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts = append(statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts, v1.VolumeMount{
 			Name:      kmc.GetVolumeName(),
@@ -425,15 +403,11 @@ func (scope *kmcScope) generateStatefulSet(ctx context.Context, kmc *km.Cluster)
 	// Create k0s telemetry config in the configmap and mount it to the controller pod
 	// If user disables k0s telemetry this will have not effect.
 	cm := &v1.ConfigMap{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v1",
-			Kind:       "ConfigMap",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("kmc-%s-telemetry-config", kmc.Name),
-			Namespace: kmc.Namespace,
-			Labels:    kcontrollerutil.LabelsForK0smotronComponent(kmc, kcontrollerutil.ComponentTelemetry),
-		},
+		APIVersion: "v1",
+		Kind:       "ConfigMap",
+		Name:       fmt.Sprintf("kmc-%s-telemetry-config", kmc.Name),
+		Namespace:  kmc.Namespace,
+		Labels:     kcontrollerutil.LabelsForK0smotronComponent(kmc, kcontrollerutil.ComponentTelemetry),
 		Data: map[string]string{
 			"configmap.yaml": `
 apiVersion: v1
@@ -453,10 +427,8 @@ data:
 	}
 	statefulSet.Spec.Template.Spec.Volumes = append(statefulSet.Spec.Template.Spec.Volumes, v1.Volume{
 		Name: cm.Name,
-		VolumeSource: v1.VolumeSource{
-			ConfigMap: &v1.ConfigMapVolumeSource{
-				LocalObjectReference: v1.LocalObjectReference{Name: cm.Name},
-			},
+		ConfigMap: &v1.ConfigMapVolumeSource{
+			Name: cm.Name,
 		},
 	})
 
@@ -500,13 +472,13 @@ data:
 		InitialDelaySeconds: 60,
 		PeriodSeconds:       10,
 		FailureThreshold:    15,
-		ProbeHandler:        v1.ProbeHandler{Exec: &v1.ExecAction{Command: []string{"k0s", "status"}}},
+		Exec:                &v1.ExecAction{Command: []string{"k0s", "status"}},
 	}
 	statefulSet.Spec.Template.Spec.Containers[0].LivenessProbe = &v1.Probe{
 		InitialDelaySeconds: 90,
 		FailureThreshold:    10,
 		PeriodSeconds:       10,
-		ProbeHandler:        v1.ProbeHandler{Exec: &v1.ExecAction{Command: []string{"k0s", "status"}}},
+		Exec:                &v1.ExecAction{Command: []string{"k0s", "status"}},
 	}
 	if kmc.Spec.Storage.Type == km.StorageTypeNATS {
 		statefulSet.Spec.Template.Spec.Containers[0].ReadinessProbe.InitialDelaySeconds = 0
@@ -548,7 +520,7 @@ func mountSecrets(kmc *km.Cluster, sfs *apps.StatefulSet) {
 		case "ca":
 			projectedSecrets = append(projectedSecrets, v1.VolumeProjection{
 				Secret: &v1.SecretProjection{
-					LocalObjectReference: v1.LocalObjectReference{Name: cert.Name},
+					Name: cert.Name,
 					Items: []v1.KeyToPath{
 						{
 							Key:  "tls.crt",
@@ -565,7 +537,7 @@ func mountSecrets(kmc *km.Cluster, sfs *apps.StatefulSet) {
 		case "sa":
 			projectedSecrets = append(projectedSecrets, v1.VolumeProjection{
 				Secret: &v1.SecretProjection{
-					LocalObjectReference: v1.LocalObjectReference{Name: cert.Name},
+					Name: cert.Name,
 					Items: []v1.KeyToPath{
 						{
 							Key:  "tls.crt",
@@ -581,7 +553,7 @@ func mountSecrets(kmc *km.Cluster, sfs *apps.StatefulSet) {
 		case "proxy":
 			projectedSecrets = append(projectedSecrets, v1.VolumeProjection{
 				Secret: &v1.SecretProjection{
-					LocalObjectReference: v1.LocalObjectReference{Name: cert.Name},
+					Name: cert.Name,
 					Items: []v1.KeyToPath{
 						{
 							Key:  "tls.crt",
@@ -597,7 +569,7 @@ func mountSecrets(kmc *km.Cluster, sfs *apps.StatefulSet) {
 		case "apiserver-etcd-client":
 			projectedSecrets = append(projectedSecrets, v1.VolumeProjection{
 				Secret: &v1.SecretProjection{
-					LocalObjectReference: v1.LocalObjectReference{Name: cert.Name},
+					Name: cert.Name,
 					Items: []v1.KeyToPath{
 						{
 							Key:  "tls.crt",
@@ -613,7 +585,7 @@ func mountSecrets(kmc *km.Cluster, sfs *apps.StatefulSet) {
 		case "etcd":
 			projectedSecrets = append(projectedSecrets, v1.VolumeProjection{
 				Secret: &v1.SecretProjection{
-					LocalObjectReference: v1.LocalObjectReference{Name: cert.Name},
+					Name: cert.Name,
 					Items: []v1.KeyToPath{
 						{
 							Key:  "tls.crt",
@@ -631,10 +603,8 @@ func mountSecrets(kmc *km.Cluster, sfs *apps.StatefulSet) {
 	}
 	sfs.Spec.Template.Spec.Volumes = append(sfs.Spec.Template.Spec.Volumes, v1.Volume{
 		Name: "certs",
-		VolumeSource: v1.VolumeSource{
-			Projected: &v1.ProjectedVolumeSource{
-				Sources: projectedSecrets,
-			},
+		Projected: &v1.ProjectedVolumeSource{
+			Sources: projectedSecrets,
 		},
 	})
 
@@ -746,31 +716,23 @@ func addMonitoringStack(kmc *km.Cluster, statefulSet *apps.StatefulSet) {
 
 	statefulSet.Spec.Template.Spec.Volumes = append(statefulSet.Spec.Template.Spec.Volumes, v1.Volume{
 		Name: kmc.GetMonitoringConfigMapName(),
-		VolumeSource: v1.VolumeSource{
-			ConfigMap: &v1.ConfigMapVolumeSource{
-				LocalObjectReference: v1.LocalObjectReference{
-					Name: kmc.GetMonitoringConfigMapName(),
-				},
-				DefaultMode: &entrypointDefaultMode,
-				Items: []v1.KeyToPath{{
-					Key:  "prometheus.yml",
-					Path: "prometheus.yml",
-				}},
-			},
+		ConfigMap: &v1.ConfigMapVolumeSource{
+			Name:        kmc.GetMonitoringConfigMapName(),
+			DefaultMode: &entrypointDefaultMode,
+			Items: []v1.KeyToPath{{
+				Key:  "prometheus.yml",
+				Path: "prometheus.yml",
+			}},
 		},
 	}, v1.Volume{
 		Name: nginxConfCMName,
-		VolumeSource: v1.VolumeSource{
-			ConfigMap: &v1.ConfigMapVolumeSource{
-				LocalObjectReference: v1.LocalObjectReference{
-					Name: kmc.GetMonitoringConfigMapName(),
-				},
-				DefaultMode: &entrypointDefaultMode,
-				Items: []v1.KeyToPath{{
-					Key:  "nginx.conf",
-					Path: "nginx.conf",
-				}},
-			},
+		ConfigMap: &v1.ConfigMapVolumeSource{
+			Name:        kmc.GetMonitoringConfigMapName(),
+			DefaultMode: &entrypointDefaultMode,
+			Items: []v1.KeyToPath{{
+				Key:  "nginx.conf",
+				Path: "nginx.conf",
+			}},
 		},
 	})
 }

@@ -26,7 +26,6 @@ import (
 	kcontrollerutil "github.com/k0sproject/k0smotron/v2/internal/controller/util"
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -59,16 +58,12 @@ func (scope *kmcScope) reconcileNatsSvc(ctx context.Context, kmc *km.Cluster) er
 	labels := kcontrollerutil.LabelsForK0smotronControlPlane(kmc)
 
 	svc := v1.Service{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v1",
-			Kind:       "Service",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        kmc.GetNatsServiceName(),
-			Namespace:   kmc.Namespace,
-			Labels:      labels,
-			Annotations: kcontrollerutil.AnnotationsForK0smotronCluster(kmc),
-		},
+		APIVersion:  "v1",
+		Kind:        "Service",
+		Name:        kmc.GetNatsServiceName(),
+		Namespace:   kmc.Namespace,
+		Labels:      labels,
+		Annotations: kcontrollerutil.AnnotationsForK0smotronCluster(kmc),
 		Spec: v1.ServiceSpec{
 			Type:                     v1.ServiceTypeClusterIP,
 			ClusterIP:                v1.ClusterIPNone,
@@ -110,16 +105,12 @@ func (scope *kmcScope) reconcileNatsTokenSecret(ctx context.Context, kmc *km.Clu
 	}
 
 	secret := &v1.Secret{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v1",
-			Kind:       "Secret",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        secretName,
-			Namespace:   kmc.Namespace,
-			Labels:      kcontrollerutil.LabelsForK0smotronControlPlane(kmc),
-			Annotations: kcontrollerutil.AnnotationsForK0smotronCluster(kmc),
-		},
+		APIVersion:  "v1",
+		Kind:        "Secret",
+		Name:        secretName,
+		Namespace:   kmc.Namespace,
+		Labels:      kcontrollerutil.LabelsForK0smotronControlPlane(kmc),
+		Annotations: kcontrollerutil.AnnotationsForK0smotronCluster(kmc),
 		Data: map[string][]byte{
 			"token": []byte(token),
 		},

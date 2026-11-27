@@ -47,9 +47,7 @@ func TestHasControllerConfigChanged(t *testing.T) {
 		{
 			name: "equal configs",
 			machine: &clusterv1.Machine{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test",
-				},
+				Name: "test",
 				Status: clusterv1.MachineStatus{
 					Phase: string(clusterv1.MachinePhaseRunning),
 				},
@@ -140,9 +138,7 @@ func TestHasControllerConfigChanged(t *testing.T) {
 		{
 			name: "not equal configs: new k0sInstallDir",
 			machine: &clusterv1.Machine{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test",
-				},
+				Name: "test",
 				Status: clusterv1.MachineStatus{
 					Phase: string(clusterv1.MachinePhaseRunning),
 				},
@@ -235,9 +231,7 @@ func TestHasControllerConfigChanged(t *testing.T) {
 		{
 			name: "not equal configs: enabling worker in kcp",
 			machine: &clusterv1.Machine{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test",
-				},
+				Name: "test",
 				Status: clusterv1.MachineStatus{
 					Phase: string(clusterv1.MachinePhaseRunning),
 				},
@@ -357,11 +351,9 @@ func TestGetMachineK0sConfig_LegacyAnnotation(t *testing.T) {
 	require.Contains(t, string(legacyJSON), "preStartCommands")
 
 	machine := &clusterv1.Machine{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "test",
-			Annotations: map[string]string{
-				cpv1beta2.MachineK0sConfigAnnotation: string(legacyJSON),
-			},
+		Name: "test",
+		Annotations: map[string]string{
+			cpv1beta2.MachineK0sConfigAnnotation: string(legacyJSON),
 		},
 	}
 
@@ -385,9 +377,7 @@ func TestHasControllerConfigChanged_LegacyAnnotationNoRollout(t *testing.T) {
 	// Minimal v1beta1 config as written by k0smotron < v2.0.0: no provisioner, no defaulted
 	// scalar fields persisted.
 	legacyConfig := bootstrapv1.K0sControllerConfig{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "test",
-		},
+		Name: "test",
 		Spec: bootstrapv1.K0sControllerConfigSpec{
 			K0sConfigSpec: &bootstrapv1.K0sConfigSpec{},
 		},
@@ -396,11 +386,9 @@ func TestHasControllerConfigChanged_LegacyAnnotationNoRollout(t *testing.T) {
 	require.NoError(t, err)
 
 	machine := &clusterv1.Machine{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "test",
-			Annotations: map[string]string{
-				cpv1beta2.MachineK0sConfigAnnotation: string(legacyJSON),
-			},
+		Name: "test",
+		Annotations: map[string]string{
+			cpv1beta2.MachineK0sConfigAnnotation: string(legacyJSON),
 		},
 		Status: clusterv1.MachineStatus{
 			Phase: string(clusterv1.MachinePhaseRunning),
@@ -432,9 +420,7 @@ func TestHasControllerConfigChanged_LegacyAnnotationNoRollout(t *testing.T) {
 	}
 
 	convertedLegacyConfig := &bootstrapv2.K0sControllerConfig{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "test",
-		},
+		Name: "test",
 	}
 	require.NoError(t, legacyConfig.ConvertTo(convertedLegacyConfig))
 	// bootstrapConfigs is only used by the deprecated fallback path; the annotation path is taken here.
@@ -442,7 +428,7 @@ func TestHasControllerConfigChanged_LegacyAnnotationNoRollout(t *testing.T) {
 }
 
 func TestDeprecatedIsK0sConfigChangedWithNoK0sConfig(t *testing.T) {
-	machine := &clusterv1.Machine{ObjectMeta: metav1.ObjectMeta{Name: "machine-0"}}
+	machine := &clusterv1.Machine{Name: "machine-0"}
 
 	t.Run("neither side sets a k0s config", func(t *testing.T) {
 		kcp := &cpv1beta2.K0sControlPlane{
@@ -488,11 +474,11 @@ func TestDeprecatedIsK0sConfigChangedWithNoK0sConfig(t *testing.T) {
 // TestGenerateMachineCopiesMachineTemplateSpec covers the template spec reaching the
 // Machine, which is the only place the machine controller reads any of it from.
 func TestGenerateMachineCopiesMachineTemplateSpec(t *testing.T) {
-	cluster := &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default"}}
+	cluster := &clusterv1.Cluster{Name: "test", Namespace: "default"}
 
 	newKCP := func(deletion cpv1beta2.K0sControlPlaneMachineTemplateDeletionSpec) *cpv1beta2.K0sControlPlane {
 		return &cpv1beta2.K0sControlPlane{
-			ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default"},
+			Name: "test", Namespace: "default",
 			Spec: cpv1beta2.K0sControlPlaneSpec{
 				Version: "v1.31.0",
 				MachineTemplate: &cpv1beta2.K0sControlPlaneMachineTemplate{
@@ -569,13 +555,11 @@ func TestGenerateMachineCopiesMachineTemplateSpec(t *testing.T) {
 }
 
 func TestGenerateMachineKeepsWhatAnExistingMachineWasCreatedWith(t *testing.T) {
-	cluster := &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default"}}
+	cluster := &clusterv1.Cluster{Name: "test", Namespace: "default"}
 	kcp := &cpv1beta2.K0sControlPlane{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        "test",
-			Namespace:   "default",
-			Annotations: map[string]string{cpv1beta2.RemediationInProgressAnnotation: remediationData{Machine: "other", Timestamp: metav1.Now()}.marshal()},
-		},
+		Name:        "test",
+		Namespace:   "default",
+		Annotations: map[string]string{cpv1beta2.RemediationInProgressAnnotation: remediationData{Machine: "other", Timestamp: metav1.Now()}.marshal()},
 		Spec: cpv1beta2.K0sControlPlaneSpec{
 			Version:         "v1.31.0",
 			MachineTemplate: &cpv1beta2.K0sControlPlaneMachineTemplate{},
@@ -583,13 +567,11 @@ func TestGenerateMachineKeepsWhatAnExistingMachineWasCreatedWith(t *testing.T) {
 		},
 	}
 	existing := &clusterv1.Machine{
-		ObjectMeta: metav1.ObjectMeta{
-			UID:             "existing-uid",
-			ResourceVersion: "42",
-			Annotations: map[string]string{
-				cpv1beta2.MachineK0sConfigAnnotation: "created-with",
-				cpv1beta2.RemediationForAnnotation:   "lineage",
-			},
+		UID:             "existing-uid",
+		ResourceVersion: "42",
+		Annotations: map[string]string{
+			cpv1beta2.MachineK0sConfigAnnotation: "created-with",
+			cpv1beta2.RemediationForAnnotation:   "lineage",
 		},
 		Spec: clusterv1.MachineSpec{Version: "v1.30.0+k0s.0"},
 	}

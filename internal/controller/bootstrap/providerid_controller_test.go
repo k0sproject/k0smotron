@@ -51,7 +51,7 @@ func pagedNodes(pages ...[]corev1.Node) (listNodes, *[]metav1.ListOptions) {
 }
 
 func node(name string, mutate func(*corev1.Node)) corev1.Node {
-	n := corev1.Node{ObjectMeta: metav1.ObjectMeta{Name: name}}
+	n := corev1.Node{Name: name}
 	if mutate != nil {
 		mutate(&n)
 	}
@@ -61,8 +61,8 @@ func node(name string, mutate func(*corev1.Node)) corev1.Node {
 
 func machineWithProviderID(name, providerID string, addresses ...string) *clusterv1.Machine {
 	m := &clusterv1.Machine{
-		ObjectMeta: metav1.ObjectMeta{Name: name},
-		Spec:       clusterv1.MachineSpec{ProviderID: providerID},
+		Name: name,
+		Spec: clusterv1.MachineSpec{ProviderID: providerID},
 	}
 	for _, a := range addresses {
 		m.Status.Addresses = append(m.Status.Addresses, clusterv1.MachineAddress{Address: a})

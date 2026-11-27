@@ -22,7 +22,6 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
@@ -80,18 +79,14 @@ func (scope *kmcScope) reconcileKubeConfigSecret(ctx context.Context, management
 
 	secret := v1.Secret{
 		// The dynamic r.Client needs TypeMeta to be set
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Secret",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        kmc.GetAdminConfigSecretName(),
-			Namespace:   kmc.Namespace,
-			Labels:      kcontrollerutil.LabelsForK0smotronComponent(kmc, kcontrollerutil.ComponentKubeconfig),
-			Annotations: kcontrollerutil.AnnotationsForK0smotronCluster(kmc),
-		},
-		StringData: map[string]string{"value": processedOutput},
-		Type:       clusterv1.ClusterSecretType,
+		Kind:        "Secret",
+		APIVersion:  "v1",
+		Name:        kmc.GetAdminConfigSecretName(),
+		Namespace:   kmc.Namespace,
+		Labels:      kcontrollerutil.LabelsForK0smotronComponent(kmc, kcontrollerutil.ComponentKubeconfig),
+		Annotations: kcontrollerutil.AnnotationsForK0smotronCluster(kmc),
+		StringData:  map[string]string{"value": processedOutput},
+		Type:        clusterv1.ClusterSecretType,
 	}
 
 	// workload cluster kubeconfig is always created in the management cluster so we set k0smotron cluster as owner

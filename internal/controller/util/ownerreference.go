@@ -35,11 +35,9 @@ func EnsureExternalOwner(ctx context.Context, name, namespace string, c client.C
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			cm := &corev1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      getExternalOwnerName(name),
-					Namespace: namespace,
-				},
-				Data: map[string]string{},
+				Name:      getExternalOwnerName(name),
+				Namespace: namespace,
+				Data:      map[string]string{},
 			}
 
 			err := c.Create(ctx, cm)

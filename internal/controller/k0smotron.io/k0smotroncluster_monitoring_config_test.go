@@ -26,7 +26,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	km "github.com/k0sproject/k0smotron/v2/api/k0smotron.io/v1beta2"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestGenerateMonitoringCM_storageJobs(t *testing.T) {
@@ -45,8 +44,8 @@ func TestGenerateMonitoringCM_storageJobs(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			kmc := &km.Cluster{
-				ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default"},
-				Spec:       km.ClusterSpec{Storage: km.StorageSpec{Type: tc.storageType}},
+				Name: "test", Namespace: "default",
+				Spec: km.ClusterSpec{Storage: km.StorageSpec{Type: tc.storageType}},
 			}
 
 			cm, err := newCertTestScope().generateMonitoringCM(kmc)
