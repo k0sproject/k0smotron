@@ -144,7 +144,7 @@ func TestEtcd_resourceRequirements(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			sts := generateEtcdStatefulSet(tc.cluster, nil, 1, "")
+			sts := generateEtcdStatefulSet(tc.cluster, nil, 1, "", corev1.IPv4Protocol)
 			resources := sts.Spec.Template.Spec.Containers[0].Resources
 			tc.want(t, resources)
 		})
@@ -187,10 +187,74 @@ func TestEtcd_generateEtcdStatefulSet(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run("", func(t *testing.T) {
-			sts := generateEtcdStatefulSet(tc.cluster, nil, 1, "")
+			sts := generateEtcdStatefulSet(tc.cluster, nil, 1, "", corev1.IPv4Protocol)
 			for _, w := range tc.want {
 				assert.True(t, strings.Contains(sts.Spec.Template.Spec.Containers[0].Args[1], w))
 			}
+		})
+	}
+}
+
+func TestEtcd_primaryIPFamily(t *testing.T) {
+	tests := []struct {
+		name     string
+		families []corev1.IPFamily
+		want     corev1.IPFamily
+	}{
+		{name: "none assigned", want: corev1.IPv4Protocol},
+		{name: "IPv4", families: []corev1.IPFamily{corev1.IPv4Protocol}, want: corev1.IPv4Protocol},
+		{name: "IPv6", families: []corev1.IPFamily{corev1.IPv6Protocol}, want: corev1.IPv6Protocol},
+		{name: "dual-stack, IPv4 first", families: []corev1.IPFamily{corev1.IPv4Protocol, corev1.IPv6Protocol}, want: corev1.IPv4Protocol},
+		{name: "dual-stack, IPv6 first", families: []corev1.IPFamily{corev1.IPv6Protocol, corev1.IPv4Protocol}, want: corev1.IPv6Protocol},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			svc := &corev1.Service{Spec: corev1.ServiceSpec{IPFamilies: tc.families}}
+			assert.Equal(t, tc.want, primaryIPFamily(svc))
+		})
+	}
+}
+
+func TestEtcd_podTemplateFollowsIPFamily(t *testing.T) {
+	kmc := &km.Cluster{
+		ObjectMeta: metav1.ObjectMeta{Name: "kmc", Namespace: "default"},
+		Spec:       km.ClusterSpec{Replicas: 1},
+	}
+
+	// The IPv4 strings are pinned to the byte: they are what the etcd
+	// StatefulSet of every cluster on an IPv4 management cluster carries, and a
+	// different pod template rolls etcd when the operator is upgraded.
+	ipv4 := struct{ dnsCheck, listen string }{
+		dnsCheck: "getent ahostsv4 ${HOSTNAME}.${SVC_NAME}.default.svc",
+		listen: "  --listen-peer-urls=https://0.0.0.0:2380 \\\n" +
+			"  --listen-client-urls=https://0.0.0.0:2379 \\\n",
+	}
+
+	tests := []struct {
+		name         string
+		ipFamily     corev1.IPFamily
+		wantDNSCheck string
+		wantListen   string
+	}{
+		{name: "IPv4", ipFamily: corev1.IPv4Protocol, wantDNSCheck: ipv4.dnsCheck, wantListen: ipv4.listen},
+		{name: "no family", ipFamily: "", wantDNSCheck: ipv4.dnsCheck, wantListen: ipv4.listen},
+		{
+			name:         "IPv6",
+			ipFamily:     corev1.IPv6Protocol,
+			wantDNSCheck: "getent ahosts ${HOSTNAME}.${SVC_NAME}.default.svc",
+			wantListen: "  --listen-peer-urls=https://[::]:2380 \\\n" +
+				"  --listen-client-urls=https://[::]:2379 \\\n",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			podSpec := generateEtcdStatefulSet(kmc, nil, 1, "", tc.ipFamily).Spec.Template.Spec
+
+			assert.Equal(t, "dns-check", podSpec.InitContainers[0].Name)
+			assert.Equal(t, []string{tc.wantDNSCheck}, podSpec.InitContainers[0].Args)
+			assert.Contains(t, podSpec.Containers[0].Args[1], tc.wantListen)
 		})
 	}
 }
@@ -201,12 +265,12 @@ func TestEtcd_certificateFingerprintAnnotation(t *testing.T) {
 		Spec:       km.ClusterSpec{Replicas: 1},
 	}
 
-	sts := generateEtcdStatefulSet(kmc, nil, 1, "abc123")
+	sts := generateEtcdStatefulSet(kmc, nil, 1, "abc123", corev1.IPv4Protocol)
 	assert.Equal(t, "abc123", sts.Spec.Template.Annotations[certificateFingerprintAnnotation])
 
 	// A different fingerprint must produce a different pod template, which is
 	// what makes Kubernetes roll the pods after a renewal.
-	other := generateEtcdStatefulSet(kmc, nil, 1, "def456")
+	other := generateEtcdStatefulSet(kmc, nil, 1, "def456", corev1.IPv4Protocol)
 	assert.NotEqual(t,
 		sts.Spec.Template.Annotations[certificateFingerprintAnnotation],
 		other.Spec.Template.Annotations[certificateFingerprintAnnotation])
@@ -236,7 +300,7 @@ func TestEtcd_upgradeDoesNotRoll(t *testing.T) {
 	// certificates were not renewed this reconcile (they are perfectly valid).
 	effectiveFingerprint := effectiveCertFingerprint(existingSts, "abc123", false)
 
-	sts := generateEtcdStatefulSet(kmc, existingSts, 1, effectiveFingerprint)
+	sts := generateEtcdStatefulSet(kmc, existingSts, 1, effectiveFingerprint, corev1.IPv4Protocol)
 	_, ok := sts.Spec.Template.Annotations[certificateFingerprintAnnotation]
 	assert.False(t, ok, "adopting a pre-existing etcd StatefulSet without a genuine renewal must not stamp the fingerprint, or the upgrade rolls etcd for nothing")
 }
@@ -247,7 +311,7 @@ func TestEtcd_emptyFingerprintOmitsAnnotation(t *testing.T) {
 		Spec:       km.ClusterSpec{Replicas: 1},
 	}
 
-	sts := generateEtcdStatefulSet(kmc, nil, 1, "")
+	sts := generateEtcdStatefulSet(kmc, nil, 1, "", corev1.IPv4Protocol)
 	_, ok := sts.Spec.Template.Annotations[certificateFingerprintAnnotation]
 	assert.False(t, ok, "an empty fingerprint must not add an annotation, so existing clusters do not roll on upgrade")
 }

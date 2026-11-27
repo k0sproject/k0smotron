@@ -51,12 +51,13 @@ func (scope *kmcScope) reconcileEtcd(ctx context.Context, kmc *km.Cluster, certF
 		return ctrl.Result{}, nil
 	}
 
-	if err := scope.reconcileEtcdSvc(ctx, kmc); err != nil {
+	ipFamily, err := scope.reconcileEtcdSvc(ctx, kmc)
+	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("error reconciling etcd service: %w", err)
 	}
 
 	// We can continue reconciling etcd if we need to requeue for statefulset, but if there is an error we should return immediately
-	result, err := scope.reconcileEtcdStatefulSet(ctx, kmc, certFingerprint)
+	result, err := scope.reconcileEtcdStatefulSet(ctx, kmc, certFingerprint, ipFamily)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("error reconciling etcd statefulset: %w", err)
 	}
@@ -69,7 +70,9 @@ func (scope *kmcScope) reconcileEtcd(ctx context.Context, kmc *km.Cluster, certF
 	return result, nil
 }
 
-func (scope *kmcScope) reconcileEtcdSvc(ctx context.Context, kmc *km.Cluster) error {
+// reconcileEtcdSvc applies the headless Service of the etcd members and returns
+// the IP family the API server resolves it to first.
+func (scope *kmcScope) reconcileEtcdSvc(ctx context.Context, kmc *km.Cluster) (v1.IPFamily, error) {
 	// Service selector is immutable after creation. Add app.kubernetes.io/component only to metadata labels.
 	selectorLabels := kcontrollerutil.LabelsForEtcdK0smotronCluster(kmc)
 	metadataLabels := make(map[string]string, len(selectorLabels)+1)
@@ -109,7 +112,20 @@ func (scope *kmcScope) reconcileEtcdSvc(ctx context.Context, kmc *km.Cluster) er
 
 	_ = kcontrollerutil.SetExternalOwnerReference(kmc, &svc, scope.client.Scheme(), scope.externalOwner)
 
-	return scope.reconcileResource(ctx, kmc, &svc)
+	if err := scope.reconcileResource(ctx, kmc, &svc); err != nil {
+		return "", err
+	}
+
+	return primaryIPFamily(&svc), nil
+}
+
+// primaryIPFamily returns the IP family svc resolves to first, which is IPv4
+// where the API server has assigned it none.
+func primaryIPFamily(svc *v1.Service) v1.IPFamily {
+	if len(svc.Spec.IPFamilies) == 0 {
+		return v1.IPv4Protocol
+	}
+	return svc.Spec.IPFamilies[0]
 }
 
 func (scope *kmcScope) reconcileEtcdDefragJob(ctx context.Context, kmc *km.Cluster) error {
@@ -198,7 +214,7 @@ func (scope *kmcScope) reconcileEtcdDefragJob(ctx context.Context, kmc *km.Clust
 	return scope.reconcileResource(ctx, kmc, &cronJob)
 }
 
-func (scope *kmcScope) reconcileEtcdStatefulSet(ctx context.Context, kmc *km.Cluster, certFingerprint string) (ctrl.Result, error) {
+func (scope *kmcScope) reconcileEtcdStatefulSet(ctx context.Context, kmc *km.Cluster, certFingerprint string, ipFamily v1.IPFamily) (ctrl.Result, error) {
 	foundStatefulSet, err := scope.clienSet.AppsV1().StatefulSets(kmc.Namespace).Get(ctx, kmc.GetEtcdStatefulSetName(), metav1.GetOptions{})
 	if err != nil {
 		if !apierrors.IsNotFound(err) {
@@ -219,7 +235,7 @@ func (scope *kmcScope) reconcileEtcdStatefulSet(ctx context.Context, kmc *km.Clu
 
 	effectiveFingerprint := effectiveCertFingerprint(foundStatefulSet, certFingerprint, scope.currentReconcileState.certificatesRenewed)
 
-	statefulSet := generateEtcdStatefulSet(kmc, foundStatefulSet, desiredReplicas, effectiveFingerprint)
+	statefulSet := generateEtcdStatefulSet(kmc, foundStatefulSet, desiredReplicas, effectiveFingerprint, ipFamily)
 
 	_ = kcontrollerutil.SetExternalOwnerReference(kmc, &statefulSet, scope.client.Scheme(), scope.externalOwner)
 
@@ -245,7 +261,7 @@ func etcdReplicasToApply(desired, current, ready int32) (replicas int32, scaleUp
 	return current + 1, current+1 < desired
 }
 
-func generateEtcdStatefulSet(kmc *km.Cluster, existingSts *apps.StatefulSet, replicas int32, certFingerprint string) apps.StatefulSet {
+func generateEtcdStatefulSet(kmc *km.Cluster, existingSts *apps.StatefulSet, replicas int32, certFingerprint string, ipFamily v1.IPFamily) apps.StatefulSet {
 	// StatefulSet selector is immutable after creation. Add app.kubernetes.io/component only to metadata and template labels.
 	selectorLabels := kcontrollerutil.LabelsForEtcdK0smotronCluster(kmc)
 	labels := make(map[string]string, len(selectorLabels)+1)
@@ -276,9 +292,11 @@ func generateEtcdStatefulSet(kmc *km.Cluster, existingSts *apps.StatefulSet, rep
 
 	var etcdEntrypointScriptBuf bytes.Buffer
 	_ = etcdEntrypointScriptTmpl.Execute(&etcdEntrypointScriptBuf, struct {
-		Args []string
+		ListenHost string
+		Args       []string
 	}{
-		Args: kmc.Spec.Storage.Etcd.Args,
+		ListenHost: etcdListenHost(ipFamily),
+		Args:       kmc.Spec.Storage.Etcd.Args,
 	})
 
 	statefulSet := apps.StatefulSet{
@@ -365,7 +383,7 @@ func generateEtcdStatefulSet(kmc *km.Cluster, existingSts *apps.StatefulSet, rep
 					SecurityContext: &v1.PodSecurityContext{
 						FSGroup: new(int64(1001)),
 					},
-					InitContainers: generateEtcdInitContainers(kmc, existingSts),
+					InitContainers: generateEtcdInitContainers(kmc, existingSts, ipFamily),
 					Containers: []v1.Container{{
 						Name:            "etcd",
 						Image:           kmc.Spec.Storage.Etcd.Image,
@@ -438,7 +456,28 @@ func initialCluster(kmc *km.Cluster, replicas int32) string {
 	return strings.Join(members, ",")
 }
 
-func generateEtcdInitContainers(kmc *km.Cluster, existingSts *apps.StatefulSet) []v1.Container {
+// etcdListenHost returns the wildcard address etcd listens on where its Service
+// resolves to ipFamily first. The IPv6 wildcard accepts IPv4 connections too.
+// The IPv4 value is pinned: existing StatefulSets carry it, and any other rolls
+// their members when the operator is upgraded.
+func etcdListenHost(ipFamily v1.IPFamily) string {
+	if ipFamily == v1.IPv6Protocol {
+		return "[::]"
+	}
+	return "0.0.0.0"
+}
+
+// etcdDNSCheckDatabase returns the getent database the dns-check init container
+// looks the pod's own name up in, where its Service resolves to ipFamily first.
+// The IPv4 value is pinned for the reason etcdListenHost gives.
+func etcdDNSCheckDatabase(ipFamily v1.IPFamily) string {
+	if ipFamily == v1.IPv6Protocol {
+		return "ahosts"
+	}
+	return "ahostsv4"
+}
+
+func generateEtcdInitContainers(kmc *km.Cluster, existingSts *apps.StatefulSet, ipFamily v1.IPFamily) []v1.Container {
 	checkImage := kmc.Spec.GetImage()
 	if existingSts != nil {
 		for _, c := range existingSts.Spec.Template.Spec.InitContainers {
@@ -456,7 +495,7 @@ func generateEtcdInitContainers(kmc *km.Cluster, existingSts *apps.StatefulSet) 
 			Image:           checkImage,
 			ImagePullPolicy: v1.PullIfNotPresent,
 			Command:         []string{"/bin/sh", "-c"},
-			Args:            []string{"getent ahostsv4 ${HOSTNAME}.${SVC_NAME}." + kmc.Namespace + ".svc"},
+			Args:            []string{"getent " + etcdDNSCheckDatabase(ipFamily) + " ${HOSTNAME}.${SVC_NAME}." + kmc.Namespace + ".svc"},
 			Env: []v1.EnvVar{
 				{Name: "SVC_NAME", Value: kmc.GetEtcdServiceName()},
 			},
@@ -508,8 +547,8 @@ if [[ -f /var/lib/k0s/etcd/existing ]]; then
 fi
 
 etcd --name ${HOSTNAME} \
-  --listen-peer-urls=https://0.0.0.0:2380 \
-  --listen-client-urls=https://0.0.0.0:2379 \
+  --listen-peer-urls=https://{{ .ListenHost }}:2380 \
+  --listen-client-urls=https://{{ .ListenHost }}:2379 \
   --advertise-client-urls=https://${HOSTNAME}.${SVC_NAME}:2379 \
   --initial-advertise-peer-urls=https://${HOSTNAME}.${SVC_NAME}:2380 \
   --client-cert-auth=true \
